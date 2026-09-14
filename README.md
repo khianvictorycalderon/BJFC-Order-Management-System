@@ -53,7 +53,7 @@ If you don't have the following, install it.
 Below are the steps you will do for first time setting up this project.
 1. Clone this repository via `git clone https://github.com/khianvictorycalderon/BJFC-Order-Management-System.git`.
 2. Create a virtual environment via `python -m venv venv`.
-3. Activate the virtual environment via `\venv\Scripts\activate`.
+3. Activate the virtual environment via `venv\Scripts\activate`.
 4. Before running any CLI command again, check your CLI, it should have a `(venv)` at the left side. For example: `(venv) D:\myproject\>`. If it has the `(venv)`, the virtual environment is already activated, if not, repeat step 3.
 5. Using the CLI with virtual environment, install the necessary dependencies via `pip install -r requirements.txt`
 6. Create an `.env` file in the root directory *(root directory means if you can see the `dj` folder, then it's the root directory, if not, click back to previous folder)*. The `.env` file should contain the following content:
