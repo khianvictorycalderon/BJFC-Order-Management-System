@@ -1,0 +1,41 @@
+# Python bytecode files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environment (if in project folder)
+venv/
+env/
+.venv/
+
+# Django migration files (optional: you might track initial migrations)
+# **/migrations
+# !*/migrations/__init__.py
+
+# Database files
+db.sqlite3
+
+# Django static files (if using collectstatic)
+staticfiles/
+
+# Media files (user uploads)
+media/
+
+# PyCharm / VS Code / IDE files
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Environment variables
+.env
+
+# Misc
+*.vbs
