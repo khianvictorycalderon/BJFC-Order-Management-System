@@ -121,3 +121,4 @@ Meaning uploading the code you made for the whole team to see and use. *ANALOGY:
 - All tasks are posted on our github repo's issues, check the boxes once you finished the tasks assigned to you..
 - If you encountered an error, always read first the error message first, then search how to fix it, or use AI. If it still doesn't work, then you can ask in our GC what's the solution.
 - For backend developers, always run `python manage.py makemigrations` if you changed something in the models. 
+- Always use virtual environment (`venv\Scripts\activate`) when running `python manage.py runserver`.
