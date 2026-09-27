@@ -12,15 +12,14 @@ https://docs.djangoproject.com/en/6.1/ref/settings/
 
 from utils.env_list_parser import parse_env_list
 from pathlib import Path
+from dotenv import load_dotenv
 import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Load .env on development only
-if (os.getenv("DJANGO_ENV") != "production"):
-    from dotenv import load_dotenv
-    load_dotenv(os.path.join(BASE_DIR, ".env"))
+load_dotenv(os.path.join(BASE_DIR, ".env"))
 
 # Attempts to load secret key from the .env file
 SECRET_KEY = os.getenv("DJANGO_SECRET_KEY")
@@ -39,8 +38,7 @@ INSTALLED_APPS = [
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
-    'django.contrib.staticfiles',
-    'testapp'
+    'django.contrib.staticfiles'
 ]
 
 MIDDLEWARE = [
