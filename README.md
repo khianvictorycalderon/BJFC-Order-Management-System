@@ -65,11 +65,7 @@ Below are the steps you will do for first time setting up this project.
     ```
 7. Replace all the ones with `...` with actual values. To get the values of the following:
     - `DJANGO_ENV` -> either `production` or `development` only. Since we are developing this project, the value should be `development`
-    - `DJANGO_SECRET_KEY` -> Run this in any python interpreter and copy it's printed random character value:
-        ```python
-        from django.core.management.utils import get_random_secret_key
-        print(get_random_secret_key())
-        ```
+    - `DJANGO_SECRET_KEY` -> Go to [`https://khianvictorycalderon.github.io/secured-dynamic-key-generator`](https://khianvictorycalderon.github.io/secured-dynamic-key-generator) to generate a 64 character long key.
     - `DEBUG` -> either `True` or `False` only, used to display useful information in development. Set this to `True` since we are in development, but it must be set to `False` on production.
     - `ALLOWED_HOSTS` -> this is the url where you want your django project to be hosted, for now just set this to `127.0.0.1, localhost`
 8. Run `python manage.py migrate` to sync the Django models with the database schema.
