@@ -1,0 +1,34 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Home | Bespren Johny's Fried Chicken{% endblock %}
+
+{% block content %}
+{% include 'components/navbar.html' with active='home' %}
+
+<main>
+    <section id="home" class="flex flex-col lg:min-h-[max(40rem,calc(100vh-87px))] lg:flex-row">
+
+        {# Left: copy #}
+        <div class="order-2 flex flex-col justify-center px-6 pb-12 pt-4 sm:px-10 lg:order-1 lg:w-[46%] lg:py-0 lg:pb-[40px] lg:pl-[98px] lg:pr-6">
+            <h1 class="text-4xl font-bold leading-tight sm:text-5xl lg:whitespace-nowrap xl:text-[62px]">{{ hero.title }}</h1>
+
+            <p class="mt-6 text-lg leading-[30px] sm:text-[22px] lg:mt-9 lg:pl-[7px]">
+                {% for line in hero.lines %}{{ line }}{% if not forloop.last %}<br>{% endif %}{% endfor %}
+            </p>
+
+            <a href="{{ hero.cta_url }}"
+               class="mt-8 flex h-[47px] w-[158px] items-center justify-center rounded-full bg-gradient-to-b from-[#ea3434] via-[#e02828] to-[#b81c1c] text-xl font-bold uppercase text-white shadow-[0_3px_5px_rgba(0,0,0,0.4),inset_0_-3px_4px_rgba(0,0,0,0.25)] transition duration-300 hover:-translate-y-0.5 hover:brightness-110 hover:shadow-[0_6px_10px_rgba(0,0,0,0.4),inset_0_-3px_4px_rgba(0,0,0,0.25)] active:translate-y-0">
+                {{ hero.cta_label }}
+            </a>
+        </div>
+
+        {# Right: red curve + plate artwork #}
+        <div class="order-1 lg:order-2 lg:w-[54%] lg:self-stretch">
+            <img src="{% static 'img/hero-art.jpg' %}"
+                 alt="Plate of crispy fried chicken with dipping sauces, spices and garlic"
+                 class="h-auto w-full object-cover object-left-top lg:h-full">
+        </div>
+    </section>
+</main>
+{% endblock %}
