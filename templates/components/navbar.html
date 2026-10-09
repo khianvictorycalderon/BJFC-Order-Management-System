@@ -1,58 +1,177 @@
 {% load static %}
-{# Reusable navbar. Pass active="home|about|menu|contact" via {% include ... with active="home" %} #}
-<header class="relative z-30 bg-white shadow-[0_2px_3px_rgba(0,0,0,0.35)]">
-    <nav class="mx-auto flex h-[87px] items-center px-5 sm:px-8 lg:px-0 lg:pl-[44px] lg:pr-[38px]">
+{# Reusable navbar. Pass active="home|about|menu|contact" via include. #}
 
-        <a href="{% url 'home' %}" class="shrink-0" aria-label="Bespren Johny's Fried Chicken - Home">
-            <img src="{% static 'img/logo.png' %}" alt="Bespren Johny's Fried Chicken" class="h-[66px] w-auto transition duration-300 hover:scale-105">
+<header class="fixed inset-x-0 top-0 z-50 bg-white shadow-[0_2px_3px_rgba(0,0,0,0.35)]">
+    <nav class="mx-auto flex h-[87px] items-center px-5 sm:px-8 lg:px-[44px]">
+
+        <!-- Logo -->
+        <a href="{% url 'home' %}" class="shrink-0"
+           aria-label="Bespren Johny's Fried Chicken - Home">
+            <img
+                src="{% static 'img/logo.png' %}"
+                alt="Bespren Johny's Fried Chicken"
+                class="h-[66px] w-auto transition duration-300 hover:scale-105"
+            >
         </a>
 
-        <ul class="hidden items-center gap-x-[60px] text-2xl text-brand lg:ml-[175px] lg:flex">
+        <!-- Desktop Navigation -->
+        <ul class="ml-auto hidden items-center gap-x-10 text-xl text-brand lg:flex xl:ml-[175px] xl:gap-x-[60px]">
             <li class="group relative">
-                <a href="{% url 'home' %}" class="transition duration-300 hover:text-[#b81c1c] {% if active == 'home' %}font-semibold{% endif %}">HOME</a>
+                <a href="{% url 'home' %}"
+                   class="transition duration-300 hover:text-[#b81c1c] {% if active == 'home' %}font-semibold{% endif %}"
+                   {% if active == 'home' %}aria-current="page"{% endif %}>
+                    HOME
+                </a>
                 <span class="absolute -bottom-[7px] left-[7px] right-[8px] h-[2px] origin-left bg-brand transition duration-300 {% if active == 'home' %}scale-x-100{% else %}scale-x-0 group-hover:scale-x-100{% endif %}"></span>
             </li>
+
             <li class="group relative">
-                <a href="#about" class="transition duration-300 hover:text-[#b81c1c]">ABOUT</a>
-                <span class="absolute -bottom-[7px] left-[7px] right-[8px] h-[2px] origin-left scale-x-0 bg-brand transition duration-300 group-hover:scale-x-100"></span>
+                <a href="{% url 'home' %}#about"
+                   class="transition duration-300 hover:text-[#b81c1c] {% if active == 'about' %}font-semibold{% endif %}"
+                   {% if active == 'about' %}aria-current="page"{% endif %}>
+                    ABOUT
+                </a>
+                <span class="absolute -bottom-[7px] left-[7px] right-[8px] h-[2px] origin-left bg-brand transition duration-300 {% if active == 'about' %}scale-x-100{% else %}scale-x-0 group-hover:scale-x-100{% endif %}"></span>
             </li>
+
             <li class="group relative">
-                <a href="#menu" class="transition duration-300 hover:text-[#b81c1c]">MENU</a>
-                <span class="absolute -bottom-[7px] left-[7px] right-[8px] h-[2px] origin-left scale-x-0 bg-brand transition duration-300 group-hover:scale-x-100"></span>
+                <a href="{% url 'home' %}#menu"
+                   class="transition duration-300 hover:text-[#b81c1c] {% if active == 'menu' %}font-semibold{% endif %}"
+                   {% if active == 'menu' %}aria-current="page"{% endif %}>
+                    MENU
+                </a>
+                <span class="absolute -bottom-[7px] left-[7px] right-[8px] h-[2px] origin-left bg-brand transition duration-300 {% if active == 'menu' %}scale-x-100{% else %}scale-x-0 group-hover:scale-x-100{% endif %}"></span>
             </li>
+
             <li class="group relative">
-                <a href="#contact" class="transition duration-300 hover:text-[#b81c1c]">CONTACT</a>
-                <span class="absolute -bottom-[7px] left-[7px] right-[8px] h-[2px] origin-left scale-x-0 bg-brand transition duration-300 group-hover:scale-x-100"></span>
+                <a href="{% url 'home' %}#contact"
+                   class="transition duration-300 hover:text-[#b81c1c] {% if active == 'contact' %}font-semibold{% endif %}"
+                   {% if active == 'contact' %}aria-current="page"{% endif %}>
+                    CONTACT
+                </a>
+                <span class="absolute -bottom-[7px] left-[7px] right-[8px] h-[2px] origin-left bg-brand transition duration-300 {% if active == 'contact' %}scale-x-100{% else %}scale-x-0 group-hover:scale-x-100{% endif %}"></span>
             </li>
         </ul>
 
-        <div class="ml-auto flex items-center gap-1">
+        <!-- Actions -->
+        <div class="ml-auto flex shrink-0 items-center gap-2 lg:ml-auto lg:gap-1">
+
             <a href="#login"
-               class="flex h-[27px] w-[85px] items-center justify-center rounded-lg bg-brand-btn text-[9px] font-medium uppercase text-white shadow-[0_3px_4px_rgba(0,0,0,0.35)] transition duration-300 hover:-translate-y-0.5 hover:bg-[#b81c1c] hover:shadow-[0_5px_8px_rgba(0,0,0,0.4)] active:translate-y-0">
+               class="flex h-[32px] min-w-[70px] items-center justify-center rounded-lg bg-brand-btn px-3 text-[10px] font-medium uppercase text-white shadow-[0_3px_4px_rgba(0,0,0,0.35)] transition duration-300 hover:-translate-y-0.5 hover:bg-[#b81c1c] active:translate-y-0 sm:h-[36px] sm:min-w-[85px] sm:text-xs">
                 Log in
             </a>
-            <a href="#cart" aria-label="Cart"
-               class="flex h-[27px] w-[43px] items-center justify-center rounded-lg bg-brand-dark text-white shadow-[0_3px_4px_rgba(0,0,0,0.35)] transition duration-300 hover:-translate-y-0.5 hover:bg-black hover:shadow-[0_5px_8px_rgba(0,0,0,0.4)] active:translate-y-0">
-                <svg viewBox="0 0 24 24" class="h-[14px] w-[14px]" fill="currentColor" aria-hidden="true">
+
+            <a href="#cart"
+               aria-label="Cart"
+               class="flex h-[32px] w-[38px] shrink-0 items-center justify-center rounded-lg bg-brand-dark text-white shadow-[0_3px_4px_rgba(0,0,0,0.35)] transition duration-300 hover:-translate-y-0.5 hover:bg-black active:translate-y-0 sm:h-[36px] sm:w-[43px]">
+                <svg viewBox="0 0 24 24" class="h-4 w-4"
+                     fill="currentColor" aria-hidden="true">
                     <path d="M7 18a2 2 0 1 0 0 4 2 2 0 0 0 0-4Zm10 0a2 2 0 1 0 0 4 2 2 0 0 0 0-4ZM1 2v2h2l3.6 7.6-1.4 2.4A2 2 0 0 0 7 17h12v-2H7.4l1.1-2h7.5a2 2 0 0 0 1.7-1l3.6-6.5A1 1 0 0 0 20.4 4H5.2l-.9-2H1Z"/>
                 </svg>
             </a>
 
-            {# TODO (Frontend Engineers): mobile menu button is hidden until the JS slide-out is built. Replace "hidden" with "lg:hidden" to show it on small screens. #}
-            <button type="button" id="nav-toggle" aria-label="Toggle menu" aria-expanded="false" aria-controls="nav-mobile"
-                    class="ml-3 flex h-9 w-9 items-center justify-center rounded-lg text-brand hidden">
-                <svg viewBox="0 0 24 24" class="h-7 w-7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+            <!-- Mobile Menu Toggle -->
+            <button
+                type="button"
+                id="nav-toggle"
+                aria-label="Open navigation menu"
+                aria-expanded="false"
+                aria-controls="nav-mobile"
+                class="ml-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-brand transition hover:bg-gray-100 lg:hidden"
+            >
+                <svg id="nav-icon-open" viewBox="0 0 24 24"
+                     class="h-7 w-7" fill="none" stroke="currentColor"
+                     stroke-width="2" stroke-linecap="round"
+                     aria-hidden="true">
                     <path d="M4 6h16M4 12h16M4 18h16"/>
+                </svg>
+
+                <svg id="nav-icon-close" viewBox="0 0 24 24"
+                     class="hidden h-7 w-7" fill="none" stroke="currentColor"
+                     stroke-width="2" stroke-linecap="round"
+                     aria-hidden="true">
+                    <path d="m6 6 12 12M18 6 6 18"/>
                 </svg>
             </button>
         </div>
     </nav>
 
-    <ul id="nav-mobile" class="hidden border-t border-gray-200 bg-white px-5 py-3 text-xl text-brand sm:px-8 lg:hidden">
-        <li><a href="{% url 'home' %}" class="block py-2 transition duration-300 hover:pl-2 hover:text-[#b81c1c] {% if active == 'home' %}font-semibold{% endif %}">HOME</a></li>
-        <li><a href="#about" class="block py-2 transition duration-300 hover:pl-2 hover:text-[#b81c1c]">ABOUT</a></li>
-        <li><a href="#menu" class="block py-2 transition duration-300 hover:pl-2 hover:text-[#b81c1c]">MENU</a></li>
-        <li><a href="#contact" class="block py-2 transition duration-300 hover:pl-2 hover:text-[#b81c1c]">CONTACT</a></li>
-    </ul>
+    <!-- Mobile Navigation -->
+    <div
+        id="nav-mobile"
+        class="hidden border-t border-gray-200 bg-white px-5 py-3 shadow-lg sm:px-8 lg:hidden"
+    >
+        <ul class="space-y-1 text-lg text-brand">
+            <li>
+                <a href="{% url 'home' %}"
+                   class="block rounded-lg px-3 py-2 transition hover:bg-gray-50 hover:text-[#b81c1c] {% if active == 'home' %}font-semibold{% endif %}">
+                    HOME
+                </a>
+            </li>
+            <li>
+                <a href="{% url 'home' %}#about"
+                   class="block rounded-lg px-3 py-2 transition hover:bg-gray-50 hover:text-[#b81c1c] {% if active == 'about' %}font-semibold{% endif %}">
+                    ABOUT
+                </a>
+            </li>
+            <li>
+                <a href="{% url 'home' %}#menu"
+                   class="block rounded-lg px-3 py-2 transition hover:bg-gray-50 hover:text-[#b81c1c] {% if active == 'menu' %}font-semibold{% endif %}">
+                    MENU
+                </a>
+            </li>
+            <li>
+                <a href="{% url 'home' %}#contact"
+                   class="block rounded-lg px-3 py-2 transition hover:bg-gray-50 hover:text-[#b81c1c] {% if active == 'contact' %}font-semibold{% endif %}">
+                    CONTACT
+                </a>
+            </li>
+        </ul>
+    </div>
 </header>
 
+<script>
+    (() => {
+        const toggle = document.getElementById("nav-toggle");
+        const mobileMenu = document.getElementById("nav-mobile");
+        const openIcon = document.getElementById("nav-icon-open");
+        const closeIcon = document.getElementById("nav-icon-close");
+
+        if (!toggle || !mobileMenu) return;
+
+        const setMenuOpen = (isOpen) => {
+            mobileMenu.classList.toggle("hidden", !isOpen);
+            toggle.setAttribute("aria-expanded", String(isOpen));
+            toggle.setAttribute(
+                "aria-label",
+                isOpen ? "Close navigation menu" : "Open navigation menu"
+            );
+
+            openIcon?.classList.toggle("hidden", isOpen);
+            closeIcon?.classList.toggle("hidden", !isOpen);
+        };
+
+        toggle.addEventListener("click", () => {
+            const isOpen = toggle.getAttribute("aria-expanded") === "true";
+            setMenuOpen(!isOpen);
+        });
+
+        mobileMenu.querySelectorAll("a").forEach((link) => {
+            link.addEventListener("click", () => setMenuOpen(false));
+        });
+
+        // Close the mobile menu when switching to desktop layout.
+        window.addEventListener("resize", () => {
+            if (window.innerWidth >= 1024) {
+                setMenuOpen(false);
+            }
+        });
+
+        // Close the menu with Escape.
+        document.addEventListener("keydown", (event) => {
+            if (event.key === "Escape") {
+                setMenuOpen(false);
+            }
+        });
+    })();
+</script>
