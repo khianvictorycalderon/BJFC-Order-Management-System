@@ -1,0 +1,64 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}About Us | BJ Johnny's Fried Chicken{% endblock %}
+
+{% block content %}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+
+<div class="bg-white font-['Nunito',sans-serif] text-black antialiased">
+
+  <!-- NAVBAR -->
+  <header class="relative z-20 flex h-[88px] items-center justify-between bg-white px-6 shadow-[0_2px_3px_rgba(0,0,0,0.25)] lg:px-11">
+
+    <a href="#" class="shrink-0">
+     <img src="{% static 'images/logo.png' %}" alt="BJ Johnny's Fried Chicken" style="height:62px; width:auto; object-fit:contain;">
+    </a>
+
+    <nav class="hidden flex-1 items-center gap-[62px] pl-[175px] md:flex">
+      <a href="#" class="text-[22px] font-normal tracking-wide text-red-600">HOME</a>
+      <a href="#" class="relative text-[22px] font-bold tracking-wide text-red-600">
+        ABOUT
+        <span class="absolute -bottom-1 left-0 right-0 h-[2px] bg-red-600"></span>
+      </a>
+      <a href="#" class="-ml-5 text-[22px] font-normal tracking-wide text-red-600">MENU</a>
+      <a href="#" class="text-[22px] font-normal tracking-wide text-red-600">CONTACT</a>
+    </nav>
+
+    <div class="flex items-center gap-1.5">
+      <a href="#"
+         class="flex h-[26px] w-[86px] items-center justify-center rounded-full bg-gradient-to-b from-red-500 to-red-700 text-[8px] font-semibold uppercase tracking-wide text-white shadow-[0_3px_5px_rgba(0,0,0,0.35)]">
+        Log in
+      </a>
+      <a href="#" aria-label="Cart"
+         class="flex h-[26px] w-[43px] items-center justify-center rounded-full bg-gradient-to-b from-neutral-600 to-neutral-900 text-white shadow-[0_3px_5px_rgba(0,0,0,0.35)]">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="h-3.5 w-3.5">
+          <path d="M7 18a2 2 0 1 0 0 4 2 2 0 0 0 0-4Zm10 0a2 2 0 1 0 0 4 2 2 0 0 0 0-4ZM1 2v2h2l3.6 7.6-1.4 2.4C4.5 15.3 5.5 17 7 17h12v-2H7.4l1.1-2h7.5c.8 0 1.4-.4 1.7-1l3.6-6.5A1 1 0 0 0 20.4 4H5.2l-.9-2H1Zm11 3h2v2h2v2h-2v2h-2V9h-2V7h2V5Z"/>
+        </svg>
+      </a>
+    </div>
+  </header>
+
+  <!-- ABOUT HERO -->
+  <main class="relative min-h-[710px] overflow-hidden bg-white pt-[30px]">
+
+    <img src="{% static 'images/store.png' %}" alt="Inside BJ Johnny's Fried Chicken"
+        style="position:absolute; left:0; top:30px; width:70%; height:710px; max-width:none; object-fit:cover; opacity:0.9;
+               -webkit-mask-image:linear-gradient(to right,#000 0%,#000 62%,transparent 100%);
+               mask-image:linear-gradient(to right,#000 0%,#000 62%,transparent 100%);">
+
+
+    <section class="relative z-10 flex min-h-[710px] items-center">
+      <div class="-mt-[60px] ml-auto w-full px-6 md:w-[44%] md:px-0 md:pr-12 lg:pr-24">
+        <h1 class="text-[40px] font-semibold uppercase leading-none tracking-wide md:text-[58px]">About Us</h1>
+        <p class="mt-8 max-w-[430px] break-words text-[16px] font-bold uppercase leading-[25px]">
+          WAJDAIUHWFUIAGFIGWAFUA HAWFOUAHFUOHAWOFUAWOUFHAW FHAWIOHFAWOIHFOUAWHFOUAWHFOUAWF BFOAUWFGHOUAWFGOAW
+        </p>
+      </div>
+    </section>
+  </main>
+
+</div>
+{% endblock %}
