@@ -27,7 +27,7 @@ if not SECRET_KEY:
     raise ValueError("DJANGO_SECRET_KEY is not set!")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.getenv("DEBUG", "False").lower() == "true"
+DEBUG = True
 ALLOWED_HOSTS = parse_env_list("ALLOWED_HOSTS")
 
 # Application definition

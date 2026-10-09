@@ -17,7 +17,7 @@
                 <span class="absolute -bottom-[7px] left-[7px] right-[8px] h-[2px] origin-left scale-x-0 bg-brand transition duration-300 group-hover:scale-x-100"></span>
             </li>
             <li class="group relative">
-                <a href="#menu" class="transition duration-300 hover:text-[#b81c1c]">MENU</a>
+                <a href="{% url 'menu' %}" class="transition duration-300 hover:text-[#b81c1c]">MENU</a>
                 <span class="absolute -bottom-[7px] left-[7px] right-[8px] h-[2px] origin-left scale-x-0 bg-brand transition duration-300 group-hover:scale-x-100"></span>
             </li>
             <li class="group relative">
@@ -51,7 +51,7 @@
     <ul id="nav-mobile" class="hidden border-t border-gray-200 bg-white px-5 py-3 text-xl text-brand sm:px-8 lg:hidden">
         <li><a href="{% url 'home' %}" class="block py-2 transition duration-300 hover:pl-2 hover:text-[#b81c1c] {% if active == 'home' %}font-semibold{% endif %}">HOME</a></li>
         <li><a href="#about" class="block py-2 transition duration-300 hover:pl-2 hover:text-[#b81c1c]">ABOUT</a></li>
-        <li><a href="#menu" class="block py-2 transition duration-300 hover:pl-2 hover:text-[#b81c1c]">MENU</a></li>
+        <li><a href="{% url 'menu' %}" class="block py-2 transition duration-300 hover:pl-2 hover:text-[#b81c1c]">MENU</a></li>
         <li><a href="#contact" class="block py-2 transition duration-300 hover:pl-2 hover:text-[#b81c1c]">CONTACT</a></li>
     </ul>
 </header>
