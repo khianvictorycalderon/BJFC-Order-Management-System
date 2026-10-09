@@ -1,0 +1,79 @@
+{# Reusable footer. Include with: {% include 'components/footer.html' %} #}
+{# id="contact" lets the navbar CONTACT link scroll to this footer. #}
+
+<footer id="contact" class="text-white">
+
+    <!-- Main footer -->
+    <div class="bg-[#f43939] px-6 py-8 sm:px-8 lg:px-[42px] lg:pb-[13px] lg:pt-[19px]">
+        <div class="grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-2 lg:grid-cols-[380px_155px_224px_1fr] lg:gap-x-0 lg:gap-y-0">
+
+            <!-- Follow the Flavor -->
+            <section>
+                <h2 class="text-[17px] font-bold uppercase leading-5">Follow the Flavor</h2>
+                <p class="mt-[19px] max-w-[290px] text-[10.5px] leading-[14px]">
+                    Follow us on Facebook, Instagram, and TikTok for new menu items, exclusive promos, and delicious updates.
+                </p>
+            </section>
+
+            <!-- Explore -->
+            <nav aria-label="Explore">
+                <h2 class="text-[17px] font-bold uppercase leading-5">Explore</h2>
+                <ul class="mt-[13px] text-[10.5px] leading-[14px]">
+                    <li><a href="{% url 'home' %}" class="inline-block transition duration-300 hover:translate-x-1 hover:underline">Home</a></li>
+                    <li><a href="{% url 'home' %}#menu" class="inline-block transition duration-300 hover:translate-x-1 hover:underline">Our Menu</a></li>
+                    <li><a href="{% url 'home' %}#about" class="inline-block transition duration-300 hover:translate-x-1 hover:underline">About Us</a></li>
+                    <li><a href="#" class="inline-block transition duration-300 hover:translate-x-1 hover:underline">Special Offers</a></li>
+                    <li><a href="#" class="inline-block transition duration-300 hover:translate-x-1 hover:underline">Gallery</a></li>
+                    <li><a href="#contact" class="inline-block transition duration-300 hover:translate-x-1 hover:underline">Contact Us</a></li>
+                </ul>
+            </nav>
+
+            <!-- Customer Service -->
+            <nav aria-label="Customer service">
+                <h2 class="text-[17px] font-bold uppercase leading-5">Customer Service</h2>
+                <ul class="mt-[19px] text-[10.5px] leading-[14px]">
+                    <li><a href="#" class="inline-block transition duration-300 hover:translate-x-1 hover:underline">FAQs</a></li>
+                    <li><a href="#" class="inline-block transition duration-300 hover:translate-x-1 hover:underline">Delivery Information</a></li>
+                    <li><a href="#" class="inline-block transition duration-300 hover:translate-x-1 hover:underline">Order Tracking</a></li>
+                    <li><a href="#" class="inline-block transition duration-300 hover:translate-x-1 hover:underline">Payment Options</a></li>
+                    <li><a href="#" class="inline-block transition duration-300 hover:translate-x-1 hover:underline">Terms &amp; Conditions</a></li>
+                    <li><a href="#" class="inline-block transition duration-300 hover:translate-x-1 hover:underline">Privacy Policy</a></li>
+                </ul>
+            </nav>
+
+            <!-- Contact -->
+            <section>
+                <h2 class="text-[17px] font-bold uppercase leading-5">Contact</h2>
+                <address class="mt-[13px] space-y-0 text-[10.5px] font-bold not-italic leading-[14px]">
+                    <p class="flex items-center gap-1.5">
+                        <svg viewBox="0 0 24 24" class="h-[11px] w-[11px] shrink-0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"/>
+                            <path d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z"/>
+                        </svg>
+                        <span>Your Location</span>
+                    </p>
+                    <p class="flex items-center gap-1.5">
+                        <svg viewBox="0 0 24 24" class="h-[11px] w-[11px] shrink-0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 0 0 2.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 0 1-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 0 0-1.091-.852H4.5A2.25 2.25 0 0 0 2.25 4.5v2.25Z"/>
+                        </svg>
+                        <span>+63 9XX XXX XXXX</span>
+                    </p>
+                    <p class="flex items-center gap-1.5">
+                        <svg viewBox="0 0 24 24" class="h-[11px] w-[11px] shrink-0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75"/>
+                        </svg>
+                        <a href="mailto:hello@yourfoodbrand.com" class="underline transition duration-300 hover:opacity-80">hello@yourfoodbrand.com</a>
+                    </p>
+                </address>
+            </section>
+
+        </div>
+    </div>
+
+    <!-- Bottom bar -->
+    <div class="bg-[#873f3f] px-6 py-3 text-center text-[10.5px] font-medium leading-[14px]">
+        <p>&copy; 2026 Bepres Jonny's Fried Chicken&nbsp; . All Rights Reserved.</p>
+        <p>Fresh Food &bull; Great Taste &bull; Happy Moments</p>
+    </div>
+
+</footer>
