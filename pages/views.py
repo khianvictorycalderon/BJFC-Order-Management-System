@@ -1,6 +1,5 @@
 from django.shortcuts import render
 
-
 def home(req):
     # Hero copy lives here so it can be swapped for real content later.
     context = {
@@ -13,7 +12,11 @@ def home(req):
     }
     return render(req, "public/home.html", context)
 
-
 # For Frontend Designers: Replace with actual .html template file upon developing
+
 def private_test(req):
     return render(req, "private/test.html")
+
+def about(req):
+    return render(req, "public/about.html")
+
