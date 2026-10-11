@@ -56,3 +56,5 @@ def menu(req):
 def about(req):
     return render(req, "public/about.html")
 
+def contact(req):
+    return render(req, "public/contact.html")

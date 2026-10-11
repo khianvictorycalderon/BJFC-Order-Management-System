@@ -26,7 +26,7 @@
             </li>
 
             <li class="group relative">
-                <a href="{% url 'home' %}#about"
+                <a href="{% url 'about' %}"
                    class="transition duration-300 hover:text-[#b81c1c] {% if active == 'about' %}font-semibold{% endif %}"
                    {% if active == 'about' %}aria-current="page"{% endif %}>
                     ABOUT
@@ -40,7 +40,7 @@
             </li>
 
             <li class="group relative">
-                <a href="{% url 'home' %}#contact"
+                <a href="{% url 'contact' %}"
                    class="transition duration-300 hover:text-[#b81c1c] {% if active == 'contact' %}font-semibold{% endif %}"
                    {% if active == 'contact' %}aria-current="page"{% endif %}>
                     CONTACT
