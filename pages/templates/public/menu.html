@@ -1,0 +1,526 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Menu | Bespren Johny's Fried Chicken{% endblock %}
+
+{% block content %}
+
+<div class="fixed top-0 left-0 z-50 w-full">
+    {% include 'components/navbar.html' with active='menu' %}
+</div>
+
+<main class="mx-auto max-w-[1400px] px-5 pb-16 pt-28 sm:px-8 lg:px-12">
+
+    <!-- HERO SECTION -->
+
+    <section class="relative flex min-h-[340px] w-full items-center overflow-hidden rounded-3xl bg-[#ee2023] text-white">
+
+        <div class="relative z-10 w-1/2 px-8 py-10 sm:px-12">
+            <p class="mb-3 font-bold uppercase tracking-[0.25em]">
+                BESPREN JOHNY'S
+            </p>
+
+            <h1 class="text-4xl font-extrabold leading-tight sm:text-5xl lg:text-6xl">
+                SIGNATURE<br>
+                FRIED CHICKEN
+            </h1>
+
+            <p class="mt-5 max-w-md text-base leading-7">
+                Crispy on the outside, juicy on the inside.
+                Discover your favorite meals, drinks, and add-ons!
+            </p>
+
+            <a href="#chicken-meals"
+            class="mt-7 inline-flex rounded-full bg-white px-7 py-3 font-extrabold text-[#ee2023] transition hover:-translate-y-1 hover:bg-gray-100">
+                EXPLORE MENU
+            </a>
+        </div>
+
+        <div class="absolute inset-y-0 right-0 w-1/2">
+            <img
+                src="{% static 'img/chicken0.png' %}"
+                alt="Bespren Johny's Signature Fried Chicken"
+                class="h-full w-full object-cover object-center"
+            >
+        </div>
+
+    </section>
+
+    <!-- PRODUCT CARD STYLES -->
+    <style>
+        .product-card {
+            min-width: 0;
+            overflow: hidden;
+            border: 1px solid #f0f0f0;
+            border-radius: 16px;
+            background: #fff;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, .08);
+            transition: transform .25s ease, box-shadow .25s ease;
+        }
+
+        .product-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 22px rgba(0, 0, 0, .13);
+        }
+
+        .product-image-wrap {
+            display: flex;
+            height: 150px;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            background: #f9f9f9;
+            padding: 10px;
+        }
+
+        .product-image {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            transition: transform .25s ease;
+        }
+
+        .product-card:hover .product-image {
+            transform: scale(1.04);
+        }
+
+        .product-title-bar {
+            position: relative;
+            display: flex;
+            min-height: 68px;
+            align-items: center;
+            background: #a91d22;
+            color: #fff;
+            padding: 12px 76px 12px 15px;
+        }
+
+        .product-title {
+            overflow-wrap: anywhere;
+            font-size: 17px;
+            font-weight: 800;
+            line-height: 1.25;
+        }
+
+        .product-subtitle {
+            margin-top: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            opacity: .9;
+        }
+
+        .product-price {
+            position: absolute;
+            top: 50%;
+            right: 8px;
+            display: flex;
+            width: 70px;
+            height: 70px;
+            align-items: center;
+            justify-content: center;
+            transform: translateY(-50%);
+            border: 2px solid #222;
+            border-radius: 50%;
+            background: #fff;
+            color: #171717;
+            font-size: 17px;
+            font-weight: 900;
+            box-shadow: 0 3px 8px rgba(0, 0, 0, .2);
+        }
+
+        .product-description {
+            min-height: 55px;
+            padding: 12px 14px 4px;
+            color: #666;
+            font-size: 12px;
+            line-height: 1.5;
+        }
+
+        .product-controls {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 12px 12px 10px;
+        }
+
+        .quantity-button {
+            display: flex;
+            width: 30px;
+            height: 30px;
+            flex: 0 0 30px;
+            align-items: center;
+            justify-content: center;
+            border: 1.5px solid #222;
+            border-radius: 50%;
+            background: #fff;
+            color: #222;
+            font-size: 20px;
+            line-height: 1;
+            transition: background .2s, color .2s;
+        }
+
+        .quantity-button:hover {
+            background: #222;
+            color: #fff;
+        }
+
+        .quantity-number {
+            min-width: 24px;
+            text-align: center;
+            font-size: 15px;
+            font-weight: 800;
+            color: #222;
+        }
+
+        .product-actions {
+            display: flex;
+            gap: 8px;
+            padding: 0 12px 14px;
+        }
+
+        .product-action {
+            flex: 1;
+            min-width: 0;
+            border: none;
+            border-radius: 7px;
+            background: #f36a70;
+            padding: 10px 5px;
+            color: #fff;
+            font-size: 10px;
+            font-weight: 800;
+            text-align: center;
+            white-space: nowrap;
+            cursor: pointer;
+            transition: background .2s;
+        }
+
+        .product-action:hover {
+            background: #dc454d;
+        }
+
+        .add-cart-button {
+            background: #a91d22;
+        }
+
+        .add-cart-button:hover {
+            background: #80151a;
+        }
+
+        @media (min-width: 640px) {
+            .product-image-wrap {
+                height: 170px;
+            }
+
+            .product-title {
+                font-size: 19px;
+            }
+
+            .product-price {
+                width: 78px;
+                height: 78px;
+                font-size: 19px;
+            }
+
+            .product-title-bar {
+                padding-right: 90px;
+            }
+
+            .product-action {
+                font-size: 11px;
+            }
+        }
+
+        @media (max-width: 360px) {
+            .product-actions {
+                gap: 5px;
+                padding-right: 8px;
+                padding-left: 8px;
+            }
+
+            .product-action {
+                padding: 9px 3px;
+                font-size: 8px;
+            }
+
+            .product-controls {
+                gap: 7px;
+            }
+        }
+    </style>
+
+    <!-- FRIED CHICKEN MEALS -->
+    <section id="chicken-meals" class="mb-14 scroll-mt-28">
+        <div class="mb-6 flex items-center justify-between">
+            <div class="pt-8">
+                <h2 class="mt-1 text-2xl font-extrabold sm:text-3xl">
+                    Fried Chicken Meal
+                </h2>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+            {% for item in meals %}
+            <article class="product-card">
+                <div class="product-image-wrap">
+                    <img src="{% static item.image %}"
+                         alt="{{ item.name }}"
+                         class="product-image"
+                         onerror="this.style.display='none'">
+                </div>
+
+                <div class="product-title-bar">
+                    <div>
+                        <h3 class="product-title">{{ item.name }}</h3>
+                        <p class="product-subtitle">with rice</p>
+                    </div>
+                    <span class="product-price">₱{{ item.price }}</span>
+                </div>
+
+                <p class="product-description">
+                    {% if item.description %}
+                        {{ item.description }}
+                    {% else %}
+                        Crispy, juicy and freshly prepared chicken served with rice.
+                    {% endif %}
+                </p>
+
+                <div class="product-controls">
+                    <button type="button"
+                            class="quantity-button"
+                            aria-label="Decrease quantity"
+                            onclick="changeQuantity('meal-{{ forloop.counter }}', -1)">−</button>
+
+                    <span id="qty-meal-{{ forloop.counter }}" class="quantity-number">1</span>
+
+                    <button type="button"
+                            class="quantity-button"
+                            aria-label="Increase quantity"
+                            onclick="changeQuantity('meal-{{ forloop.counter }}', 1)">+</button>
+                </div>
+
+                <div class="product-actions">
+                    <button type="button"
+                            class="product-action add-cart-button"
+                            onclick="addProductToCart('meal-{{ forloop.counter }}')">
+                        ADD TO CART
+                    </button>
+
+                    <button type="button"
+                            class="product-action"
+                            onclick="buyNow('meal-{{ forloop.counter }}')">
+                        BUY NOW
+                    </button>
+                </div>
+
+                <div id="data-meal-{{ forloop.counter }}"
+                     data-name="{{ item.name }}"
+                     data-price="{{ item.price }}"></div>
+            </article>
+            {% empty %}
+            <p class="col-span-full text-gray-500">No meals available yet.</p>
+            {% endfor %}
+        </div>
+    </section>
+
+    <!-- DRINKS -->
+    <section id="drinks" class="mb-14 scroll-mt-28">
+        <div class="mb-6">
+            <p class="text-sm font-bold uppercase tracking-widest text-[#ee2023]">
+                REFRESH YOUR DAY
+            </p>
+            <h2 class="mt-1 text-2xl font-extrabold sm:text-3xl">Drinks</h2>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
+            {% for item in drinks %}
+            <article class="product-card">
+                <div class="product-image-wrap">
+                    <img src="{% static item.image %}"
+                         alt="{{ item.name }}"
+                         class="product-image"
+                         onerror="this.style.display='none'">
+                </div>
+
+                <div class="product-title-bar">
+                    <div>
+                        <h3 class="product-title">{{ item.name }}</h3>
+                        <p class="product-subtitle">refreshing drink</p>
+                    </div>
+                    <span class="product-price">₱{{ item.price }}</span>
+                </div>
+
+                <p class="product-description">
+                    {% if item.description %}
+                        {{ item.description }}
+                    {% else %}
+                        A refreshing drink to enjoy with your favorite meal.
+                    {% endif %}
+                </p>
+
+                <div class="product-controls">
+                    <button type="button"
+                            class="quantity-button"
+                            aria-label="Decrease quantity"
+                            onclick="changeQuantity('drink-{{ forloop.counter }}', -1)">−</button>
+
+                    <span id="qty-drink-{{ forloop.counter }}" class="quantity-number">1</span>
+
+                    <button type="button"
+                            class="quantity-button"
+                            aria-label="Increase quantity"
+                            onclick="changeQuantity('drink-{{ forloop.counter }}', 1)">+</button>
+                </div>
+
+                <div class="product-actions">
+                    <button type="button"
+                            class="product-action add-cart-button"
+                            onclick="addProductToCart('drink-{{ forloop.counter }}')">
+                        ADD TO CART
+                    </button>
+
+                    <button type="button"
+                            class="product-action"
+                            onclick="buyNow('drink-{{ forloop.counter }}')">
+                        BUY NOW
+                    </button>
+                </div>
+
+                <div id="data-drink-{{ forloop.counter }}"
+                     data-name="{{ item.name }}"
+                     data-price="{{ item.price }}"></div>
+            </article>
+            {% empty %}
+            <p class="col-span-full text-gray-500">No drinks available yet.</p>
+            {% endfor %}
+        </div>
+    </section>
+
+    <!-- ADD-ONS -->
+    <section id="addons" class="scroll-mt-28">
+        <div class="mb-6">
+            <p class="text-sm font-bold uppercase tracking-widest text-[#ee2023]">
+                MAKE IT EXTRA SPECIAL
+            </p>
+            <h2 class="mt-1 text-2xl font-extrabold sm:text-3xl">Add-ons</h2>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
+            {% for item in addons %}
+            <article class="product-card">
+                <div class="product-image-wrap">
+                    <img src="{% static item.image %}"
+                         alt="{{ item.name }}"
+                         class="product-image"
+                         onerror="this.style.display='none'">
+                </div>
+
+                <div class="product-title-bar">
+                    <div>
+                        <h3 class="product-title">{{ item.name }}</h3>
+                        <p class="product-subtitle">extra add-on</p>
+                    </div>
+                    <span class="product-price">₱{{ item.price }}</span>
+                </div>
+
+                <p class="product-description">
+                    {% if item.description %}
+                        {{ item.description }}
+                    {% else %}
+                        Add an extra serving to complete your meal.
+                    {% endif %}
+                </p>
+
+                <div class="product-controls">
+                    <button type="button"
+                            class="quantity-button"
+                            aria-label="Decrease quantity"
+                            onclick="changeQuantity('addon-{{ forloop.counter }}', -1)">−</button>
+
+                    <span id="qty-addon-{{ forloop.counter }}" class="quantity-number">1</span>
+
+                    <button type="button"
+                            class="quantity-button"
+                            aria-label="Increase quantity"
+                            onclick="changeQuantity('addon-{{ forloop.counter }}', 1)">+</button>
+                </div>
+
+                <div class="product-actions">
+                    <button type="button"
+                            class="product-action add-cart-button"
+                            onclick="addProductToCart('addon-{{ forloop.counter }}')">
+                        ADD TO CART
+                    </button>
+
+                    <button type="button"
+                            class="product-action"
+                            onclick="buyNow('addon-{{ forloop.counter }}')">
+                        BUY NOW
+                    </button>
+                </div>
+
+                <div id="data-addon-{{ forloop.counter }}"
+                     data-name="{{ item.name }}"
+                     data-price="{{ item.price }}"></div>
+            </article>
+            {% empty %}
+            <p class="col-span-full text-gray-500">No add-ons available yet.</p>
+            {% endfor %}
+        </div>
+    </section>
+
+</main>
+
+<script>
+    let cart = [];
+
+    function changeQuantity(id, change) {
+        const quantityElement = document.getElementById("qty-" + id);
+
+        if (!quantityElement) return;
+
+        let quantity = parseInt(quantityElement.textContent, 10) || 1;
+        quantity = Math.max(1, quantity + change);
+
+        quantityElement.textContent = quantity;
+    }
+
+    function getProduct(id) {
+        const data = document.getElementById("data-" + id);
+        const quantityElement = document.getElementById("qty-" + id);
+
+        if (!data || !quantityElement) return null;
+
+        return {
+            name: data.dataset.name,
+            price: Number(data.dataset.price),
+            quantity: parseInt(quantityElement.textContent, 10) || 1
+        };
+    }
+
+    function addProductToCart(id) {
+        const product = getProduct(id);
+
+        if (!product || !Number.isFinite(product.price)) return;
+
+        const existing = cart.find(item => item.name === product.name);
+
+        if (existing) {
+            existing.quantity += product.quantity;
+        } else {
+            cart.push({
+                name: product.name,
+                price: product.price,
+                quantity: product.quantity
+            });
+        }
+
+        console.log("Cart:", cart);
+    }
+
+    function buyNow(id) {
+        addProductToCart(id);
+        console.log("Buy now:", cart);
+    }
+</script>
+
+{% endblock %}
