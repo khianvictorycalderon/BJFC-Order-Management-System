@@ -26,6 +26,13 @@
             },
         }
     </script>
+    <style>
+        @layer components {
+            .footer-link {
+                @apply inline-flex items-center gap-2 text-sm text-white/75 transition duration-200 hover:translate-x-1 hover:text-white;
+            }
+        }
+    </style>
 
     {% block header %}{% endblock %}
 </head>
