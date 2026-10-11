@@ -44,8 +44,8 @@ If you don't have the following, install it.
 - [Christian Lenard Melecia](https://github.com/lnrd01)
 
 #### Documentation Team
-- [Lester Genton](https://github.com/ReleasedDevil) **(Documentation Team Leader)**
-- [James Walter Imperial](https://github.com/imperialjameswalter-BSIT3A)
+- [James Walter Imperial](https://github.com/imperialjameswalter-BSIT3A) **(Documentation Team Leader)**
+- [Lester Genton](https://github.com/ReleasedDevil)
 
 ---
 
