@@ -21,28 +21,28 @@ def private_test(req):
 # Menu page
 def menu(req):
     meals = [
-        {"name": "Fried Chicken", "price": 75, "image": "img\\chicken1.png"},
-        {"name": "Fruit Soda", "price": 75, "image": "img\\chicken2.png"},
-        {"name": "Bottled Water", "price": 75, "image": "img\\chicken3.png"},
-        {"name": "Milk Tea", "price": 75, "image": "img\\chicken4.png "},
+        {"name": "Fried Chicken", "price": 75, "image": "images/menu/chicken1.png"},
+        {"name": "Fruit Soda", "price": 75, "image": "images/menu/chicken2.png"},
+        {"name": "Bottled Water", "price": 75, "image": "images/menu/chicken3.png"},
+        {"name": "Milk Tea", "price": 75, "image": "images/menu/chicken4.png"},
     ]
 
     drinks = [
-        {"name": "Iced Coffee", "price": 50, "image": "img\\ice coffee.png"},
-        {"name": "Fruit Soda", "price": 60, "image": "img\\fruitsoda.png"},
-        {"name": "Milk Tea", "price": 70, "image": "img\\milktea.png"},
-        {"name": "Matcha Latte", "price": 80, "image": "img\\matcha.png"},
-        {"name": "Frappe", "price": 90, "image": "img\\frappe.png"},
-        {"name": "Bottled Water", "price": 20, "image": "img\\water.png"},
+        {"name": "Iced Coffee", "price": 50, "image": "images/menu/ice coffee.png"},
+        {"name": "Fruit Soda", "price": 60, "image": "images/menu/fruitsoda.png"},
+        {"name": "Milk Tea", "price": 70, "image": "images/menu/milktea.png"},
+        {"name": "Matcha Latte", "price": 80, "image": "images/menu/matcha.png"},
+        {"name": "Frappe", "price": 90, "image": "images/menu/frappe.png"},
+        {"name": "Bottled Water", "price": 20, "image": "images/menu/water.png"},
     ]
 
     addons = [
-        {"name": "Extra Buffalo Sauce", "price": 20, "image": "img\\bufalo.png"},
-        {"name": "Extra Soy Garlic Sauce", "price": 25, "image": "img\\soy garlic.png"},
-        {"name": "Extra Sour Cream Sauce", "price": 25, "image": "img\\sourcream.png"},
-        {"name": "Ketchup", "price": 5, "image": "img\\ketchup.png"},
-        {"name": "Extra Rice", "price": 20, "image": "img\\rice.png"},
-        {"name": "Soup", "price": 20, "image": "img\\soup.png"},
+        {"name": "Extra Buffalo Sauce", "price": 20, "image": "images/menu/bufalo.png"},
+        {"name": "Extra Soy Garlic Sauce", "price": 25, "image": "images/menu/soy garlic.png"},
+        {"name": "Extra Sour Cream Sauce", "price": 25, "image": "images/menu/sourcream.png"},
+        {"name": "Ketchup", "price": 5, "image": "images/menu/ketchup.png"},
+        {"name": "Extra Rice", "price": 20, "image": "images/menu/rice.png"},
+        {"name": "Soup", "price": 20, "image": "images/menu/soup.png"},
     ]
 
     context = {
@@ -56,3 +56,5 @@ def menu(req):
 def about(req):
     return render(req, "public/about.html")
 
+def contact(req):
+    return render(req, "public/contact.html")

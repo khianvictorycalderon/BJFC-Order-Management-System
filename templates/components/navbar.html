@@ -2,20 +2,20 @@
 {# Reusable navbar. Pass active="home|about|menu|contact" via include. #}
 
 <header class="fixed inset-x-0 top-0 z-50 bg-white shadow-[0_2px_3px_rgba(0,0,0,0.35)]">
-    <nav class="mx-auto flex h-[87px] items-center px-5 sm:px-8 lg:px-[44px]">
+    <nav class="mx-auto flex h-[87px] items-center px-4 sm:px-8 lg:px-[44px]">
 
         <!-- Logo -->
         <a href="{% url 'home' %}" class="shrink-0"
            aria-label="Bespren Johny's Fried Chicken - Home">
             <img
-                src="{% static 'img/logo.png' %}"
+                src="{% static 'icons/logo.png' %}"
                 alt="Bespren Johny's Fried Chicken"
-                class="h-[66px] w-auto transition duration-300 hover:scale-105"
+                class="h-[56px] w-auto transition duration-300 hover:scale-105 sm:h-[66px]"
             >
         </a>
 
         <!-- Desktop Navigation -->
-        <ul class="ml-auto hidden items-center gap-x-10 text-xl text-brand lg:flex xl:ml-[175px] xl:gap-x-[60px]">
+        <ul class="ml-auto hidden items-center gap-x-8 text-lg text-brand lg:flex xl:ml-[120px] xl:gap-x-[60px] xl:text-xl">
             <li class="group relative">
                 <a href="{% url 'home' %}"
                    class="transition duration-300 hover:text-[#b81c1c] {% if active == 'home' %}font-semibold{% endif %}"
@@ -26,7 +26,7 @@
             </li>
 
             <li class="group relative">
-                <a href="{% url 'home' %}#about"
+                <a href="{% url 'about' %}"
                    class="transition duration-300 hover:text-[#b81c1c] {% if active == 'about' %}font-semibold{% endif %}"
                    {% if active == 'about' %}aria-current="page"{% endif %}>
                     ABOUT
@@ -35,12 +35,16 @@
             </li>
 
             <li class="group relative">
-                <a href="{% url 'menu' %}" class="transition duration-300 hover:text-[#b81c1c]">MENU</a>
-                <span class="absolute -bottom-[7px] left-[7px] right-[8px] h-[2px] origin-left scale-x-0 bg-brand transition duration-300 group-hover:scale-x-100"></span>
+                <a href="{% url 'menu' %}"
+                   class="transition duration-300 hover:text-[#b81c1c] {% if active == 'menu' %}font-semibold{% endif %}"
+                   {% if active == 'menu' %}aria-current="page"{% endif %}>
+                    MENU
+                </a>
+                <span class="absolute -bottom-[7px] left-[7px] right-[8px] h-[2px] origin-left bg-brand transition duration-300 {% if active == 'menu' %}scale-x-100{% else %}scale-x-0 group-hover:scale-x-100{% endif %}"></span>
             </li>
 
             <li class="group relative">
-                <a href="{% url 'home' %}#contact"
+                <a href="{% url 'contact' %}"
                    class="transition duration-300 hover:text-[#b81c1c] {% if active == 'contact' %}font-semibold{% endif %}"
                    {% if active == 'contact' %}aria-current="page"{% endif %}>
                     CONTACT
@@ -50,16 +54,16 @@
         </ul>
 
         <!-- Actions -->
-        <div class="ml-auto flex shrink-0 items-center gap-2 lg:ml-auto lg:gap-1">
+        <div class="ml-auto flex shrink-0 items-center gap-1.5 sm:gap-2 lg:ml-auto lg:gap-1">
 
             <a href="#login"
-               class="flex h-[32px] min-w-[70px] items-center justify-center rounded-lg bg-brand-btn px-3 text-[10px] font-medium uppercase text-white shadow-[0_3px_4px_rgba(0,0,0,0.35)] transition duration-300 hover:-translate-y-0.5 hover:bg-[#b81c1c] active:translate-y-0 sm:h-[36px] sm:min-w-[85px] sm:text-xs">
+               class="flex h-[32px] min-w-[60px] items-center justify-center rounded-lg bg-brand-btn px-2.5 text-[10px] font-medium uppercase text-white shadow-[0_3px_4px_rgba(0,0,0,0.35)] transition duration-300 hover:-translate-y-0.5 hover:bg-[#b81c1c] active:translate-y-0 sm:h-[36px] sm:min-w-[85px] sm:px-3 sm:text-xs">
                 Log in
             </a>
 
             <a href="#cart"
                aria-label="Cart"
-               class="flex h-[32px] w-[38px] shrink-0 items-center justify-center rounded-lg bg-brand-dark text-white shadow-[0_3px_4px_rgba(0,0,0,0.35)] transition duration-300 hover:-translate-y-0.5 hover:bg-black active:translate-y-0 sm:h-[36px] sm:w-[43px]">
+               class="flex h-[32px] w-[36px] shrink-0 items-center justify-center rounded-lg bg-brand-dark text-white shadow-[0_3px_4px_rgba(0,0,0,0.35)] transition duration-300 hover:-translate-y-0.5 hover:bg-black active:translate-y-0 sm:h-[36px] sm:w-[43px]">
                 <svg viewBox="0 0 24 24" class="h-4 w-4"
                      fill="currentColor" aria-hidden="true">
                     <path d="M7 18a2 2 0 1 0 0 4 2 2 0 0 0 0-4Zm10 0a2 2 0 1 0 0 4 2 2 0 0 0 0-4ZM1 2v2h2l3.6 7.6-1.4 2.4A2 2 0 0 0 7 17h12v-2H7.4l1.1-2h7.5a2 2 0 0 0 1.7-1l3.6-6.5A1 1 0 0 0 20.4 4H5.2l-.9-2H1Z"/>
@@ -73,7 +77,7 @@
                 aria-label="Open navigation menu"
                 aria-expanded="false"
                 aria-controls="nav-mobile"
-                class="ml-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-brand transition hover:bg-gray-100 lg:hidden"
+                class="ml-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-brand transition hover:bg-gray-100 lg:hidden"
             >
                 <svg id="nav-icon-open" viewBox="0 0 24 24"
                      class="h-7 w-7" fill="none" stroke="currentColor"
@@ -92,11 +96,45 @@
         </div>
     </nav>
 
-    <ul id="nav-mobile" class="hidden border-t border-gray-200 bg-white px-5 py-3 text-xl text-brand sm:px-8 lg:hidden">
-        <li><a href="{% url 'home' %}" class="block py-2 transition duration-300 hover:pl-2 hover:text-[#b81c1c] {% if active == 'home' %}font-semibold{% endif %}">HOME</a></li>
-        <li><a href="#about" class="block py-2 transition duration-300 hover:pl-2 hover:text-[#b81c1c]">ABOUT</a></li>
-        <li><a href="{% url 'menu' %}" class="block py-2 transition duration-300 hover:pl-2 hover:text-[#b81c1c]">MENU</a></li>
-        <li><a href="#contact" class="block py-2 transition duration-300 hover:pl-2 hover:text-[#b81c1c]">CONTACT</a></li>
+    <!-- Mobile Navigation -->
+    <ul id="nav-mobile"
+        class="hidden max-h-[calc(100vh-87px)] overflow-y-auto border-t border-gray-200 bg-white px-5 py-3 text-lg text-brand shadow-md sm:px-8 lg:hidden">
+
+        <li>
+            <a href="{% url 'home' %}"
+            class="relative block w-fit py-2 transition duration-300 hover:text-[#b81c1c] {% if active == 'home' %}font-semibold{% endif %}"
+            {% if active == 'home' %}aria-current="page"{% endif %}>
+                HOME
+                <span class="absolute bottom-1 left-0 h-[2px] w-full bg-brand transition-transform duration-300 {% if active == 'home' %}scale-x-100{% else %}scale-x-0{% endif %}"></span>
+            </a>
+        </li>
+
+        <li>
+            <a href="{% url 'about' %}"
+            class="relative block w-fit py-2 transition duration-300 hover:text-[#b81c1c] {% if active == 'about' %}font-semibold{% endif %}"
+            {% if active == 'about' %}aria-current="page"{% endif %}>
+                ABOUT
+                <span class="absolute bottom-1 left-0 h-[2px] w-full bg-brand transition-transform duration-300 {% if active == 'about' %}scale-x-100{% else %}scale-x-0{% endif %}"></span>
+            </a>
+        </li>
+
+        <li>
+            <a href="{% url 'menu' %}"
+            class="relative block w-fit py-2 transition duration-300 hover:text-[#b81c1c] {% if active == 'menu' %}font-semibold{% endif %}"
+            {% if active == 'menu' %}aria-current="page"{% endif %}>
+                MENU
+                <span class="absolute bottom-1 left-0 h-[2px] w-full bg-brand transition-transform duration-300 {% if active == 'menu' %}scale-x-100{% else %}scale-x-0{% endif %}"></span>
+            </a>
+        </li>
+
+        <li>
+            <a href="{% url 'contact' %}"
+            class="relative block w-fit py-2 transition duration-300 hover:text-[#b81c1c] {% if active == 'contact' %}font-semibold{% endif %}"
+            {% if active == 'contact' %}aria-current="page"{% endif %}>
+                CONTACT
+                <span class="absolute bottom-1 left-0 h-[2px] w-full bg-brand transition-transform duration-300 {% if active == 'contact' %}scale-x-100{% else %}scale-x-0{% endif %}"></span>
+            </a>
+        </li>
     </ul>
 </header>
 
@@ -107,7 +145,7 @@
         const openIcon = document.getElementById("nav-icon-open");
         const closeIcon = document.getElementById("nav-icon-close");
 
-        if (!toggle || !mobileMenu) return;
+        if (!toggle || !mobileMenu || !openIcon || !closeIcon) return;
 
         const setMenuOpen = (isOpen) => {
             mobileMenu.classList.toggle("hidden", !isOpen);
@@ -117,8 +155,8 @@
                 isOpen ? "Close navigation menu" : "Open navigation menu"
             );
 
-            openIcon?.classList.toggle("hidden", isOpen);
-            closeIcon?.classList.toggle("hidden", !isOpen);
+            openIcon.classList.toggle("hidden", isOpen);
+            closeIcon.classList.toggle("hidden", !isOpen);
         };
 
         toggle.addEventListener("click", () => {
@@ -137,7 +175,7 @@
             }
         });
 
-        // Close the menu with Escape.
+        // Close the mobile menu with Escape.
         document.addEventListener("keydown", (event) => {
             if (event.key === "Escape") {
                 setMenuOpen(false);
