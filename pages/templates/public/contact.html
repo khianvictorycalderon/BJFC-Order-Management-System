@@ -1,0 +1,246 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Contact Us | Bespren Johny's Fried Chicken{% endblock %}
+
+{% block content %}
+{% include 'components/navbar.html' with active='contact' %}
+
+<main>
+
+    <!-- Contact Section -->
+    <section
+        class="grid min-h-screen grid-cols-1 lg:h-screen lg:min-h-0 lg:grid-cols-2"
+    >
+
+        <!-- Left: Contact Information -->
+        <div class="relative flex flex-col justify-center overflow-hidden bg-gradient-to-br from-[#ee2023] via-[#df2929] to-[#a91d22] px-6 py-12 text-white sm:px-10 lg:px-12 lg:py-8 xl:px-16">
+
+            <!-- Background Logo -->
+            <img
+                src="{% static 'images/background-logo.png' %}"
+                alt=""
+                aria-hidden="true"
+                class="pointer-events-none absolute -bottom-16 -left-12 w-[75%] max-w-none select-none object-contain opacity-10"
+            >
+
+            <div class="relative z-10 mx-auto w-full max-w-xl">
+
+                <h1 class="mt-24 lg:mt-0 text-4xl font-bold uppercase leading-tight sm:text-5xl xl:text-[62px]">
+                    Contact Us
+                </h1>
+
+                <p class="mt-4 text-base leading-relaxed text-white/90 sm:mt-5 sm:text-lg sm:leading-[30px]">
+                    We'd love to hear from you! Whether you have a question,
+                    want to place a bulk order, or just want to say hello,
+                    our team is ready to help.
+                </p>
+
+                <!-- Contact Details -->
+                <address class="mt-8 space-y-5 text-base not-italic sm:text-lg lg:mt-7 lg:space-y-4">
+
+                    <!-- Address -->
+                    <div class="flex items-start gap-4">
+                        <svg viewBox="0 0 24 24"
+                             class="mt-1 h-6 w-6 shrink-0"
+                             fill="none"
+                             stroke="currentColor"
+                             stroke-width="1.75"
+                             stroke-linecap="round"
+                             stroke-linejoin="round"
+                             aria-hidden="true">
+                            <path d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"/>
+                            <path d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z"/>
+                        </svg>
+
+                        <div>
+                            <p class="font-bold">Address</p>
+                            <p class="mt-1 text-white/80">
+                                [Your Street, City, Province]
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Phone -->
+                    <div class="flex items-start gap-4">
+                        <svg viewBox="0 0 24 24"
+                             class="mt-1 h-6 w-6 shrink-0"
+                             fill="none"
+                             stroke="currentColor"
+                             stroke-width="1.75"
+                             stroke-linecap="round"
+                             stroke-linejoin="round"
+                             aria-hidden="true">
+                            <path d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 0 0 2.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 0 1-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 0 0-1.091-.852H4.5A2.25 2.25 0 0 0 2.25 4.5v2.25Z"/>
+                        </svg>
+
+                        <div>
+                            <p class="font-bold">Phone</p>
+                            <p class="mt-1 text-white/80">
+                                [Your Phone Number]
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Email -->
+                    <div class="flex items-start gap-4">
+                        <svg viewBox="0 0 24 24"
+                             class="mt-1 h-6 w-6 shrink-0"
+                             fill="none"
+                             stroke="currentColor"
+                             stroke-width="1.75"
+                             stroke-linecap="round"
+                             stroke-linejoin="round"
+                             aria-hidden="true">
+                            <path d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75"/>
+                        </svg>
+
+                        <div class="min-w-0">
+                            <p class="font-bold">Email</p>
+                            <p class="mt-1 break-words text-white/80">
+                                [Your Email Address]
+                            </p>
+                        </div>
+                    </div>
+
+                </address>
+
+            </div>
+        </div>
+
+        <!-- Right: Contact Form -->
+        <div class="flex flex-col justify-center bg-white px-6 py-12 sm:px-10 lg:px-10 lg:py-6 xl:px-16">
+
+            <div class="mx-auto w-full max-w-xl">
+
+                <h2 class="mt-16 text-2xl font-extrabold uppercase tracking-wide sm:text-3xl">
+                    We'd Like to Hear From You
+                </h2>
+
+                <p class="mt-3 text-sm leading-relaxed text-gray-600 sm:text-base">
+                    Have a question or feedback? Fill out the form below
+                    and let us know how we can help.
+                </p>
+
+                <form method="POST" action="" class="mt-6 space-y-4 lg:mt-5 lg:space-y-3">
+                    {% csrf_token %}
+
+                    <!-- Name -->
+                    <div>
+                        <label for="first_name"
+                               class="mb-2 block text-sm font-bold text-gray-800">
+                            Name
+                        </label>
+
+                        <div class="grid grid-cols-1 gap-3 sm:grid-cols-12">
+                            <div class="sm:col-span-5">
+                                <input
+                                    id="first_name"
+                                    type="text"
+                                    name="first_name"
+                                    placeholder="First name"
+                                    autocomplete="given-name"
+                                    required
+                                    class="h-11 w-full rounded-xl border border-gray-300 bg-gray-50 px-4 text-gray-800 placeholder-gray-400 transition focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/30"
+                                >
+                            </div>
+
+                            <div class="sm:col-span-5">
+                                <input
+                                    id="last_name"
+                                    type="text"
+                                    name="last_name"
+                                    placeholder="Last name"
+                                    autocomplete="family-name"
+                                    required
+                                    class="h-11 w-full rounded-xl border border-gray-300 bg-gray-50 px-4 text-gray-800 placeholder-gray-400 transition focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/30"
+                                >
+                            </div>
+
+                            <div class="sm:col-span-2">
+                                <input
+                                    id="middle_initial"
+                                    type="text"
+                                    name="middle_initial"
+                                    placeholder="M.I."
+                                    maxlength="3"
+                                    aria-label="Middle initial (optional)"
+                                    class="h-11 w-full rounded-xl border border-gray-300 bg-gray-50 px-3 text-gray-800 placeholder-gray-400 transition focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/30"
+                                >
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Email -->
+                    <div>
+                        <label for="email"
+                               class="mb-2 block text-sm font-bold text-gray-800">
+                            Email
+                        </label>
+
+                        <input
+                            id="email"
+                            type="email"
+                            name="email"
+                            placeholder="example@gmail.com"
+                            autocomplete="email"
+                            required
+                            class="h-11 w-full rounded-xl border border-gray-300 bg-gray-50 px-4 text-gray-800 placeholder-gray-400 transition focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/30"
+                        >
+                    </div>
+
+                    <!-- Phone -->
+                    <div>
+                        <label for="phone"
+                               class="mb-2 block text-sm font-bold text-gray-800">
+                            Phone <span class="font-normal text-gray-500">(optional)</span>
+                        </label>
+
+                        <input
+                            id="phone"
+                            type="tel"
+                            name="phone"
+                            placeholder="Your phone number"
+                            autocomplete="tel"
+                            class="h-11 w-full rounded-xl border border-gray-300 bg-gray-50 px-4 text-gray-800 placeholder-gray-400 transition focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/30"
+                        >
+                    </div>
+
+                    <!-- Message -->
+                    <div>
+                        <label for="message"
+                               class="mb-2 block text-sm font-bold text-gray-800">
+                            Message
+                        </label>
+
+                        <textarea
+                            id="message"
+                            name="message"
+                            rows="3"
+                            placeholder="How can we help you?"
+                            required
+                            class="w-full resize-y rounded-xl border border-gray-300 bg-gray-50 p-4 text-gray-800 placeholder-gray-400 transition focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/30"
+                        ></textarea>
+                    </div>
+
+                    <!-- Submit -->
+                    <div class="pt-1">
+                        <button
+                            type="submit"
+                            class="flex h-12 w-full items-center justify-center rounded-full bg-gradient-to-b from-[#ea3434] via-[#e02828] to-[#b81c1c] px-8 text-base font-extrabold uppercase tracking-wide text-white shadow-[0_3px_5px_rgba(0,0,0,0.25)] transition duration-300 hover:-translate-y-0.5 hover:brightness-110 hover:shadow-lg active:translate-y-0 sm:w-auto"
+                        >
+                            Send Message
+                        </button>
+                    </div>
+
+                </form>
+
+            </div>
+        </div>
+
+    </section>
+
+</main>
+
+{% include 'components/footer.html' %}
+{% endblock %}

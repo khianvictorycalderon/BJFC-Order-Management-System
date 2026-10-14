@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}About Us | Bespren Johny's Fried Chicken{% endblock %}
+
+{% block content %}
+{% include 'components/navbar.html' with active='about' %}
+
+<main>
+
+    <!-- About Hero Section -->
+    <section
+        id="about"
+        class="relative flex min-h-screen lg:h-screen flex-col overflow-hidden lg:flex-row"
+    >
+
+        <!-- Left: Store Artwork -->
+        <div class="relative order-1 flex min-h-[350px] w-full items-center justify-center overflow-hidden sm:min-h-[450px] lg:min-h-0 lg:w-[54%]">
+
+            <img
+                src="{% static 'images/chicken.png' %}"
+                alt="Bespren Johny's fried chicken"
+                class="absolute inset-0 h-full w-full object-cover object-center"
+            >
+
+            <!-- Image Fade -->
+            <div
+                class="absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-white lg:block"
+                aria-hidden="true"
+            ></div>
+
+        </div>
+
+        <!-- Right: About Copy -->
+        <div class="order-2 flex w-full flex-col justify-center px-6 py-12 sm:px-10 lg:w-[46%] lg:py-16 lg:pl-6 lg:pr-[98px]">
+
+            <h1 class="text-4xl font-bold uppercase leading-tight sm:text-5xl xl:text-[62px]">
+                About Us
+            </h1>
+
+            <p class="mt-6 max-w-[520px] text-base leading-relaxed sm:text-lg sm:leading-[30px] lg:mt-9 lg:pl-[7px]">
+                Welcome to Bespren Johny's Fried Chicken! We're passionate about
+                serving delicious, crispy fried chicken and creating happy moments
+                with every meal. Our goal is to bring great taste, quality food,
+                and a welcoming experience to every customer.
+            </p>
+
+        </div>
+
+    </section>
+
+</main>
+
+{% include 'components/footer.html' %}
+{% endblock %}

@@ -9,6 +9,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/png" href="{% static 'icons/logo.png' %}">
 
     <script src="{% static 'js/tailwind-3.4.17.js' %}"></script>
     <script src="{% static 'js/chart.js' %}"></script>
@@ -26,6 +27,13 @@
             },
         }
     </script>
+    <style>
+        @layer components {
+            .footer-link {
+                @apply inline-flex items-center gap-2 text-sm text-white/75 transition duration-200 hover:translate-x-1 hover:text-white;
+            }
+        }
+    </style>
 
     {% block header %}{% endblock %}
 </head>
