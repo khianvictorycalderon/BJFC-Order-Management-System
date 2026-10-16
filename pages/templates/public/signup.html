@@ -1,0 +1,45 @@
+{% extends 'public/auth_layout.html' %}
+
+{% block title %}Sign Up | Bespren Johny's Fried Chicken{% endblock %}
+
+{% block logo_class %}mt-[25px] w-[74px]{% endblock %}
+{% block heading_class %}mt-[18px]{% endblock %}
+{% block heading %}Sign Up{% endblock %}
+
+{% block body %}
+{# Field names match the register API (/api/register/): username, email, password, confirm_password. #}
+<form method="post" action="" data-endpoint="{% url 'register' %}" class="mt-12 flex w-full flex-col items-center sm:mt-[68px]">
+    {% csrf_token %}
+
+    <div class="grid w-full max-w-[624px] grid-cols-1 gap-x-5 gap-y-[19px] md:grid-flow-col md:grid-cols-2 md:grid-rows-3">
+        {% with 'block h-9 w-full rounded-xl border border-black bg-[#f8c8c8] px-[18px] text-[11px] font-medium text-black shadow-[0_3px_4px_rgba(0,0,0,0.3)] outline-none transition duration-300 placeholder:text-black focus:ring-2 focus:ring-red-500/60' as field %}
+        <div><label for="first_name" class="sr-only">First Name</label>
+            <input id="first_name" name="first_name" type="text" placeholder="First Name" autocomplete="given-name" required class="{{ field }}"></div>
+        <div><label for="last_name" class="sr-only">Last Name</label>
+            <input id="last_name" name="last_name" type="text" placeholder="Last Name" autocomplete="family-name" required class="{{ field }}"></div>
+        <div><label for="username" class="sr-only">Username</label>
+            <input id="username" name="username" type="text" placeholder="Username" autocomplete="username" required class="{{ field }}"></div>
+        <div><label for="email" class="sr-only">Email</label>
+            <input id="email" name="email" type="email" placeholder="Email" autocomplete="email" required class="{{ field }}"></div>
+        <div><label for="password" class="sr-only">Password</label>
+            <input id="password" name="password" type="password" placeholder="Password" autocomplete="new-password" required class="{{ field }}"></div>
+        <div><label for="confirm_password" class="sr-only">Confirm Password</label>
+            <input id="confirm_password" name="confirm_password" type="password" placeholder="Confirm Password" autocomplete="new-password" required class="{{ field }}"></div>
+        {% endwith %}
+    </div>
+
+    <label class="mt-[22px] flex w-full max-w-[624px] cursor-pointer items-center gap-[5px] pl-[19px] text-[10.5px] leading-[14px]">
+        <input type="checkbox" name="remember" checked class="h-[13px] w-[13px] cursor-pointer accent-black">
+        Remember me
+    </label>
+
+    <button type="submit"
+            class="mt-2 h-9 w-[131px] rounded-xl bg-gradient-to-r from-[#f96e70] to-[#f92e2e] text-base font-bold uppercase text-white shadow-[0_4px_4px_rgba(0,0,0,0.25)] transition duration-300 hover:-translate-y-0.5 hover:brightness-105 active:translate-y-0">
+        Sign Up
+    </button>
+</form>
+
+{% include 'components/social_login.html' with before="or" bold="SIGN IN" after="with" %}
+{% endblock %}
+
+{% block bottom %}Already have an account? <a href="{% url 'login' %}" class="transition duration-300 hover:underline">Log in</a>{% endblock %}
