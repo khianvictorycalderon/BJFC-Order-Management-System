@@ -58,3 +58,10 @@ def about(req):
 
 def contact(req):
     return render(req, "public/contact.html")
+
+def login_page(req):
+    return render(req, "public/login.html")
+
+
+def signup_page(req):
+    return render(req, "public/signup.html")
