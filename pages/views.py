@@ -58,3 +58,30 @@ def about(req):
 
 def contact(req):
     return render(req, "public/contact.html")
+
+
+
+# Admin Pages
+
+def admin_dashboard(req):
+    return render(req, "private/layout/admin/dashboard.html")
+
+
+def admin_menu(req):
+    return render(req, "private/layout/admin/menu.html")
+
+
+def admin_orders(req):
+    return render(req, "private/layout/admin/order.html")
+
+
+def admin_feedback(req):
+    return render(req, "private/layout/admin/feedback.html")
+
+
+def admin_settings(req):
+    return render(req, "private/layout/admin/settings.html")
+
+
+def admin_account(req):
+    return render(req, "private/layout/admin/account.html")
