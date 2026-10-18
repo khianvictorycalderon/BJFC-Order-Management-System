@@ -59,6 +59,8 @@ def about(req):
 def contact(req):
     return render(req, "public/contact.html")
 
+def dashboard(req):
+       return render(req, "private/dashboard.html")
 
 # Admin Pages
 def admin_dashboard(req):

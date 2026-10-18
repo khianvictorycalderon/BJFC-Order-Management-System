@@ -1,0 +1,202 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Dashboard | BJ Johnny's Fried Chicken{% endblock %}
+
+{% block content %}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Alfa+Slab+One&family=Cormorant+Garamond:wght@500;600&family=Gelasio:wght@600;700&family=Nunito:wght@400;600;700&family=Outfit:wght@400;500&display=swap" rel="stylesheet">
+
+<div class="min-h-screen bg-white font-['Nunito',sans-serif] text-black antialiased">
+
+  <!-- HEADER -->
+  <header class="flex h-[88px] items-center bg-[#800808] pr-6 lg:pr-[26px]">
+
+       <a href="#" class="ml-6 shrink-0 lg:ml-[83px]">
+     <img src="{% static 'icons/logo.png' %}" alt="BJ Johnny's Fried Chicken"
+          style="height:92px; width:auto; object-fit:contain;">
+   </a>
+
+    <h1 class="ml-6 hidden whitespace-nowrap font-['Alfa_Slab_One',serif] text-[30px] leading-none md:block lg:ml-[90px] lg:text-[50px]"
+        style="text-shadow:2px 2px 0 rgba(0,0,0,0.3);">
+      <span class="text-[#e60000]">Bespren</span>
+      <span class="text-[#ffd400]">Johny’s</span>
+      <span class="text-[#00d4e6]">Fried Chicken</span>
+    </h1>
+
+    <div class="ml-auto flex items-center gap-2">
+      <a href="#" aria-label="Account" class="flex h-[44px] w-[44px] items-center justify-center rounded-full bg-black">
+        <svg viewBox="0 0 24 24" class="h-[30px] w-[30px]" fill="#b00000">
+          <circle cx="12" cy="8" r="4.5"/>
+          <path d="M3.5 22c0-5 3.8-8 8.5-8s8.5 3 8.5 8H3.5Z"/>
+        </svg>
+      </a>
+      <a href="#" aria-label="Cart"
+         class="flex h-[41px] w-[52px] items-center justify-center rounded-xl bg-gradient-to-b from-neutral-600 to-neutral-900 text-white shadow-[0_3px_5px_rgba(0,0,0,0.4)]">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="h-5 w-5">
+          <path d="M7 18a2 2 0 1 0 0 4 2 2 0 0 0 0-4Zm10 0a2 2 0 1 0 0 4 2 2 0 0 0 0-4ZM1 2v2h2l3.6 7.6-1.4 2.4C4.5 15.3 5.5 17 7 17h12v-2H7.4l1.1-2h7.5c.8 0 1.4-.4 1.7-1l3.6-6.5A1 1 0 0 0 20.4 4H5.2l-.9-2H1Zm11 3h2v2h2v2h-2v2h-2V9h-2V7h2V5Z"/>
+        </svg>
+      </a>
+    </div>
+  </header>
+
+  <!-- BODY -->
+  <div class="flex flex-col gap-5 px-3 pt-[18px] pb-8 lg:flex-row lg:gap-[22px] lg:px-[13px]">
+
+    <!-- SIDEBAR -->
+    <aside class="w-full shrink-0 lg:w-[272px]">
+
+      <!-- Profile card -->
+      <div class="relative h-[215px] overflow-hidden rounded-[26px] bg-[#800808]">
+        <div class="absolute rounded-full bg-[#8d2528]" style="left:176px; top:-32px; width:139px; height:139px;"></div>
+
+        <div class="relative px-[26px] pt-[24px]">
+          <div class="flex h-[57px] w-[57px] items-center justify-center rounded-full bg-black">
+            <svg viewBox="0 0 24 24" class="h-[42px] w-[42px]" fill="#b00000">
+              <circle cx="12" cy="8" r="4.5"/>
+              <path d="M3.5 22c0-5 3.8-8 8.5-8s8.5 3 8.5 8H3.5Z"/>
+            </svg>
+          </div>
+          <p class="mt-[6px] text-[16px] leading-tight text-neutral-200">Meh Eh</p>
+          <p class="text-[10px] leading-tight text-neutral-200">MehEh@gmail.com</p>
+
+          <div class="mt-[14px] flex h-[45px] w-[215px] items-center justify-center rounded-full border-2 border-black bg-[#bc9a9a] text-[18px] text-neutral-900">
+            Loyal Customer
+          </div>
+        </div>
+      </div>
+
+      <!-- Navigation -->
+      <nav class="mt-[21px] h-[507px] rounded-[14px] border border-black bg-white px-[18px] pt-[50px]">
+        <ul class="flex flex-col font-['Cormorant_Garamond',serif] text-[30px] font-medium">
+
+          <li>
+            <a href="#" class="flex h-[40px] items-center gap-3 rounded-full bg-[#800808] px-[22px] text-black">
+              <svg viewBox="0 0 24 24" class="h-[24px] w-[24px]" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round">
+                <path d="M2 5h20M2 12h20M2 19h20"/>
+              </svg>
+              Dashboard
+            </a>
+          </li>
+
+          <li class="mt-[60px]">
+            <a href="#" class="flex items-center gap-4 px-[22px]">
+              <svg viewBox="0 0 24 24" class="h-[24px] w-[24px]" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M1 2h3l2.6 12.5a2 2 0 0 0 2 1.5h9.7a2 2 0 0 0 2-1.5L22 6H5"/>
+                <circle cx="9" cy="21" r="1.2" fill="currentColor"/>
+                <circle cx="18" cy="21" r="1.2" fill="currentColor"/>
+              </svg>
+              My Orders
+            </a>
+          </li>
+
+          <li class="mt-[48px]">
+            <a href="#" class="flex items-center gap-4 px-[22px]">
+              <svg viewBox="0 0 24 24" class="h-[24px] w-[24px]" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round">
+                <path d="M12 21s-8.5-5.4-8.5-11.2A4.8 4.8 0 0 1 12 7.3a4.8 4.8 0 0 1 8.5 2.5C20.5 15.6 12 21 12 21Z"/>
+              </svg>
+              Favorites
+            </a>
+          </li>
+
+          <li class="mt-[48px]">
+            <a href="#" class="flex items-center gap-4 px-[22px]">
+              <svg viewBox="0 0 24 24" class="h-[24px] w-[24px]" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="7.5" r="4"/>
+                <path d="M4 21c0-4.2 3.4-6.5 8-6.5s8 2.3 8 6.5H4Z"/>
+              </svg>
+              Account
+            </a>
+          </li>
+        </ul>
+      </nav>
+    </aside>
+
+    <!-- MAIN -->
+    <main class="min-w-0 flex-1">
+
+      <!-- Stat cards -->
+      <div class="grid grid-cols-1 justify-items-center gap-6 pt-[26px] sm:grid-cols-3 lg:px-[70px]">
+
+        <!-- My Order -->
+        <div class="relative h-[213px] w-[220px] rounded-[40px] border-[3px] border-black bg-white text-center">
+          <svg viewBox="0 0 24 24" class="absolute left-[18px] top-[14px] h-[36px] w-[36px]" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M1 2h3l2.6 12.5a2 2 0 0 0 2 1.5h9.7a2 2 0 0 0 2-1.5L22 6H5"/>
+            <circle cx="9" cy="21" r="1.3" fill="currentColor"/>
+            <circle cx="18" cy="21" r="1.3" fill="currentColor"/>
+          </svg>
+          <p class="pt-[62px] font-['Gelasio',serif] text-[56px] font-bold leading-none">1</p>
+          <p class="mt-[30px] font-['Gelasio',serif] text-[25px] font-bold leading-none">My Order</p>
+        </div>
+
+        <!-- Favorite -->
+        <div class="relative h-[213px] w-[220px] rounded-[40px] border-[3px] border-black bg-white text-center">
+          <svg viewBox="0 0 24 24" class="absolute left-[14px] top-[14px] h-[40px] w-[40px]" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round">
+            <path d="M12 21s-8.5-5.4-8.5-11.2A4.8 4.8 0 0 1 12 7.3a4.8 4.8 0 0 1 8.5 2.5C20.5 15.6 12 21 12 21Z"/>
+          </svg>
+          <p class="pt-[72px] font-['Gelasio',serif] text-[56px] font-bold leading-none">3</p>
+          <p class="mt-[20px] font-['Gelasio',serif] text-[25px] font-bold leading-none">Favorite</p>
+        </div>
+
+        <!-- Total Order -->
+        <div class="relative h-[213px] w-[220px] rounded-[40px] border-[3px] border-black bg-white text-center">
+          <svg viewBox="0 0 28 24" class="absolute left-[14px] top-[14px] h-[40px] w-[44px]" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M1 2h8M1 6h6M1 10h4"/>
+            <path d="M9 4h10v13H9z M19 8h4l3 4v5h-7"/>
+            <circle cx="9" cy="18" r="2.4" fill="white"/>
+            <circle cx="21" cy="18" r="2.4" fill="white"/>
+          </svg>
+          <p class="pt-[72px] font-['Gelasio',serif] text-[56px] font-bold leading-none">28</p>
+          <p class="mt-[20px] font-['Gelasio',serif] text-[25px] font-bold leading-none">Total Order</p>
+        </div>
+      </div>
+
+      <!-- My Order panel -->
+      <section class="mt-[64px] rounded-[40px] border-[3px] border-black bg-white px-6 pb-6 pt-[40px] lg:rounded-[60px] lg:px-[40px]">
+        <h2 class="font-['Gelasio',serif] text-[42px] font-bold leading-none">My Order</h2>
+        <p class="mt-[22px] font-['Outfit',sans-serif] text-[23px]">Overview of your recent orders.</p>
+
+        <!-- Chart -->
+        <div class="mt-[20px]">
+          <p class="ml-[-6px] mb-[10px] text-[14px] text-neutral-500">orders</p>
+
+          <div class="flex">
+            <!-- Y axis labels -->
+            <div class="relative h-[232px] w-[42px] shrink-0 text-[12px] text-neutral-700">
+              <span class="absolute right-[10px] top-[0%] -translate-y-1/2">16</span>
+              <span class="absolute right-[10px] top-[12.5%] -translate-y-1/2">14</span>
+              <span class="absolute right-[10px] top-[25%] -translate-y-1/2">12</span>
+              <span class="absolute right-[10px] top-[37.5%] -translate-y-1/2">10</span>
+              <span class="absolute right-[10px] top-[50%] -translate-y-1/2">8</span>
+              <span class="absolute right-[10px] top-[62.5%] -translate-y-1/2">6</span>
+              <span class="absolute right-[10px] top-[75%] -translate-y-1/2">4</span>
+              <span class="absolute right-[10px] top-[87.5%] -translate-y-1/2">2</span>
+              <span class="absolute right-[10px] top-[100%] -translate-y-1/2">0</span>
+              <div class="absolute right-0 top-[0%] h-[2px] w-[8px] bg-black"></div>
+              <div class="absolute right-0 top-[12.5%] h-[2px] w-[8px] bg-black"></div>
+              <div class="absolute right-0 top-[25%] h-[2px] w-[8px] bg-black"></div>
+              <div class="absolute right-0 top-[37.5%] h-[2px] w-[8px] bg-black"></div>
+              <div class="absolute right-0 top-[50%] h-[2px] w-[8px] bg-black"></div>
+              <div class="absolute right-0 top-[62.5%] h-[2px] w-[8px] bg-black"></div>
+              <div class="absolute right-0 top-[75%] h-[2px] w-[8px] bg-black"></div>
+              <div class="absolute right-0 top-[87.5%] h-[2px] w-[8px] bg-black"></div>
+              <div class="absolute right-0 top-[100%] h-[2px] w-[8px] bg-black"></div>
+            </div>
+
+            <!-- Plot area -->
+            <div class="flex h-[232px] flex-1 items-end gap-[3.5%] border-b-[3px] border-l-[3px] border-black px-[4%]">
+              <div class="w-[15.5%] rounded-t-[8px] bg-[#e50505]" style="height:95.5%"></div>
+              <div class="w-[15.5%] rounded-t-[8px] bg-[#e50505]" style="height:52.5%"></div>
+              <div class="w-[15.5%] rounded-t-[8px] bg-[#e50505]" style="height:15%"></div>
+              <div class="w-[15.5%] rounded-t-[8px] bg-[#e50505]" style="height:77.5%"></div>
+              <div class="w-[15.5%] rounded-t-[8px] bg-[#e50505]" style="height:7.5%"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+</div>
+{% endblock %}

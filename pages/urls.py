@@ -7,6 +7,7 @@ urlpatterns = [
     path("about/", views.about, name="about"),
     path("contact/", views.contact, name="contact"),
     path("private/", views.private_test, name="private_test"),
+    path("dashboard/", views.dashboard, name="dashboard")
 
     # Admin Pages
     path("admin-panel/dashboard/", views.admin_dashboard, name="admin_dashboard"),
