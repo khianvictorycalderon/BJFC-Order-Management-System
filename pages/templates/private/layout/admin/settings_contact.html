@@ -1,0 +1,28 @@
+{% extends "private/layout/admin/settings_base.html" %}
+{% load static %}
+
+{% block preview_url %}bjfc.com/contact{% endblock %}
+
+{% block preview_src %}{% url 'contact' %}{% endblock %}
+
+{% block forms %}
+    <div class="grid gap-6 lg:grid-cols-2">
+        <section class="rounded-3xl border border-[#eadfd2] bg-white p-6 shadow-sm sm:p-8">
+            <header class="border-b border-[#f0e7de] pb-5"><h3 class="text-lg font-extrabold text-[#2b201d]">Hero headline &amp; text</h3><p class="mt-0.5 text-sm text-[#89776e]">The banner at the top of the Contact page.</p></header>
+            <form onsubmit="return false" class="space-y-5 pt-6" novalidate>
+                <div><label for="mainHeading" class="mb-2 block text-[11px] font-extrabold uppercase tracking-[0.14em] text-[#89776e]">Main heading title</label><input id="mainHeading" type="text" value="CONTACT US" class="h-12 w-full rounded-xl border border-[#eadfd2] bg-[#fffaf4] px-4 text-sm font-semibold text-[#342724] outline-none transition focus:border-[#800000] focus:bg-white focus:ring-4 focus:ring-[#800000]/10"></div>
+                <div><label for="subHeading" class="mb-2 block text-[11px] font-extrabold uppercase tracking-[0.14em] text-[#89776e]">Subheading description</label><textarea id="subHeading" rows="4" class="w-full rounded-xl border border-[#eadfd2] bg-[#fffaf4] px-4 py-3 text-sm font-semibold leading-6 text-[#342724] outline-none transition focus:border-[#800000] focus:bg-white focus:ring-4 focus:ring-[#800000]/10">We'd love to hear from you! Whether you have a question, want to place a bulk order, or just want to say hello, our team is ready to help.</textarea></div>
+                <div class="flex justify-end border-t border-[#f0e7de] pt-6"><button type="button" class="inline-flex h-11 items-center justify-center rounded-xl bg-[#800000] px-6 text-sm font-extrabold text-white shadow-sm transition hover:bg-[#650000] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#800000]/25">Update text</button></div>
+            </form>
+        </section>
+        <section class="rounded-3xl border border-[#eadfd2] bg-white p-6 shadow-sm sm:p-8">
+            <header class="border-b border-[#f0e7de] pb-5"><h3 class="text-lg font-extrabold text-[#2b201d]">Store information</h3><p class="mt-0.5 text-sm text-[#89776e]">Shown in the Contact page banner and footer.</p></header>
+            <form onsubmit="return false" class="space-y-5 pt-6" novalidate>
+                <div><label for="storeAddress" class="mb-2 block text-[11px] font-extrabold uppercase tracking-[0.14em] text-[#89776e]">Address</label><input id="storeAddress" type="text" value="Your Street, City, Province" class="h-12 w-full rounded-xl border border-[#eadfd2] bg-[#fffaf4] px-4 text-sm font-semibold text-[#342724] outline-none transition focus:border-[#800000] focus:bg-white focus:ring-4 focus:ring-[#800000]/10"></div>
+                <div><label for="storePhone" class="mb-2 block text-[11px] font-extrabold uppercase tracking-[0.14em] text-[#89776e]">Phone</label><input id="storePhone" type="tel" value="Your Phone Number" class="h-12 w-full rounded-xl border border-[#eadfd2] bg-[#fffaf4] px-4 text-sm font-semibold text-[#342724] outline-none transition focus:border-[#800000] focus:bg-white focus:ring-4 focus:ring-[#800000]/10"></div>
+                <div><label for="storeEmail" class="mb-2 block text-[11px] font-extrabold uppercase tracking-[0.14em] text-[#89776e]">Email</label><input id="storeEmail" type="email" value="Your Email Address" class="h-12 w-full rounded-xl border border-[#eadfd2] bg-[#fffaf4] px-4 text-sm font-semibold text-[#342724] outline-none transition focus:border-[#800000] focus:bg-white focus:ring-4 focus:ring-[#800000]/10"></div>
+                <div class="flex justify-end border-t border-[#f0e7de] pt-6"><button type="button" class="inline-flex h-11 items-center justify-center rounded-xl bg-[#800000] px-6 text-sm font-extrabold text-white shadow-sm transition hover:bg-[#650000] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#800000]/25">Update information</button></div>
+            </form>
+        </section>
+    </div>
+{% endblock %}

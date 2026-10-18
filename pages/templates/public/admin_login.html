@@ -1,0 +1,65 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Login | Bespren Johny's Fried Chicken</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <script src="{% static 'js/tailwind-3.4.17.js' %}"></script>
+    <style>body { font-family: 'Nunito', sans-serif; }</style>
+</head>
+<body class="min-h-screen bg-[#fff8ed] text-[#28211e] antialiased">
+{# Mock UI only: the form is inert until the backend is wired up. #}
+<main class="grid min-h-screen lg:grid-cols-2">
+    <section class="flex flex-col px-6 py-8 sm:px-12 lg:px-16">
+        <a href="{% url 'home' %}" class="flex w-fit items-center gap-3" aria-label="Bespren Johny's Fried Chicken - Home">
+            <span class="flex h-12 w-12 items-center justify-center overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-[#eadfd2]">
+                <img src="{% static 'icons/logo.png' %}" alt="" class="h-10 w-10 object-contain">
+            </span>
+            <span class="text-sm font-black tracking-wide text-[#800000]">BJFC</span>
+        </a>
+
+        <div class="mx-auto flex w-full max-w-md flex-1 flex-col justify-center py-10">
+            <span class="inline-flex w-fit items-center gap-1.5 rounded-full bg-[#fff1e3] px-3 py-1.5 text-xs font-extrabold uppercase tracking-[0.14em] text-[#800000] ring-1 ring-[#f0dcc6]">
+                <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l8 3v6c0 4.5-3.2 8-8 9-4.8-1-8-4.5-8-9V6l8-3Z"/></svg>
+                Admin access
+            </span>
+            <h1 class="mt-4 text-4xl font-black tracking-tight text-[#2b201d]">Welcome back, admin</h1>
+            <p class="mt-2 text-sm text-[#89776e]">Sign in to manage orders, the menu and customer feedback.</p>
+
+            <form onsubmit="return false" class="mt-8 space-y-5" novalidate>
+                <div>
+                    <label for="adminLoginEmail" class="mb-2 block text-[11px] font-extrabold uppercase tracking-[0.14em] text-[#89776e]">Email</label>
+                    <input id="adminLoginEmail" type="email" placeholder="admin@bjfc.com" autocomplete="email" class="h-12 w-full rounded-xl border border-[#eadfd2] bg-white px-4 text-sm font-semibold text-[#342724] outline-none transition placeholder:font-medium placeholder:text-[#b9a79d] focus:border-[#800000] focus:ring-4 focus:ring-[#800000]/10">
+                </div>
+                <div>
+                    <div class="mb-2 flex items-center justify-between">
+                        <label for="adminLoginPassword" class="text-[11px] font-extrabold uppercase tracking-[0.14em] text-[#89776e]">Password</label>
+                        <a href="#" class="text-xs font-extrabold text-[#800000] hover:underline">Forgot password?</a>
+                    </div>
+                    <div class="relative">
+                        <input id="adminLoginPassword" type="password" placeholder="Enter your password" autocomplete="current-password" class="h-12 w-full rounded-xl border border-[#eadfd2] bg-white pl-4 pr-12 text-sm font-semibold text-[#342724] outline-none transition placeholder:font-medium placeholder:text-[#b9a79d] focus:border-[#800000] focus:ring-4 focus:ring-[#800000]/10">
+                        <button type="button" aria-label="Show password" class="absolute right-1.5 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-lg text-[#977f76] transition hover:bg-[#fff4e7] hover:text-[#800000]">
+                            <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg>
+                        </button>
+                    </div>
+                </div>
+                <button type="button" class="group flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#800000] text-sm font-extrabold text-white shadow-lg shadow-[#800000]/20 transition hover:bg-[#650000] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#800000]/25">
+                    Sign in to dashboard
+                    <svg class="h-4 w-4 transition group-hover:translate-x-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+                </button>
+            </form>
+        </div>
+    </section>
+
+    <aside class="relative hidden items-center justify-center overflow-hidden bg-[#211513] lg:flex" aria-hidden="true">
+        <div class="absolute -right-24 -top-24 h-96 w-96 rounded-full bg-[#800000]/60 blur-3xl"></div>
+        <div class="absolute -bottom-32 -left-20 h-96 w-96 rounded-full bg-[#f5a623]/15 blur-3xl"></div>
+        <img src="{% static 'icons/logo.png' %}" alt="" class="relative w-[78%] max-w-[520px] object-contain drop-shadow-2xl">
+    </aside>
+</main>
+</body>
+</html>

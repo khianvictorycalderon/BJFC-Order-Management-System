@@ -2,20 +2,24 @@
 {% load static %}
 
 {% block title %}Dashboard | Admin{% endblock %}
-{% block page_heading %}Dashboard Admin{% endblock %}
+{% block page_heading %}Dashboard{% endblock %}
 
 {% block content %}
 
-<div class="min-h-screen bg-[#fff7eb] p-4 sm:p-6">
+<div class="space-y-7">
 
     <!-- PAGE TITLE -->
-    <div class="mb-5 flex flex-wrap items-center justify-between gap-3">
-        <h1 class="text-2xl font-extrabold uppercase tracking-wide text-black sm:text-3xl">
+    <div class="flex flex-wrap items-end justify-between gap-3">
+        <div>
+            <p class="text-xs font-extrabold uppercase tracking-[0.18em] text-[#a87864]">Overview</p>
+            <h2 class="mt-1 text-2xl font-black tracking-tight text-[#342724] sm:text-3xl">
             Dashboard
-        </h1>
+            </h2>
+            <p class="mt-1 text-sm text-[#89776e]">A snapshot of today's business.</p>
+        </div>
 
         <!-- DATE: DISPLAY ONLY -->
-        <div class="flex items-center gap-3 rounded-full bg-white px-4 py-2 text-sm font-bold shadow-sm">
+        <div class="flex items-center gap-3 rounded-xl border border-[#eadfd2] bg-white px-4 py-2.5 text-sm font-bold text-[#594941] shadow-sm">
             <svg class="h-5 w-5 text-gray-600"
                  fill="none" stroke="currentColor"
                  viewBox="0 0 24 24">
@@ -30,12 +34,12 @@
     </div>
 
     <!-- SUMMARY CARDS -->
-    <div class="mb-7 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
 
         <!-- TOTAL SALES -->
-        <div class="rounded-xl border border-[#c9a79b] bg-white p-5 shadow-sm">
+        <div class="rounded-2xl border border-[#eadfd2] bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
             <div class="flex items-center justify-between">
-                <p class="text-xs font-extrabold uppercase">Total Sales</p>
+                <p class="text-xs font-extrabold uppercase tracking-wider text-[#75645d]">Total Sales</p>
                 <svg class="h-6 w-6 text-gray-600"
                      fill="none" stroke="currentColor"
                      viewBox="0 0 24 24">
@@ -45,19 +49,19 @@
                 </svg>
             </div>
 
-            <p class="mt-5 text-center text-4xl font-black text-black">
+            <p class="mt-5 text-4xl font-black tracking-tight text-[#342724]">
                 ₱3,500
             </p>
 
-            <p class="mt-3 text-center text-sm font-bold text-green-600">
+            <p class="mt-3 text-sm font-bold text-green-700">
                 ↗ 6.5%
             </p>
         </div>
 
         <!-- TOTAL ORDERS -->
-        <div class="rounded-xl border border-[#c9a79b] bg-white p-5 shadow-sm">
+        <div class="rounded-2xl border border-[#eadfd2] bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
             <div class="flex items-center justify-between">
-                <p class="text-xs font-extrabold uppercase">Total Orders</p>
+                <p class="text-xs font-extrabold uppercase tracking-wider text-[#75645d]">Total Orders</p>
                 <svg class="h-6 w-6 text-gray-600"
                      fill="none" stroke="currentColor"
                      viewBox="0 0 24 24">
@@ -69,21 +73,16 @@
                 </svg>
             </div>
 
-            <p class="mt-5 text-center text-4xl font-black text-black">
+            <p class="mt-5 text-4xl font-black tracking-tight text-[#342724]">
                 75
             </p>
 
-            <div class="mt-4 text-center">
-                <span class="rounded-full bg-green-600 px-4 py-1 text-xs font-bold text-white">
-                    STATUS
-                </span>
-            </div>
         </div>
 
         <!-- TOTAL CUSTOMER -->
-        <div class="rounded-xl border border-[#c9a79b] bg-white p-5 shadow-sm">
+        <div class="rounded-2xl border border-[#eadfd2] bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
             <div class="flex items-center justify-between">
-                <p class="text-xs font-extrabold uppercase">Total Customer</p>
+                <p class="text-xs font-extrabold uppercase tracking-wider text-[#75645d]">Total customers</p>
                 <svg class="h-6 w-6 text-gray-600"
                      fill="none" stroke="currentColor"
                      viewBox="0 0 24 24">
@@ -93,32 +92,31 @@
                 </svg>
             </div>
 
-            <p class="mt-5 text-center text-4xl font-black text-black">
+            <p class="mt-5 text-4xl font-black tracking-tight text-[#342724]">
                 50
             </p>
         </div>
 
         <!-- TOTAL REVENUE -->
-        <div class="rounded-xl border border-[#c9a79b] bg-white p-5 shadow-sm">
+        <div class="rounded-2xl border border-[#eadfd2] bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
             <div class="flex items-center justify-between">
-                <p class="text-xs font-extrabold uppercase">Total Revenue</p>
-                <span class="text-2xl font-bold text-gray-600">₱</span>
+                <p class="text-xs font-extrabold uppercase tracking-wider text-[#75645d]">Total Revenue</p>
             </div>
 
-            <p class="mt-5 text-center text-4xl font-black text-black">
-                50
+            <p class="mt-5 text-4xl font-black tracking-tight text-[#342724]">
+                ₱50
             </p>
         </div>
 
     </div>
 
     <!-- SALES CHART + TOP SELLING ITEMS -->
-    <div class="mb-7 grid grid-cols-1 gap-5 xl:grid-cols-2">
+    <div class="grid grid-cols-1 gap-5 xl:grid-cols-2">
 
         <!-- SALES CHART -->
-        <section class="rounded-xl border border-[#c9a79b] bg-white p-4 shadow-sm">
+        <section class="rounded-2xl border border-[#eadfd2] bg-white p-5 shadow-sm sm:p-6">
             <div class="mb-5 flex flex-wrap items-center justify-between gap-2">
-                <h2 class="text-lg font-extrabold uppercase">Sales</h2>
+                <h2 class="text-lg font-extrabold text-[#342724]">Sales performance</h2>
 
                 <!-- FILTER: DISPLAY ONLY -->
                 <div class="flex items-center gap-2 rounded-full bg-gray-200 px-3 py-1.5 text-sm font-bold text-gray-800">
@@ -134,10 +132,10 @@
         </section>
 
         <!-- TOP SELLING ITEMS -->
-        <section class="rounded-xl border border-[#c9a79b] bg-white p-4 shadow-sm">
+        <section class="rounded-2xl border border-[#eadfd2] bg-white p-5 shadow-sm sm:p-6">
             <div class="mb-5 flex flex-wrap items-center justify-between gap-2">
                 <h2 class="text-lg font-extrabold uppercase">
-                    Top Selling Items
+                    Top selling items
                 </h2>
 
                 <!-- FILTER: DISPLAY ONLY -->
@@ -154,16 +152,16 @@
                     <span class="w-5 text-lg font-extrabold">1</span>
 
                     <div class="flex h-12 w-16 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-orange-50">
-                        <img src="{% static 'img/chicken-meal/chicken.jpg' %}"
+                        <img src="{% static 'images/menu/chicken1.png' %}"
                              alt="Fried Chicken"
-                             class="h-full w-full object-cover"
-                             onerror="this.style.display='none'">
-                        <span class="text-xl">🍗</span>
+                             class="h-full w-full object-contain">
                     </div>
 
-                    <div class="h-7 flex-1 overflow-hidden rounded-full bg-gray-100">
-                        <div class="h-full rounded-full bg-red-700"
-                             style="width: 100%"></div>
+                    <div class="min-w-0 flex-1">
+                        <p class="mb-1 truncate text-xs font-bold text-[#594941]">Fried Chicken</p>
+                        <div class="h-2 overflow-hidden rounded-full bg-gray-100">
+                            <div class="h-full rounded-full bg-[#800000]" style="width: 100%"></div>
+                        </div>
                     </div>
 
                     <span class="text-sm font-bold">35</span>
@@ -174,16 +172,16 @@
                     <span class="w-5 text-lg font-extrabold">2</span>
 
                     <div class="flex h-12 w-16 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-orange-50">
-                        <img src="{% static 'img/chicken-meal/chicken.jpg' %}"
-                             alt="Chicken Meal"
-                             class="h-full w-full object-cover"
-                             onerror="this.style.display='none'">
-                        <span class="text-xl">🍗</span>
+                        <img src="{% static 'images/menu/chicken2.png' %}"
+                             alt="Fruit Soda"
+                             class="h-full w-full object-contain">
                     </div>
 
-                    <div class="h-7 flex-1 overflow-hidden rounded-full bg-gray-100">
-                        <div class="h-full rounded-full bg-red-700"
-                             style="width: 86%"></div>
+                    <div class="min-w-0 flex-1">
+                        <p class="mb-1 truncate text-xs font-bold text-[#594941]">Fruit Soda</p>
+                        <div class="h-2 overflow-hidden rounded-full bg-gray-100">
+                            <div class="h-full rounded-full bg-[#800000]" style="width: 86%"></div>
+                        </div>
                     </div>
 
                     <span class="text-sm font-bold">30</span>
@@ -194,16 +192,16 @@
                     <span class="w-5 text-lg font-extrabold">3</span>
 
                     <div class="flex h-12 w-16 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-orange-50">
-                        <img src="{% static 'img/chicken-meal/chicken.jpg' %}"
-                             alt="Chicken Meal"
-                             class="h-full w-full object-cover"
-                             onerror="this.style.display='none'">
-                        <span class="text-xl">🍗</span>
+                        <img src="{% static 'images/menu/chicken3.png' %}"
+                             alt="Bottled Water"
+                             class="h-full w-full object-contain">
                     </div>
 
-                    <div class="h-7 flex-1 overflow-hidden rounded-full bg-gray-100">
-                        <div class="h-full rounded-full bg-red-700"
-                             style="width: 57%"></div>
+                    <div class="min-w-0 flex-1">
+                        <p class="mb-1 truncate text-xs font-bold text-[#594941]">Bottled Water</p>
+                        <div class="h-2 overflow-hidden rounded-full bg-gray-100">
+                            <div class="h-full rounded-full bg-[#800000]" style="width: 57%"></div>
+                        </div>
                     </div>
 
                     <span class="text-sm font-bold">20</span>
@@ -214,16 +212,16 @@
                     <span class="w-5 text-lg font-extrabold">4</span>
 
                     <div class="flex h-12 w-16 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-orange-50">
-                        <img src="{% static 'img/chicken-meal/chicken.jpg' %}"
-                             alt="Chicken Meal"
-                             class="h-full w-full object-cover"
-                             onerror="this.style.display='none'">
-                        <span class="text-xl">🍗</span>
+                        <img src="{% static 'images/menu/chicken4.png' %}"
+                             alt="Milk Tea"
+                             class="h-full w-full object-contain">
                     </div>
 
-                    <div class="h-7 flex-1 overflow-hidden rounded-full bg-gray-100">
-                        <div class="h-full rounded-full bg-red-700"
-                             style="width: 23%"></div>
+                    <div class="min-w-0 flex-1">
+                        <p class="mb-1 truncate text-xs font-bold text-[#594941]">Milk Tea</p>
+                        <div class="h-2 overflow-hidden rounded-full bg-gray-100">
+                            <div class="h-full rounded-full bg-[#800000]" style="width: 23%"></div>
+                        </div>
                     </div>
 
                     <span class="text-sm font-bold">8</span>
@@ -235,10 +233,10 @@
     </div>
 
     <!-- RECENT ORDERS -->
-    <section class="rounded-xl border border-[#c9a79b] bg-white p-4 shadow-sm">
+    <section class="rounded-2xl border border-[#eadfd2] bg-white p-5 shadow-sm sm:p-6">
 
         <div class="mb-4 flex flex-wrap items-center justify-between gap-2">
-            <h2 class="text-lg font-extrabold uppercase">Recent Orders</h2>
+            <h2 class="text-lg font-extrabold text-[#342724]">Recent orders</h2>
 
             <!-- FILTER: DISPLAY ONLY -->
             <div class="flex items-center gap-2 rounded-full bg-gray-200 px-3 py-1.5 text-sm font-bold text-gray-800">
@@ -268,8 +266,8 @@
                     <!-- ORDER 1 -->
                     <tr class="border-b border-red-200 hover:bg-red-50">
                         <td class="px-3 py-3 font-bold">023874</td>
-                        <td class="px-3 py-3">mau</td>
-                        <td class="px-3 py-3">Chicken</td>
+                        <td class="px-3 py-3">Mau</td>
+                        <td class="px-3 py-3">Chicken meal</td>
                         <td class="px-3 py-3">₱232</td>
                         <td class="px-3 py-3">
                             <span class="rounded-full bg-green-500 px-3 py-1 font-bold text-white">
@@ -284,8 +282,8 @@
                     <!-- ORDER 2 -->
                     <tr class="border-b border-red-200 hover:bg-red-50">
                         <td class="px-3 py-3 font-bold">064897</td>
-                        <td class="px-3 py-3">jayjay</td>
-                        <td class="px-3 py-3">Sjdskdn</td>
+                        <td class="px-3 py-3">Jay J.</td>
+                        <td class="px-3 py-3">Chicken combo</td>
                         <td class="px-3 py-3">₱435</td>
                         <td class="px-3 py-3">
                             <span class="rounded-full bg-red-600 px-3 py-1 font-bold text-white">
@@ -300,8 +298,8 @@
                     <!-- ORDER 3 -->
                     <tr class="hover:bg-red-50">
                         <td class="px-3 py-3 font-bold">027468</td>
-                        <td class="px-3 py-3">kein</td>
-                        <td class="px-3 py-3">Sddsada</td>
+                        <td class="px-3 py-3">Kein M.</td>
+                        <td class="px-3 py-3">Buffalo chicken</td>
                         <td class="px-3 py-3">₱243</td>
                         <td class="px-3 py-3">
                             <span class="rounded-full bg-green-500 px-3 py-1 font-bold text-white">
