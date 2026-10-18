@@ -16,7 +16,7 @@
 
     <div class="px-6 pb-3 pt-7 text-[10px] font-extrabold uppercase tracking-[0.2em] text-white/40">Workspace</div>
     <nav aria-label="Customer navigation" class="flex flex-1 flex-col gap-1 px-3 pb-5">
-        <a href="{% url 'dashboard' %}" {% if request.resolver_match.url_name == 'dashboard' %}aria-current="page"{% endif %} class="group flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-bold transition {% if request.resolver_match.url_name == 'dashboard' %}bg-[#800000] text-white shadow-lg shadow-black/15{% else %}text-white/75 hover:bg-white/10 hover:text-white{% endif %}">
+        <a href="{% url 'dashboard' %}" {% if request.resolver_match.url_name == 'dashboard' or request.resolver_match.url_name == 'dashboard_slash' %}aria-current="page"{% endif %} class="group flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-bold transition {% if request.resolver_match.url_name == 'dashboard' or request.resolver_match.url_name == 'dashboard_slash' %}bg-[#800000] text-white shadow-lg shadow-black/15{% else %}text-white/75 hover:bg-white/10 hover:text-white{% endif %}">
             <svg class="h-5 w-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="5" rx="1.5"/><rect x="13" y="10" width="8" height="11" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/></svg>
             Dashboard
         </a>

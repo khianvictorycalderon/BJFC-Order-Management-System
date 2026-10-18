@@ -9,7 +9,7 @@ urlpatterns = [
     path("contact/", views.contact, name="contact"),
     path("private/", views.private_test, name="private_test"),
     path("dashboard", views.dashboard, name="dashboard"),
-    path("dashboard/", views.dashboard),
+    path("dashboard/", views.dashboard, name="dashboard_slash"),
     path("my-orders", views.my_orders, name="my_orders"),
     path("my-orders/", views.my_orders),
     path("account", views.customer_account, name="customer_account"),
