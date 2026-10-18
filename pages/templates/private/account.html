@@ -1,0 +1,51 @@
+{% extends "private/layout/customer/base.html" %}
+
+{% block customer_title %}My Account | BJFC{% endblock %}
+{% block page_heading %}My account{% endblock %}
+
+{% block content %}
+{# Mock UI only: forms are inert until the backend is wired up. #}
+<div class="mx-auto max-w-4xl space-y-6">
+    <div>
+        <p class="text-xs font-extrabold uppercase tracking-[0.18em] text-[#a87864]">Profile</p>
+        <h2 class="mt-1 text-2xl font-black tracking-tight text-[#342724] sm:text-3xl">User account</h2>
+        <p class="mt-1 text-sm text-[#89776e]">Manage your BJFC profile and keep your sign-in secure.</p>
+    </div>
+
+    <section class="rounded-3xl border border-[#eadfd2] bg-white p-6 shadow-sm sm:p-8">
+        <header class="flex flex-col gap-5 border-b border-[#f0e7de] pb-6 sm:flex-row sm:items-center">
+            <span class="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-[#800000] text-2xl font-black text-white ring-4 ring-[#fff1e3]">J</span>
+            <div class="min-w-0">
+                <h3 class="text-lg font-extrabold text-[#2b201d]">My profile</h3>
+                <p class="mt-0.5 text-sm text-[#89776e]">Your name and contact details for orders.</p>
+            </div>
+        </header>
+
+        <form onsubmit="return false" class="pt-6" novalidate>
+            <div class="grid gap-5 sm:grid-cols-2">
+                <div>
+                    <label for="firstName" class="mb-2 block text-[11px] font-extrabold uppercase tracking-[0.14em] text-[#89776e]">First name</label>
+                    <input id="firstName" type="text" value="JOLLIBEE" class="h-12 w-full rounded-xl border border-[#eadfd2] bg-[#fffaf4] px-4 text-sm font-semibold text-[#342724] outline-none transition focus:border-[#800000] focus:bg-white focus:ring-4 focus:ring-[#800000]/10">
+                </div>
+                <div>
+                    <label for="lastName" class="mb-2 block text-[11px] font-extrabold uppercase tracking-[0.14em] text-[#89776e]">Last name</label>
+                    <input id="lastName" type="text" value="JOLLIBEE" class="h-12 w-full rounded-xl border border-[#eadfd2] bg-[#fffaf4] px-4 text-sm font-semibold text-[#342724] outline-none transition focus:border-[#800000] focus:bg-white focus:ring-4 focus:ring-[#800000]/10">
+                </div>
+                <div>
+                    <label for="userName" class="mb-2 block text-[11px] font-extrabold uppercase tracking-[0.14em] text-[#89776e]">Username</label>
+                    <input id="userName" type="text" value="JOLLIBEE DIN" class="h-12 w-full rounded-xl border border-[#eadfd2] bg-[#fffaf4] px-4 text-sm font-semibold text-[#342724] outline-none transition focus:border-[#800000] focus:bg-white focus:ring-4 focus:ring-[#800000]/10">
+                </div>
+                <div>
+                    <label for="userEmail" class="mb-2 block text-[11px] font-extrabold uppercase tracking-[0.14em] text-[#89776e]">Email</label>
+                    <input id="userEmail" type="email" value="jollibee@gmail.com" class="h-12 w-full rounded-xl border border-[#eadfd2] bg-[#fffaf4] px-4 text-sm font-semibold text-[#342724] outline-none transition focus:border-[#800000] focus:bg-white focus:ring-4 focus:ring-[#800000]/10">
+                </div>
+            </div>
+            <div class="mt-7 flex justify-end border-t border-[#f0e7de] pt-6">
+                <button type="button" class="inline-flex h-11 items-center justify-center rounded-xl bg-[#800000] px-6 text-sm font-extrabold text-white shadow-sm transition hover:bg-[#650000] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#800000]/25">Update profile</button>
+            </div>
+        </form>
+    </section>
+
+    {% include "components/security_card.html" %}
+</div>
+{% endblock %}

@@ -1,0 +1,6 @@
+{% extends "private/layout/base.html" %}
+
+{% block title %}{% block customer_title %}Customer Dashboard | BJFC{% endblock %}{% endblock %}
+{% block role_label %}Customer{% endblock %}
+{% block account_role %}Customer{% endblock %}
+{% block sidebar %}{% include "private/layout/customer/sidebar.html" %}{% endblock %}

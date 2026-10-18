@@ -1,0 +1,120 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}BJFC{% endblock %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <script src="{% static 'js/tailwind-3.4.17.js' %}"></script>
+    <script src="{% static 'js/chart.js' %}"></script>
+    <style>
+        body { font-family: 'Nunito', sans-serif; }
+    </style>
+</head>
+<body class="min-h-screen bg-[#fff8ed] text-[#28211e] antialiased">
+    <div class="min-h-screen lg:flex">
+        {% block sidebar %}
+            {% include "private/layout/admin/sidebar.html" %}
+        {% endblock %}
+
+        <div class="min-w-0 flex-1">
+            <header class="sticky top-0 z-30 flex min-h-[72px] items-center justify-between border-b border-[#eadfd2] bg-white/95 px-4 shadow-sm backdrop-blur sm:px-6 lg:px-8">
+                <div class="flex min-w-0 items-center gap-3">
+                    <button
+                        id="sidebarToggle"
+                        type="button"
+                        aria-label="Open navigation"
+                        aria-controls="appSidebar"
+                        aria-expanded="false"
+                        class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[#eadfd2] text-[#800000] transition hover:bg-[#fff4e7] lg:hidden"
+                    >
+                        <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                            <path d="M4 6h16M4 12h16M4 18h16"/>
+                        </svg>
+                    </button>
+
+                    <div class="min-w-0">
+                        <p class="hidden text-xs font-extrabold uppercase tracking-[0.16em] text-[#a87864] sm:block">
+                            BJFC · {% block role_label %}Admin{% endblock %}
+                        </p>
+                        <h1 class="truncate text-lg font-extrabold text-[#2b201d] sm:text-xl">
+                            {% block page_heading %}Dashboard{% endblock %}
+                        </h1>
+                    </div>
+                </div>
+
+                <div class="ml-3 flex shrink-0 items-center gap-3">
+                    <span class="hidden text-right sm:block">
+                        <span class="block text-sm font-extrabold text-[#342724]">{% block account_name %}{{ request.user.get_short_name|default:request.user.username|default:"Guest" }}{% endblock %}</span>
+                        <span class="block text-xs font-semibold text-[#977f76]">{% block account_role %}{{ request.user.is_staff|yesno:"Administrator,Customer" }}{% endblock %}</span>
+                    </span>
+                    <span class="flex h-10 w-10 items-center justify-center rounded-full bg-[#800000] text-sm font-extrabold text-white" aria-hidden="true">
+                        {% block account_initial %}{{ request.user.username|default:"G"|slice:":1"|upper }}{% endblock %}
+                    </span>
+                </div>
+            </header>
+
+            <main class="mx-auto w-full max-w-[1600px] p-4 sm:p-6 lg:p-8">
+                {% block content %}{% endblock %}
+            </main>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const sidebar = document.getElementById("appSidebar");
+            const toggle = document.getElementById("sidebarToggle");
+            const overlay = document.getElementById("sidebarOverlay");
+
+            if (!sidebar || !toggle || !overlay) {
+                return;
+            }
+
+            function closeSidebar() {
+                sidebar.classList.add("-translate-x-full");
+                overlay.classList.add("hidden");
+                toggle.setAttribute("aria-expanded", "false");
+                toggle.setAttribute("aria-label", "Open navigation");
+                document.body.classList.remove("overflow-hidden");
+            }
+
+            function openSidebar() {
+                sidebar.classList.remove("-translate-x-full");
+                overlay.classList.remove("hidden");
+                toggle.setAttribute("aria-expanded", "true");
+                toggle.setAttribute("aria-label", "Close navigation");
+                document.body.classList.add("overflow-hidden");
+            }
+
+            toggle.addEventListener("click", function () {
+                if (toggle.getAttribute("aria-expanded") === "true") {
+                    closeSidebar();
+                } else {
+                    openSidebar();
+                }
+            });
+
+            overlay.addEventListener("click", closeSidebar);
+            sidebar.querySelectorAll("a").forEach(function (link) {
+                link.addEventListener("click", closeSidebar);
+            });
+
+            document.addEventListener("keydown", function (event) {
+                if (event.key === "Escape") {
+                    closeSidebar();
+                }
+            });
+
+            window.addEventListener("resize", function () {
+                if (window.innerWidth >= 1024) {
+                    closeSidebar();
+                }
+            });
+
+        });
+    </script>
+</body>
+</html>

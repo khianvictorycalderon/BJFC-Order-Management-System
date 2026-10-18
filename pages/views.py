@@ -60,7 +60,30 @@ def contact(req):
     return render(req, "public/contact.html")
 
 def dashboard(req):
-       return render(req, "private/dashboard.html")
+    return render(req, "private/dashboard.html")
+
+
+def my_orders(req):
+    # Mock data for the order-building UI; swap for real menu items later.
+    order_items = [
+        {"name": "Plain Fried Chicken with rice", "desc": "Crispy fried chicken served with savory, fluffy rice.", "price": 75, "image": "images/menu/chicken1.png"},
+        {"name": "Buffalo Fried Chicken with rice", "desc": "Crispy chicken tossed in tangy buffalo sauce, served with fluffy rice.", "price": 75, "image": "images/menu/chicken2.png"},
+        {"name": "Soy Garlic Fried Chicken with rice", "desc": "Crispy fried chicken coated in sweet-savory soy garlic goodness, served with rice.", "price": 75, "image": "images/menu/chicken3.png"},
+        {"name": "Sour Cream Fried Chicken with rice", "desc": "Crispy, creamy, and savory sour cream fried chicken served with fluffy rice.", "price": 75, "image": "images/menu/chicken4.png"},
+    ]
+    addons = [
+        {"name": "Ketchup", "price": 5, "image": "images/menu/ketchup.png"},
+        {"name": "Extra Rice", "price": 20, "image": "images/menu/rice.png"},
+        {"name": "Extra Soy Garlic", "price": 25, "image": "images/menu/soy garlic.png"},
+        {"name": "Extra Buffalo", "price": 20, "image": "images/menu/bufalo.png"},
+        {"name": "Extra Sour Cream", "price": 25, "image": "images/menu/sourcream.png"},
+        {"name": "Soup", "price": 20, "image": "images/menu/soup.png"},
+    ]
+    return render(req, "private/my_orders.html", {"order_items": order_items, "addons": addons})
+
+
+def customer_account(req):
+    return render(req, "private/account.html")
 
 # Admin Pages
 def admin_dashboard(req):
@@ -79,8 +102,20 @@ def admin_feedback(req):
     return render(req, "private/layout/admin/feedback.html")
 
 
-def admin_settings(req):
-    return render(req, "private/layout/admin/settings.html")
+def admin_settings_home(req):
+    return render(req, "private/layout/admin/settings_home.html")
+
+
+def admin_settings_about(req):
+    return render(req, "private/layout/admin/settings_about.html")
+
+
+def admin_settings_menu(req):
+    return render(req, "private/layout/admin/settings_menu.html")
+
+
+def admin_settings_contact(req):
+    return render(req, "private/layout/admin/settings_contact.html")
 
 
 def admin_account(req):
@@ -92,3 +127,7 @@ def login_page(req):
 
 def signup_page(req):
     return render(req, "public/signup.html")
+
+
+def admin_login_page(req):
+    return render(req, "public/admin_login.html")

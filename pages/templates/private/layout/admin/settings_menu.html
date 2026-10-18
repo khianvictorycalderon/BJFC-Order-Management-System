@@ -1,0 +1,28 @@
+{% extends "private/layout/admin/settings_base.html" %}
+{% load static %}
+
+{% block preview_url %}bjfc.com/menu{% endblock %}
+
+{% block preview_src %}{% url 'menu' %}{% endblock %}
+
+{% block forms %}
+    <section class="rounded-3xl border border-[#eadfd2] bg-white p-6 shadow-sm sm:p-8">
+        <header class="border-b border-[#f0e7de] pb-5">
+            <h3 class="text-lg font-extrabold text-[#2b201d]">Menu banner text</h3>
+            <p class="mt-0.5 text-sm text-[#89776e]">Headline and description shown at the top of the Menu page.</p>
+        </header>
+        <form onsubmit="return false" class="space-y-5 pt-6" novalidate>
+            <div>
+                <label for="mainHeading" class="mb-2 block text-[11px] font-extrabold uppercase tracking-[0.14em] text-[#89776e]">Main heading title</label>
+                <input id="mainHeading" type="text" value="SIGNATURE FRIED CHICKEN" class="h-12 w-full rounded-xl border border-[#eadfd2] bg-[#fffaf4] px-4 text-sm font-semibold text-[#342724] outline-none transition focus:border-[#800000] focus:bg-white focus:ring-4 focus:ring-[#800000]/10">
+            </div>
+            <div>
+                <label for="subHeading" class="mb-2 block text-[11px] font-extrabold uppercase tracking-[0.14em] text-[#89776e]">Subheading description</label>
+                <textarea id="subHeading" rows="4" class="w-full rounded-xl border border-[#eadfd2] bg-[#fffaf4] px-4 py-3 text-sm font-semibold leading-6 text-[#342724] outline-none transition focus:border-[#800000] focus:bg-white focus:ring-4 focus:ring-[#800000]/10">Golden, crunchy, and juicy chicken with our signature crispy coating.</textarea>
+            </div>
+            <div class="flex justify-end border-t border-[#f0e7de] pt-6">
+                <button type="button" class="inline-flex h-11 items-center justify-center rounded-xl bg-[#800000] px-6 text-sm font-extrabold text-white shadow-sm transition hover:bg-[#650000] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#800000]/25">Save changes</button>
+            </div>
+        </form>
+    </section>
+{% endblock %}

@@ -1,74 +1,48 @@
-
 {% load static %}
 
 <aside
-    id="adminSidebar"
-    class="fixed inset-y-0 left-0 z-50 min-h-screen w-64 -translate-x-full overflow-y-auto bg-[#070616] border-r border-white/60 text-white transition-transform duration-300 ease-in-out lg:static lg:min-h-screen lg:w-64 lg:shrink-0 lg:translate-x-0"
+    id="appSidebar"
+    class="fixed inset-y-0 left-0 z-50 flex w-[280px] -translate-x-full flex-col overflow-y-auto border-r border-white/10 bg-[#211513] text-white shadow-2xl transition-transform duration-300 ease-in-out lg:sticky lg:top-0 lg:h-screen lg:shrink-0 lg:translate-x-0 lg:shadow-none"
 >
-    <div class="hidden border-b border-white/20 lg:block">
-        <div class="flex items-center gap-3 bg-[#800000] px-4 py-5">
-            <img
-                src="{% static 'icons/logo.png' %}"
-                alt="BJFC Logo"
-                class="h-12 w-12 object-contain"
-            >
+    <a href="{% url 'admin_dashboard' %}" class="flex items-center gap-3 border-b border-white/10 px-6 py-6">
+        <span class="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-white">
+            <img src="{% static 'icons/logo.png' %}" alt="BJFC" class="h-10 w-10 object-contain">
+        </span>
+        <span>
+            <span class="block text-lg font-black tracking-wide">BJFC</span>
+            <span class="block text-xs font-semibold text-white/55">Order management</span>
+        </span>
+    </a>
 
-            <div>
-                <h1 class="text-lg font-extrabold text-white">BJFC</h1>
-                <p class="text-xs text-white/70">Admin Panel</p>
-            </div>
-        </div>
-    </div>
-
-    <!-- Navigation -->
-    <nav class="flex flex-col gap-2 p-4">
-
-        <a
-            href="{% url 'admin_dashboard' %}"
-            class="rounded-lg px-4 py-3 transition hover:bg-[#800000]/50"
-        >
+    <div class="px-6 pb-3 pt-7 text-[10px] font-extrabold uppercase tracking-[0.2em] text-white/40">Workspace</div>
+    <nav aria-label="Admin navigation" class="flex flex-1 flex-col gap-1 px-3 pb-5">
+        <a href="{% url 'admin_dashboard' %}" {% if request.resolver_match.url_name == 'admin_dashboard' %}aria-current="page"{% endif %} class="group flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-bold transition {% if request.resolver_match.url_name == 'admin_dashboard' %}bg-[#800000] text-white shadow-lg shadow-black/15{% else %}text-white/70 hover:bg-white/10 hover:text-white{% endif %}">
+            <svg class="h-5 w-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="5" rx="1.5"/><rect x="13" y="10" width="8" height="11" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/></svg>
             Dashboard
         </a>
-
-        <a
-            href="{% url 'admin_menu' %}"
-            class="rounded-lg px-4 py-3 transition hover:bg-[#800000]/50"
-        >
+        <a href="{% url 'admin_menu' %}" {% if request.resolver_match.url_name == 'admin_menu' %}aria-current="page"{% endif %} class="group flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-bold transition {% if request.resolver_match.url_name == 'admin_menu' %}bg-[#800000] text-white shadow-lg shadow-black/15{% else %}text-white/70 hover:bg-white/10 hover:text-white{% endif %}">
+            <svg class="h-5 w-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10h18M5 10v10h14V10M4 6h16l1 4H3l1-4Z"/><path d="M9 14h6"/></svg>
             Menu
         </a>
-
-        <a
-            href="{% url 'admin_orders' %}"
-            class="rounded-lg px-4 py-3 transition hover:bg-[#800000]/50"
-        >
+        <a href="{% url 'admin_orders' %}" {% if request.resolver_match.url_name == 'admin_orders' %}aria-current="page"{% endif %} class="group flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-bold transition {% if request.resolver_match.url_name == 'admin_orders' %}bg-[#800000] text-white shadow-lg shadow-black/15{% else %}text-white/70 hover:bg-white/10 hover:text-white{% endif %}">
+            <svg class="h-5 w-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3h2l2.2 11.2a2 2 0 0 0 2 1.6h8.9a2 2 0 0 0 2-1.6L22 7H6"/><circle cx="10" cy="20" r="1"/><circle cx="18" cy="20" r="1"/></svg>
             Orders
         </a>
-
-        <a
-            href="{% url 'admin_feedback' %}"
-            class="rounded-lg px-4 py-3 transition hover:bg-[#800000]/50"
-        >
+        <a href="{% url 'admin_feedback' %}" {% if request.resolver_match.url_name == 'admin_feedback' %}aria-current="page"{% endif %} class="group flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-bold transition {% if request.resolver_match.url_name == 'admin_feedback' %}bg-[#800000] text-white shadow-lg shadow-black/15{% else %}text-white/70 hover:bg-white/10 hover:text-white{% endif %}">
+            <svg class="h-5 w-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.4 8.4 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 0 1-.9-3.8A8.5 8.5 0 0 1 8.7 3.9a8.4 8.4 0 0 1 3.8-.9h.5a8.5 8.5 0 0 1 8 8v.5Z"/></svg>
             Feedback
         </a>
 
-        <a
-            href="{% url 'admin_settings' %}"
-            class="rounded-lg px-4 py-3 transition hover:bg-[#800000]/50"
-        >
+        <div class="px-4 pb-1 pt-6 text-[10px] font-extrabold uppercase tracking-[0.2em] text-white/40">Preferences</div>
+        <a href="{% url 'admin_settings' %}" {% if 'admin_settings' in request.resolver_match.url_name %}aria-current="page"{% endif %} class="group flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-bold transition {% if 'admin_settings' in request.resolver_match.url_name %}bg-[#800000] text-white shadow-lg shadow-black/15{% else %}text-white/70 hover:bg-white/10 hover:text-white{% endif %}">
+            <svg class="h-5 w-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="m19.4 15 .1.1 1.4 1.1-1.4 2.4-1.7-.7a8 8 0 0 1-1.5.9l-.3 1.8h-2.8l-.3-1.8a8 8 0 0 1-1.5-.9l-1.7.7-1.4-2.4 1.4-1.1a7 7 0 0 1 0-1.8l-1.4-1.1 1.4-2.4 1.7.7a8 8 0 0 1 1.5-.9l.3-1.8h2.8l.3 1.8a8 8 0 0 1 1.5.9l1.7-.7 1.4 2.4-1.4 1.1a7 7 0 0 1 0 1.7Z"/></svg>
             Settings
         </a>
-
-        <a
-            href="{% url 'admin_account' %}"
-            class="rounded-lg px-4 py-3 transition hover:bg-[#800000]/50"
-        >
+        <a href="{% url 'admin_account' %}" {% if request.resolver_match.url_name == 'admin_account' %}aria-current="page"{% endif %} class="group flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-bold transition {% if request.resolver_match.url_name == 'admin_account' %}bg-[#800000] text-white shadow-lg shadow-black/15{% else %}text-white/70 hover:bg-white/10 hover:text-white{% endif %}">
+            <svg class="h-5 w-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
             Account
         </a>
-
     </nav>
 </aside>
 
-<div
-    id="sidebarOverlay"
-    class="fixed inset-0 z-40 hidden bg-black/50 lg:hidden"
-></div>
+<div id="sidebarOverlay" class="fixed inset-0 z-40 hidden bg-[#160d0b]/60 backdrop-blur-[2px] lg:hidden"></div>
