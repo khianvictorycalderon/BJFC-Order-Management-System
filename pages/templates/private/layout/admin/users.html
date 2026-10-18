@@ -1,0 +1,72 @@
+{% extends "private/layout/admin/base.html" %}
+{% load static %}
+
+{% block title %}Registered Users{% endblock %}
+{% block page_heading %}Users{% endblock %}
+
+{% block content %}
+<div class="space-y-7">
+    <div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+            <p class="text-xs font-extrabold uppercase tracking-[0.18em] text-[#a87864]">Customer directory</p>
+            <h2 class="mt-1 text-3xl font-black tracking-tight text-[#342724]">Registered users</h2>
+            <p class="mt-1 text-sm font-semibold text-[#89776e]">Browse customer account details.</p>
+        </div>
+    </div>
+
+    <section class="overflow-hidden rounded-2xl border border-[#eadfd2] bg-white shadow-sm">
+        <div class="flex flex-col gap-1 border-b border-[#f0e8df] px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+            <div>
+                <h3 class="font-extrabold text-[#342724]">All users</h3>
+                <p class="mt-0.5 text-xs font-semibold text-[#89776e]">Sample customer profiles</p>
+            </div>
+            <span class="inline-flex w-fit items-center rounded-full bg-[#f7f1e9] px-3 py-1 text-xs font-extrabold text-[#594941]">{{ users|length }} users</span>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full min-w-[760px] border-collapse text-left">
+                <thead class="bg-[#fffdfa]">
+                    <tr>
+                        <th scope="col" class="px-5 py-3 text-[10px] font-extrabold uppercase tracking-[0.14em] text-[#89776e] sm:px-6">User</th>
+                        <th scope="col" class="px-5 py-3 text-[10px] font-extrabold uppercase tracking-[0.14em] text-[#89776e]">Email</th>
+                        <th scope="col" class="px-5 py-3 text-[10px] font-extrabold uppercase tracking-[0.14em] text-[#89776e]">Phone</th>
+                        <th scope="col" class="px-5 py-3 text-[10px] font-extrabold uppercase tracking-[0.14em] text-[#89776e]">Joined</th>
+                        <th scope="col" class="px-5 py-3 text-[10px] font-extrabold uppercase tracking-[0.14em] text-[#89776e]">Status</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-[#f0e8df]">
+                    {% for user in users %}
+                    <tr class="transition hover:bg-[#fffdfa]">
+                        <td class="px-5 py-4 sm:px-6">
+                            <div class="flex items-center gap-3">
+                                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#fff0ed] text-sm font-black text-[#800000]" aria-hidden="true">{{ user.name|slice:":1" }}</span>
+                                <span>
+                                    <span class="block text-sm font-extrabold text-[#342724]">{{ user.name }}</span>
+                                    <span class="mt-0.5 block text-xs font-semibold text-[#89776e]">@{{ user.username }}</span>
+                                </span>
+                            </div>
+                        </td>
+                        <td class="px-5 py-4 text-sm font-semibold text-[#594941]">{{ user.email }}</td>
+                        <td class="px-5 py-4 text-sm font-semibold text-[#594941]">{{ user.phone }}</td>
+                        <td class="px-5 py-4 text-sm font-semibold text-[#594941]">{{ user.joined }}</td>
+                        <td class="px-5 py-4">
+                            {% if user.status == "Active" %}
+                            <span class="inline-flex items-center gap-1.5 rounded-full bg-[#edf7ef] px-2.5 py-1 text-xs font-extrabold text-[#32744a]">
+                                <span class="h-1.5 w-1.5 rounded-full bg-[#32744a]"></span>
+                                {{ user.status }}
+                            </span>
+                            {% else %}
+                            <span class="inline-flex items-center gap-1.5 rounded-full bg-[#f3f0ed] px-2.5 py-1 text-xs font-extrabold text-[#746b65]">
+                                <span class="h-1.5 w-1.5 rounded-full bg-[#8f837b]"></span>
+                                {{ user.status }}
+                            </span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+</div>
+{% endblock %}

@@ -20,6 +20,8 @@ urlpatterns = [
     path("admin-panel/menu/", views.admin_menu, name="admin_menu"),
     path("admin-panel/orders/", views.admin_orders, name="admin_orders"),
     path("admin-panel/feedback/", views.admin_feedback, name="admin_feedback"),
+    path("admin-panel/users", views.admin_users, name="admin_users"),
+    path("admin-panel/users/", views.admin_users),
     path("admin-panel/settings/", RedirectView.as_view(pattern_name="admin_settings_home"), name="admin_settings"),
     path("admin-panel/settings/home/", views.admin_settings_home, name="admin_settings_home"),
     path("admin-panel/settings/about/", views.admin_settings_about, name="admin_settings_about"),

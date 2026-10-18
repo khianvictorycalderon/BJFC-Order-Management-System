@@ -102,6 +102,60 @@ def admin_feedback(req):
     return render(req, "private/layout/admin/feedback.html")
 
 
+def admin_users(req):
+    users = [
+        {
+            "name": "Alex Morgan",
+            "username": "alexm",
+            "email": "alex.morgan@example.com",
+            "phone": "+1 555-0101",
+            "joined": "Oct 12, 2026",
+            "status": "Active",
+        },
+        {
+            "name": "Sam Rivera",
+            "username": "samrivera",
+            "email": "sam.rivera@example.com",
+            "phone": "+1 555-0102",
+            "joined": "Oct 10, 2026",
+            "status": "Active",
+        },
+        {
+            "name": "Jamie Chen",
+            "username": "jamiechen",
+            "email": "jamie.chen@example.com",
+            "phone": "+1 555-0103",
+            "joined": "Oct 08, 2026",
+            "status": "Active",
+        },
+        {
+            "name": "Taylor Brooks",
+            "username": "tbrooks",
+            "email": "taylor.brooks@example.com",
+            "phone": "+1 555-0104",
+            "joined": "Oct 03, 2026",
+            "status": "Inactive",
+        },
+        {
+            "name": "Casey Patel",
+            "username": "caseyp",
+            "email": "casey.patel@example.com",
+            "phone": "+1 555-0105",
+            "joined": "Sep 29, 2026",
+            "status": "Active",
+        },
+        {
+            "name": "Jordan Lee",
+            "username": "jordanlee",
+            "email": "jordan.lee@example.com",
+            "phone": "+1 555-0106",
+            "joined": "Sep 24, 2026",
+            "status": "Active",
+        },
+    ]
+    return render(req, "private/layout/admin/users.html", {"users": users})
+
+
 def admin_settings_home(req):
     return render(req, "private/layout/admin/settings_home.html")
 
