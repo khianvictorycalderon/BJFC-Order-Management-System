@@ -1,0 +1,418 @@
+{% extends "private/layout/admin/base.html" %}
+{% load static %}
+
+{% block title %}Dashboard | Admin{% endblock %}
+{% block page_heading %}Dashboard Admin{% endblock %}
+
+{% block content %}
+
+<div class="min-h-screen bg-[#fff7eb] p-4 sm:p-6">
+
+    <!-- PAGE TITLE -->
+    <div class="mb-5 flex flex-wrap items-center justify-between gap-3">
+        <h1 class="text-2xl font-extrabold uppercase tracking-wide text-black sm:text-3xl">
+            Dashboard
+        </h1>
+
+        <!-- DATE: DISPLAY ONLY -->
+        <div class="flex items-center gap-3 rounded-full bg-white px-4 py-2 text-sm font-bold shadow-sm">
+            <svg class="h-5 w-5 text-gray-600"
+                 fill="none" stroke="currentColor"
+                 viewBox="0 0 24 24">
+                <rect x="3" y="5" width="18" height="16" rx="2"
+                      stroke-width="2"/>
+                <path d="M16 3v4M8 3v4M3 10h18"
+                      stroke-width="2" stroke-linecap="round"/>
+            </svg>
+            DATE
+            <span class="text-gray-500">⌄</span>
+        </div>
+    </div>
+
+    <!-- SUMMARY CARDS -->
+    <div class="mb-7 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+
+        <!-- TOTAL SALES -->
+        <div class="rounded-xl border border-[#c9a79b] bg-white p-5 shadow-sm">
+            <div class="flex items-center justify-between">
+                <p class="text-xs font-extrabold uppercase">Total Sales</p>
+                <svg class="h-6 w-6 text-gray-600"
+                     fill="none" stroke="currentColor"
+                     viewBox="0 0 24 24">
+                    <path d="M4 19V5M4 19h16M8 15l4-4 3 2 5-7"
+                          stroke-width="2" stroke-linecap="round"
+                          stroke-linejoin="round"/>
+                </svg>
+            </div>
+
+            <p class="mt-5 text-center text-4xl font-black text-black">
+                ₱3,500
+            </p>
+
+            <p class="mt-3 text-center text-sm font-bold text-green-600">
+                ↗ 6.5%
+            </p>
+        </div>
+
+        <!-- TOTAL ORDERS -->
+        <div class="rounded-xl border border-[#c9a79b] bg-white p-5 shadow-sm">
+            <div class="flex items-center justify-between">
+                <p class="text-xs font-extrabold uppercase">Total Orders</p>
+                <svg class="h-6 w-6 text-gray-600"
+                     fill="none" stroke="currentColor"
+                     viewBox="0 0 24 24">
+                    <path d="M3 3h2l2.5 12h10.8l2-8H6"
+                          stroke-width="2" stroke-linecap="round"
+                          stroke-linejoin="round"/>
+                    <circle cx="10" cy="19" r="1.5" stroke-width="2"/>
+                    <circle cx="18" cy="19" r="1.5" stroke-width="2"/>
+                </svg>
+            </div>
+
+            <p class="mt-5 text-center text-4xl font-black text-black">
+                75
+            </p>
+
+            <div class="mt-4 text-center">
+                <span class="rounded-full bg-green-600 px-4 py-1 text-xs font-bold text-white">
+                    STATUS
+                </span>
+            </div>
+        </div>
+
+        <!-- TOTAL CUSTOMER -->
+        <div class="rounded-xl border border-[#c9a79b] bg-white p-5 shadow-sm">
+            <div class="flex items-center justify-between">
+                <p class="text-xs font-extrabold uppercase">Total Customer</p>
+                <svg class="h-6 w-6 text-gray-600"
+                     fill="none" stroke="currentColor"
+                     viewBox="0 0 24 24">
+                    <circle cx="12" cy="8" r="4" stroke-width="2"/>
+                    <path d="M5 21v-2a7 7 0 0 1 14 0v2"
+                          stroke-width="2" stroke-linecap="round"/>
+                </svg>
+            </div>
+
+            <p class="mt-5 text-center text-4xl font-black text-black">
+                50
+            </p>
+        </div>
+
+        <!-- TOTAL REVENUE -->
+        <div class="rounded-xl border border-[#c9a79b] bg-white p-5 shadow-sm">
+            <div class="flex items-center justify-between">
+                <p class="text-xs font-extrabold uppercase">Total Revenue</p>
+                <span class="text-2xl font-bold text-gray-600">₱</span>
+            </div>
+
+            <p class="mt-5 text-center text-4xl font-black text-black">
+                50
+            </p>
+        </div>
+
+    </div>
+
+    <!-- SALES CHART + TOP SELLING ITEMS -->
+    <div class="mb-7 grid grid-cols-1 gap-5 xl:grid-cols-2">
+
+        <!-- SALES CHART -->
+        <section class="rounded-xl border border-[#c9a79b] bg-white p-4 shadow-sm">
+            <div class="mb-5 flex flex-wrap items-center justify-between gap-2">
+                <h2 class="text-lg font-extrabold uppercase">Sales</h2>
+
+                <!-- FILTER: DISPLAY ONLY -->
+                <div class="flex items-center gap-2 rounded-full bg-gray-200 px-3 py-1.5 text-sm font-bold text-gray-800">
+                    <span>▦</span>
+                    All week
+                    <span>⌄</span>
+                </div>
+            </div>
+
+            <div class="relative h-64 w-full">
+                <canvas id="salesChart"></canvas>
+            </div>
+        </section>
+
+        <!-- TOP SELLING ITEMS -->
+        <section class="rounded-xl border border-[#c9a79b] bg-white p-4 shadow-sm">
+            <div class="mb-5 flex flex-wrap items-center justify-between gap-2">
+                <h2 class="text-lg font-extrabold uppercase">
+                    Top Selling Items
+                </h2>
+
+                <!-- FILTER: DISPLAY ONLY -->
+                <div class="flex items-center gap-2 rounded-full bg-gray-200 px-3 py-1.5 text-sm font-bold text-gray-800">
+                    FILTER
+                    <span>⌄</span>
+                </div>
+            </div>
+
+            <div class="space-y-4">
+
+                <!-- ITEM 1 -->
+                <div class="flex items-center gap-3">
+                    <span class="w-5 text-lg font-extrabold">1</span>
+
+                    <div class="flex h-12 w-16 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-orange-50">
+                        <img src="{% static 'img/chicken-meal/chicken.jpg' %}"
+                             alt="Fried Chicken"
+                             class="h-full w-full object-cover"
+                             onerror="this.style.display='none'">
+                        <span class="text-xl">🍗</span>
+                    </div>
+
+                    <div class="h-7 flex-1 overflow-hidden rounded-full bg-gray-100">
+                        <div class="h-full rounded-full bg-red-700"
+                             style="width: 100%"></div>
+                    </div>
+
+                    <span class="text-sm font-bold">35</span>
+                </div>
+
+                <!-- ITEM 2 -->
+                <div class="flex items-center gap-3">
+                    <span class="w-5 text-lg font-extrabold">2</span>
+
+                    <div class="flex h-12 w-16 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-orange-50">
+                        <img src="{% static 'img/chicken-meal/chicken.jpg' %}"
+                             alt="Chicken Meal"
+                             class="h-full w-full object-cover"
+                             onerror="this.style.display='none'">
+                        <span class="text-xl">🍗</span>
+                    </div>
+
+                    <div class="h-7 flex-1 overflow-hidden rounded-full bg-gray-100">
+                        <div class="h-full rounded-full bg-red-700"
+                             style="width: 86%"></div>
+                    </div>
+
+                    <span class="text-sm font-bold">30</span>
+                </div>
+
+                <!-- ITEM 3 -->
+                <div class="flex items-center gap-3">
+                    <span class="w-5 text-lg font-extrabold">3</span>
+
+                    <div class="flex h-12 w-16 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-orange-50">
+                        <img src="{% static 'img/chicken-meal/chicken.jpg' %}"
+                             alt="Chicken Meal"
+                             class="h-full w-full object-cover"
+                             onerror="this.style.display='none'">
+                        <span class="text-xl">🍗</span>
+                    </div>
+
+                    <div class="h-7 flex-1 overflow-hidden rounded-full bg-gray-100">
+                        <div class="h-full rounded-full bg-red-700"
+                             style="width: 57%"></div>
+                    </div>
+
+                    <span class="text-sm font-bold">20</span>
+                </div>
+
+                <!-- ITEM 4 -->
+                <div class="flex items-center gap-3">
+                    <span class="w-5 text-lg font-extrabold">4</span>
+
+                    <div class="flex h-12 w-16 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-orange-50">
+                        <img src="{% static 'img/chicken-meal/chicken.jpg' %}"
+                             alt="Chicken Meal"
+                             class="h-full w-full object-cover"
+                             onerror="this.style.display='none'">
+                        <span class="text-xl">🍗</span>
+                    </div>
+
+                    <div class="h-7 flex-1 overflow-hidden rounded-full bg-gray-100">
+                        <div class="h-full rounded-full bg-red-700"
+                             style="width: 23%"></div>
+                    </div>
+
+                    <span class="text-sm font-bold">8</span>
+                </div>
+
+            </div>
+        </section>
+
+    </div>
+
+    <!-- RECENT ORDERS -->
+    <section class="rounded-xl border border-[#c9a79b] bg-white p-4 shadow-sm">
+
+        <div class="mb-4 flex flex-wrap items-center justify-between gap-2">
+            <h2 class="text-lg font-extrabold uppercase">Recent Orders</h2>
+
+            <!-- FILTER: DISPLAY ONLY -->
+            <div class="flex items-center gap-2 rounded-full bg-gray-200 px-3 py-1.5 text-sm font-bold text-gray-800">
+                FILTER
+                <span>⌄</span>
+            </div>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full min-w-[650px] border-collapse text-left text-xs">
+
+                <thead class="bg-gray-200">
+                    <tr>
+                        <th class="rounded-l-lg px-3 py-3 font-extrabold">
+                            ORDER ID
+                        </th>
+                        <th class="px-3 py-3 font-extrabold">Customer</th>
+                        <th class="px-3 py-3 font-extrabold">Items</th>
+                        <th class="px-3 py-3 font-extrabold">Amount</th>
+                        <th class="px-3 py-3 font-extrabold">Status</th>
+                        <th class="rounded-r-lg px-3 py-3 font-extrabold">Time</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+
+                    <!-- ORDER 1 -->
+                    <tr class="border-b border-red-200 hover:bg-red-50">
+                        <td class="px-3 py-3 font-bold">023874</td>
+                        <td class="px-3 py-3">mau</td>
+                        <td class="px-3 py-3">Chicken</td>
+                        <td class="px-3 py-3">₱232</td>
+                        <td class="px-3 py-3">
+                            <span class="rounded-full bg-green-500 px-3 py-1 font-bold text-white">
+                                Complete
+                            </span>
+                        </td>
+                        <td class="whitespace-nowrap px-3 py-3">
+                            09-15-26, 12:30PM
+                        </td>
+                    </tr>
+
+                    <!-- ORDER 2 -->
+                    <tr class="border-b border-red-200 hover:bg-red-50">
+                        <td class="px-3 py-3 font-bold">064897</td>
+                        <td class="px-3 py-3">jayjay</td>
+                        <td class="px-3 py-3">Sjdskdn</td>
+                        <td class="px-3 py-3">₱435</td>
+                        <td class="px-3 py-3">
+                            <span class="rounded-full bg-red-600 px-3 py-1 font-bold text-white">
+                                Cancelled
+                            </span>
+                        </td>
+                        <td class="whitespace-nowrap px-3 py-3">
+                            09-15-26, 12:30PM
+                        </td>
+                    </tr>
+
+                    <!-- ORDER 3 -->
+                    <tr class="hover:bg-red-50">
+                        <td class="px-3 py-3 font-bold">027468</td>
+                        <td class="px-3 py-3">kein</td>
+                        <td class="px-3 py-3">Sddsada</td>
+                        <td class="px-3 py-3">₱243</td>
+                        <td class="px-3 py-3">
+                            <span class="rounded-full bg-green-500 px-3 py-1 font-bold text-white">
+                                Complete
+                            </span>
+                        </td>
+                        <td class="whitespace-nowrap px-3 py-3">
+                            09-15-26, 12:30PM
+                        </td>
+                    </tr>
+
+                </tbody>
+            </table>
+        </div>
+
+    </section>
+
+</div>
+
+<!-- SALES CHART -->
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const canvas = document.getElementById("salesChart");
+
+    if (!canvas || typeof Chart === "undefined") {
+        return;
+    }
+
+    const salesData = [80, 125, 90, 170, 95, 130, 200];
+
+    new Chart(canvas, {
+        type: "bar",
+
+        data: {
+            labels: [
+                "Sun 25",
+                "Mon 26",
+                "Tue 27",
+                "Wed 28",
+                "Thu 29",
+                "Fri 30",
+                "Sat 31"
+            ],
+
+            datasets: [
+                {
+                    type: "bar",
+                    label: "Sales",
+                    data: salesData,
+                    backgroundColor: "#800000",
+                    borderRadius: 4,
+                    barPercentage: 0.55,
+                    order: 2
+                },
+                {
+                    type: "line",
+                    label: "Sales Trend",
+                    data: salesData,
+                    borderColor: "#5f2929",
+                    backgroundColor: "#5f2929",
+                    pointBackgroundColor: "#ffffff",
+                    pointBorderColor: "#5f2929",
+                    pointBorderWidth: 2,
+                    pointRadius: 4,
+                    tension: 0.25,
+                    fill: false,
+                    order: 1
+                }
+            ]
+        },
+
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+
+            plugins: {
+                legend: {
+                    display: false
+                },
+
+                tooltip: {
+                    enabled: true,
+                    callbacks: {
+                        label: function (context) {
+                            return "Sales: ₱" +
+                                Number(context.raw).toLocaleString("en-PH");
+                        }
+                    }
+                }
+            },
+
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    grid: {
+                        color: "#eeeeee"
+                    },
+                    ticks: {
+                        precision: 0
+                    }
+                },
+
+                x: {
+                    grid: {
+                        display: false
+                    }
+                }
+            }
+        }
+    });
+});
+</script>
+
+{% endblock %}

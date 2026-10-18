@@ -27,7 +27,7 @@ if not SECRET_KEY:
     raise ValueError("DJANGO_SECRET_KEY is not set!")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = os.getenv("DEBUG", "False").strip().lower() == "true"
 ALLOWED_HOSTS = parse_env_list("ALLOWED_HOSTS")
 
 # Application definition
@@ -121,11 +121,13 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/6.1/howto/static-files/
 
-STATIC_URL = 'static/'
+
+STATIC_URL = "/static/"
 
 STATICFILES_DIRS = [
     BASE_DIR / "static",
 ]
+
 
 # Email
 # https://docs.djangoproject.com/en/6.1/topics/email/#topic-email-configuration
