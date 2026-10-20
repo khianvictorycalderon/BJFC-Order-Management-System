@@ -172,3 +172,22 @@ class PasswordResetRequest(models.Model):
 
     def __str__(self):
         return self.user.username
+    
+class LandingPage(models.Model):
+    main_heading = models.CharField(max_length=255)
+    subheading_description = models.TextField()
+    hero_image = models.URLField(blank=True, default="")
+    button_text = models.CharField(
+        max_length=100,
+        blank=True,
+        default=""
+    )
+    button_link = models.CharField(
+        max_length=255,
+        blank=True,
+        default=""
+    )
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.main_heading

@@ -12,6 +12,8 @@ from core.models import User
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth import authenticate
 
+from core.models import User, LandingPage
+
 
 @csrf_exempt
 def login_api(req):
@@ -185,3 +187,108 @@ def test_api_response(req):
             return JsonResponse({
                 "error": "Method not allowed!"
             }, status=400)
+
+def admin_landing_page(request):
+    # Allow only GET and PATCH requests
+    if request.method not in ["GET", "PATCH"]:
+        response = JsonResponse(
+            {"error": "Method not allowed."},
+            status=405,
+        )
+        response["Allow"] = "GET, PATCH"
+        return response
+
+    # Protect this administrative endpoint
+    if not request.user.is_authenticated or not request.user.is_staff:
+        return JsonResponse(
+            {"error": "Admin access required."},
+            status=403,
+        )
+
+    # Find the landing-page record
+    landing_page = LandingPage.objects.first()
+
+    if landing_page is None:
+        return JsonResponse(
+            {"message": "Landing page information has not been configured."},
+            status=404,
+        )
+
+    # GET: Retrieve landing-page information
+    if request.method == "GET":
+        image = landing_page.hero_image
+
+        try:
+            image = image.url if image else ""
+        except ValueError:
+            image = ""
+
+        return JsonResponse({
+            "id": landing_page.id,
+            "main_heading": landing_page.main_heading,
+            "subheading_description": landing_page.subheading_description,
+            "hero_image": image,
+            "button_text": landing_page.button_text,
+            "button_link": landing_page.button_link,
+        }, status=200)
+
+    # PATCH: Read the incoming JSON
+    try:
+        data = json.loads(request.body.decode("utf-8"))
+    except (json.JSONDecodeError, UnicodeDecodeError):
+        return JsonResponse(
+            {"error": "Invalid JSON data."},
+            status=400,
+        )
+
+    if not isinstance(data, dict):
+        return JsonResponse(
+            {"error": "Expected a JSON object."},
+            status=400,
+        )
+
+    # Only allow these fields to be updated
+    allowed_fields = {
+        "main_heading",
+        "subheading_description",
+        "hero_image",
+        "button_text",
+        "button_link",
+    }
+
+    unknown_fields = set(data.keys()) - allowed_fields
+
+    if unknown_fields:
+        return JsonResponse(
+            {
+                "error": "Invalid fields provided.",
+                "fields": sorted(unknown_fields),
+            },
+            status=400,
+        )
+
+    # Validate and update only the fields provided
+    for field, value in data.items():
+        if not isinstance(value, str):
+            return JsonResponse(
+                {"error": f"{field} must be a string."},
+                status=400,
+            )
+
+        setattr(landing_page, field, value)
+
+    landing_page.save()
+
+    return JsonResponse(
+        {
+            "message": "Landing page updated successfully.",
+            "data": {
+                "id": landing_page.id,
+                "main_heading": landing_page.main_heading,
+                "subheading_description": landing_page.subheading_description,
+                "button_text": landing_page.button_text,
+                "button_link": landing_page.button_link,
+            },
+        },
+        status=200,
+    )
