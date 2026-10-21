@@ -9,11 +9,11 @@ from django.db import IntegrityError, transaction
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.contrib.auth import authenticate, update_session_auth_hash, logout
 from core.models import User, Order, PageInfo, StoreInformation
-from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.csrf import csrf_protect
 from django.views.decorators.http import require_http_methods
 logger=logging.getLogger(__name__)
 
-@csrf_exempt
+@csrf_protect
 @require_http_methods(["POST"])
 def login_api(req):
     try:
@@ -61,7 +61,7 @@ def login_api(req):
             status=400
         )
 
-@csrf_exempt
+@csrf_protect
 @require_http_methods(["POST"])
 def register(request):
     #parsing and validation
@@ -256,6 +256,7 @@ def admin_orders(request):
         "total_items": paginator.count,
     }, status=200)
 
+@csrf_protect
 @require_http_methods(["PATCH"])
 def admin_order_status(request, pk):
     if not request.user.is_authenticated or not request.user.is_staff:
@@ -300,6 +301,7 @@ def admin_order_status(request, pk):
     }, status=200
     )
 
+@csrf_protect
 @require_http_methods(["PATCH"])
 def admin_password(request):
     if not request.user.is_authenticated or not request.user.is_staff:
@@ -360,6 +362,7 @@ def admin_password(request):
         "message": "Password changed successfully.",
     }, status=200)
 
+@csrf_protect
 def page_content(request, slug):
     if not request.user.is_authenticated or not request.user.is_staff:
         return JsonResponse(
@@ -411,6 +414,7 @@ def page_content(request, slug):
                 "error": "Method not allowed!"
             }, status=405)
 
+@csrf_protect
 def store_information(request):
     if not request.user.is_authenticated or not request.user.is_staff:
         return JsonResponse(
@@ -467,6 +471,7 @@ def store_information(request):
             }, status=405)
 
 # CUSTOMER
+@csrf_protect
 def customer_profile(request):
     if not request.user.is_authenticated:
         return JsonResponse(
