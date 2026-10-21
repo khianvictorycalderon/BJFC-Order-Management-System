@@ -34,7 +34,7 @@ urlpatterns = [
     path(
         "admin/store-information/",
         views.store_information,
-        name="store-information",
+        name="store_information",
     ),
     path(
         "profile/",
