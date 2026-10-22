@@ -1,5 +1,6 @@
 import json
 import logging
+from urllib import request
 
 from django.http import JsonResponse
 from django.core.validators import validate_email
@@ -8,6 +9,8 @@ from django.core.exceptions import ValidationError
 from django.db import IntegrityError, transaction
 from django.contrib.auth import login
 from core.models import User
+from django.db.models import Q
+
 
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth import authenticate
@@ -292,3 +295,101 @@ def admin_landing_page(request):
         },
         status=200,
     )
+
+def admin_users(request):
+
+    # Allow only GET requests
+    if request.method != "GET":
+        response = JsonResponse(
+            {"error": "Method not allowed."},
+            status=405,
+        )
+        response["Allow"] = "GET"
+        return response
+
+    # Check admin access
+    if not request.user.is_authenticated or not request.user.is_staff:
+        return JsonResponse(
+            {"error": "Admin access required."},
+            status=403,
+        )
+
+    # Read parameters
+    page = request.GET.get("page", "1")
+    size = request.GET.get("size", "10")
+    sort = request.GET.get("sort", "asc").lower()
+    search = request.GET.get("search", "").strip()
+
+    # Validate sorting
+    if sort not in ["asc", "desc"]:
+        return JsonResponse(
+            {"error": "Sort must be 'asc' or 'desc'."},
+            status=400,
+        )
+
+    # Convert pagination parameters to integers
+    try:
+        page = int(page)
+        size = int(size)
+    except ValueError:
+        return JsonResponse(
+            {"error": "Pagination parameters must be integers."},
+            status=400,
+        )
+
+    # Validate pagination
+    if page < 1 or size < 1:
+        return JsonResponse(
+            {"error": "Page and size must be greater than 0."},
+            status=400,
+        )
+
+    if size > 100:
+        return JsonResponse(
+            {"error": "Page size cannot exceed 100."},
+            status=400,
+        )
+
+    # Calculate pagination positions
+    start = (page - 1) * size
+    end = start + size
+
+    # Choose sorting direction
+    if sort == "asc":
+        order_field = "id"
+    else:
+        order_field = "-id"
+
+    # Retrieve all users
+    users = User.objects.all()
+
+    # Search by username or email
+    if search:
+        users = users.filter(
+            Q(username__icontains=search) |
+            Q(email__icontains=search)
+        )
+
+    total_users = users.count()
+    total_pages = (total_users + size - 1) // size
+
+    # Sort and paginate users
+    users = users.order_by(order_field).values(
+        "id",
+        "username",
+        "email",
+        "is_active",
+        "is_staff",
+    )[start:end]
+
+    # Return JSON response
+    return JsonResponse(
+    {
+        "total": total_users,
+        "total_pages": total_pages,
+        "page": page,
+        "size": size,
+        "users": list(users),
+    },
+    status=200,
+)

@@ -10,4 +10,5 @@ urlpatterns = [
         views.admin_landing_page,
         name="admin-landing-page",
     ),
+    path("admin/users/", views.admin_users, name="admin-users"),
 ]
