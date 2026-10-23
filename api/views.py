@@ -1,5 +1,6 @@
 import json
 import logging
+from urllib import request
 
 from django.http import JsonResponse
 from django.core.validators import validate_email
@@ -8,9 +9,13 @@ from django.core.exceptions import ValidationError
 from django.db import IntegrityError, transaction
 from django.contrib.auth import login
 from core.models import User
+from django.db.models import Q
+
 
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth import authenticate
+
+from core.models import User, LandingPage
 
 
 @csrf_exempt
@@ -185,3 +190,206 @@ def test_api_response(req):
             return JsonResponse({
                 "error": "Method not allowed!"
             }, status=400)
+
+def admin_landing_page(request):
+    # Allow only GET and PATCH requests
+    if request.method not in ["GET", "PATCH"]:
+        response = JsonResponse(
+            {"error": "Method not allowed."},
+            status=405,
+        )
+        response["Allow"] = "GET, PATCH"
+        return response
+
+    # Protect this administrative endpoint
+    if not request.user.is_authenticated or not request.user.is_staff:
+        return JsonResponse(
+            {"error": "Admin access required."},
+            status=403,
+        )
+
+    # Find the landing-page record
+    landing_page = LandingPage.objects.first()
+
+    if landing_page is None:
+        return JsonResponse(
+            {"message": "Landing page information has not been configured."},
+            status=404,
+        )
+
+    # GET: Retrieve landing-page information
+    if request.method == "GET":
+        image = landing_page.hero_image
+
+        try:
+            image = image.url if image else ""
+        except ValueError:
+            image = ""
+
+        return JsonResponse({
+            "id": landing_page.id,
+            "main_heading": landing_page.main_heading,
+            "subheading_description": landing_page.subheading_description,
+            "hero_image": image,
+            "button_text": landing_page.button_text,
+            "button_link": landing_page.button_link,
+        }, status=200)
+
+    # PATCH: Read the incoming JSON
+    try:
+        data = json.loads(request.body.decode("utf-8"))
+    except (json.JSONDecodeError, UnicodeDecodeError):
+        return JsonResponse(
+            {"error": "Invalid JSON data."},
+            status=400,
+        )
+
+    if not isinstance(data, dict):
+        return JsonResponse(
+            {"error": "Expected a JSON object."},
+            status=400,
+        )
+
+    # Only allow these fields to be updated
+    allowed_fields = {
+        "main_heading",
+        "subheading_description",
+        "hero_image",
+        "button_text",
+        "button_link",
+    }
+
+    unknown_fields = set(data.keys()) - allowed_fields
+
+    if unknown_fields:
+        return JsonResponse(
+            {
+                "error": "Invalid fields provided.",
+                "fields": sorted(unknown_fields),
+            },
+            status=400,
+        )
+
+    # Validate and update only the fields provided
+    for field, value in data.items():
+        if not isinstance(value, str):
+            return JsonResponse(
+                {"error": f"{field} must be a string."},
+                status=400,
+            )
+
+        setattr(landing_page, field, value)
+
+    landing_page.save()
+
+    return JsonResponse(
+        {
+            "message": "Landing page updated successfully.",
+            "data": {
+                "id": landing_page.id,
+                "main_heading": landing_page.main_heading,
+                "subheading_description": landing_page.subheading_description,
+                "button_text": landing_page.button_text,
+                "button_link": landing_page.button_link,
+            },
+        },
+        status=200,
+    )
+
+def admin_users(request):
+
+    # Allow only GET requests
+    if request.method != "GET":
+        response = JsonResponse(
+            {"error": "Method not allowed."},
+            status=405,
+        )
+        response["Allow"] = "GET"
+        return response
+
+    # Check admin access
+    if not request.user.is_authenticated or not request.user.is_staff:
+        return JsonResponse(
+            {"error": "Admin access required."},
+            status=403,
+        )
+
+    # Read parameters
+    page = request.GET.get("page", "1")
+    size = request.GET.get("size", "10")
+    sort = request.GET.get("sort", "asc").lower()
+    search = request.GET.get("search", "").strip()
+
+    # Validate sorting
+    if sort not in ["asc", "desc"]:
+        return JsonResponse(
+            {"error": "Sort must be 'asc' or 'desc'."},
+            status=400,
+        )
+
+    # Convert pagination parameters to integers
+    try:
+        page = int(page)
+        size = int(size)
+    except ValueError:
+        return JsonResponse(
+            {"error": "Pagination parameters must be integers."},
+            status=400,
+        )
+
+    # Validate pagination
+    if page < 1 or size < 1:
+        return JsonResponse(
+            {"error": "Page and size must be greater than 0."},
+            status=400,
+        )
+
+    if size > 100:
+        return JsonResponse(
+            {"error": "Page size cannot exceed 100."},
+            status=400,
+        )
+
+    # Calculate pagination positions
+    start = (page - 1) * size
+    end = start + size
+
+    # Choose sorting direction
+    if sort == "asc":
+        order_field = "id"
+    else:
+        order_field = "-id"
+
+    # Retrieve all users
+    users = User.objects.all()
+
+    # Search by username or email
+    if search:
+        users = users.filter(
+            Q(username__icontains=search) |
+            Q(email__icontains=search)
+        )
+
+    total_users = users.count()
+    total_pages = (total_users + size - 1) // size
+
+    # Sort and paginate users
+    users = users.order_by(order_field).values(
+        "id",
+        "username",
+        "email",
+        "is_active",
+        "is_staff",
+    )[start:end]
+
+    # Return JSON response
+    return JsonResponse(
+    {
+        "total": total_users,
+        "total_pages": total_pages,
+        "page": page,
+        "size": size,
+        "users": list(users),
+    },
+    status=200,
+)
