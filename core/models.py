@@ -6,7 +6,7 @@ class User(AbstractUser):
     phone_number = models.CharField(max_length=15,blank=True,null=True)
     
     def __str__(self):
-        return self.user.username
+        return self.username
 
 
 class Meta:
@@ -58,6 +58,21 @@ class FoodItem(models.Model):
         null=True
     )
     available = models.BooleanField(default=True)
+    addons = models.ManyToManyField(
+        "FoodAddon",
+        blank=True,
+        related_name="food_items",
+    )
+
+    def __str__(self):
+        return self.name
+
+
+class FoodAddon(models.Model):
+    name = models.CharField(max_length=255)
+    price = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    available = models.BooleanField(default=True)
+
     def __str__(self):
         return self.name
 
@@ -138,6 +153,56 @@ class OrderItem(models.Model):
 
     def __str__(self):
         return f"{self.quantity}x {self.food_item.name}"
+
+class OrderItemAddon(models.Model):
+    order_item = models.ForeignKey(
+        OrderItem,
+        on_delete=models.CASCADE,
+        related_name="selected_addons",
+    )
+    name = models.CharField(max_length=255)
+    price = models.DecimalField(max_digits=10, decimal_places=2)
+
+class Favorite(models.Model):
+    customer = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="favorites",
+    )
+    food_item = models.ForeignKey(
+        FoodItem,
+        on_delete=models.CASCADE,
+        related_name="favorited_by",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["customer", "food_item"],
+                name="unique_customer_favorite",
+            ),
+        ]
+
+class ContactMessage(models.Model):
+    class Status(models.TextChoices):
+        UNREAD = "unread", "Unread"
+        READ = "read", "Read"
+        RESOLVED = "resolved", "Resolved"
+
+    name = models.CharField(max_length=255)
+    email = models.EmailField()
+    phone = models.CharField(max_length=20, blank=True)
+    message = models.TextField()
+    status = models.CharField(
+        max_length=20,
+        choices=Status.choices,
+        default=Status.UNREAD,
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Contact message from {self.name}"
 
 class Rating(models.Model):
     SCORE_CHOICES=[
