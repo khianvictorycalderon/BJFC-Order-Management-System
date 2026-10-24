@@ -545,4 +545,182 @@
     });
 </script>
 
+<script>
+    //  GET ALL MENU ITEMS
+    async function fetchMenuItems() {
+        try {
+            const response = await fetch("/api/admin/menu/items/", {
+                method: "GET"
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! Status: ${response.status}`);
+            }
+
+            const data = await response.json();
+            console.log("Menu Items:", data);
+
+        } catch (error) {
+            console.error("Error fetching menu items:", error);
+        }
+    }
+
+
+    //  UPDATE MENU ITEM (PATCH)
+    async function updateMenuItem(id, itemData) {
+        try {
+            const response = await fetch(`/api/admin/menu/items/${id}/`, {
+                method: "PATCH",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(itemData)
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! Status: ${response.status}`);
+            }
+
+            const data = await response.json();
+            console.log("Menu item updated:", data);
+
+        } catch (error) {
+            console.error("Error updating menu item:", error);
+        }
+    }
+
+
+    //  DELETE MENU ITEM
+    async function deleteMenuItem(id) {
+        try {
+            const response = await fetch(`/api/admin/menu/items/${id}/`, {
+                method: "DELETE"
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! Status: ${response.status}`);
+            }
+
+            console.log("Menu item deleted successfully.");
+
+        } catch (error) {
+            console.error("Error deleting menu item:", error);
+        }
+    }
+
+
+    //  GET PENDING ORDER 
+    async function fetchOrderInfo() {
+        try {
+            const response = await fetch("/api/admin/orders/info/", {
+                method: "GET"
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! Status: ${response.status}`);
+            }
+
+            const data = await response.json();
+            console.log("Order Information:", data);
+
+        } catch (error) {
+            console.error("Error fetching order information:", error);
+        }
+    }
+
+
+    //  GET ALL ORDERS
+    async function fetchOrders(filter = "") {
+        try {
+            const url = filter
+                ? `/api/admin/orders/?filter=${encodeURIComponent(filter)}`
+                : "/api/admin/orders/";
+
+            const response = await fetch(url, {
+                method: "GET"
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! Status: ${response.status}`);
+            }
+
+            const data = await response.json();
+            console.log("Orders:", data);
+
+        } catch (error) {
+            console.error("Error fetching orders:", error);
+        }
+    }
+
+
+    //  UPDATE ORDER STATE (PATCH)
+    async function updateOrderStatus(id, orderData) {
+        try {
+            const response = await fetch(`/api/admin/orders/${id}/`, {
+                method: "PATCH",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(orderData)
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! Status: ${response.status}`);
+            }
+
+            const data = await response.json();
+            console.log("Order status updated:", data);
+
+        } catch (error) {
+            console.error("Error updating order status:", error);
+        }
+    }
+
+
+    //  GET ALL FEEDBACKS
+    async function fetchFeedbacks() {
+        try {
+            const response = await fetch("/api/admin/feedbacks/", {
+                method: "GET"
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! Status: ${response.status}`);
+            }
+
+            const data = await response.json();
+            console.log("Feedbacks:", data);
+
+        } catch (error) {
+            console.error("Error fetching feedbacks:", error);
+        }
+    }
+
+
+    //  GET FEEDBACK INFORMATION
+    async function fetchFeedbackInfo() {
+        try {
+            const response = await fetch("/api/admin/feedbacks/info/", {
+                method: "GET"
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! Status: ${response.status}`);
+            }
+
+            const data = await response.json();
+            console.log("Feedback Information:", data);
+
+        } catch (error) {
+            console.error("Error fetching feedback information:", error);
+        }
+    }
+
+
+    // LOAD MENU ITEMS WHEN THE PAGE OPENS
+    document.addEventListener("DOMContentLoaded", function () {
+        fetchMenuItems();
+    });
+</script>
+
 {% endblock %}
