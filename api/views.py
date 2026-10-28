@@ -1118,6 +1118,7 @@ def _page_api(request, slug):
     return JsonResponse(_serialize_page(page))
 
 
+
 @_admin_api("GET", "PATCH")
 def menu_page(request):
     return _page_api(request, "menu")
@@ -1136,18 +1137,23 @@ def contact_page(request):
 @_admin_api("GET", "PATCH")
 def page_content(request, slug):
     if slug not in PAGE_DEFAULTS:
-        return JsonResponse({"error": "Page not found."}, status=404)
+        return JsonResponse(
+            {"error": "Page not found."},
+            status=404,
+        )
+
     return _page_api(request, slug)
-
-
-
-
-ALLOWED = ["main_heading", "subheading_description", "hero_image", "button_text", "button_link"]
 
 
 @_admin_api("GET", "PATCH")
 @csrf_exempt
 def admin_landing_page(request):
+    if request.method not in ["GET", "PATCH"]:
+        return JsonResponse(
+            {"error": "Method not allowed."},
+            status=405
+        )
+
     page = LandingPage.objects.order_by("pk").first()
     if page is None:
         page = LandingPage.objects.create(**LANDING_DEFAULTS)
