@@ -970,6 +970,49 @@ def _change_password(request, admin=False):
 def admin_password(request):
     return _change_password(request, admin=True)
 
+@_admin_api("PATCH")
+@csrf_exempt
+def admin_password(request):
+    data, error = _json_body(request)
+    if error:
+        return error
+
+    unknown = set(data) - {"old_password", "new_password"}
+    if unknown:
+        return JsonResponse(
+            {"error": "Unknown fields.", "fields": sorted(unknown)}, status=400
+        )
+
+    old_password = data.get("old_password")
+    new_password = data.get("new_password")
+    if (
+        not isinstance(old_password, str)
+        or not isinstance(new_password, str)
+        or not old_password
+        or not new_password
+    ):
+        return JsonResponse(
+            {"error": "old_password and new_password are required."}, status=400
+        )
+
+    user = request.user
+    if not user.check_password(old_password):
+        return JsonResponse({"error": "Old password is incorrect."}, status=400)
+    if old_password == new_password:
+        return JsonResponse(
+            {"error": "New password must be different from the old one."}, status=400
+        )
+
+    try:
+        validate_password(new_password, user)
+    except ValidationError as exc:
+        return JsonResponse({"errors": list(exc.messages)}, status=400)
+
+    user.set_password(new_password)
+    user.save(update_fields=["password"])
+    update_session_auth_hash(request, user)  # keeps the admin logged in
+    return JsonResponse({"message": "Password updated."})
+
 
 @csrf_protect
 @require_http_methods(["PATCH"])
