@@ -828,13 +828,39 @@ def customer_update_order(request, user_id):
 # Admin: users
 # --------------------------------------------------------------------------- #
 
+def _user_row(user):
+    """Safe user fields only. Never include the password."""
+    joined = getattr(user, "date_joined", None)
+    return {
+        "id": user.pk,
+        "username": user.username,
+        "email": user.email,
+        "first_name": getattr(user, "first_name", ""),
+        "last_name": getattr(user, "last_name", ""),
+        "is_staff": user.is_staff,
+        "date_joined": joined.isoformat() if joined else None,
+    }
+
+
 @_admin_api("GET")
 def admin_users(request):
     """GET /api/admin/users?size=10&page=2&sort=asc|desc[&search=...]"""
-    params, error = _list_params(request)
-    if error:
-        return error
-    page_number, size, direction = params
+    # --- read and validate query params ---
+    try:
+        size = int(request.GET.get("size", 10))
+        page_number = int(request.GET.get("page", 1))
+    except ValueError:
+        return JsonResponse({"error": "size and page must be numbers."}, status=400)
+
+    if size < 1 or page_number < 1:
+        return JsonResponse({"error": "size and page must be 1 or greater."}, status=400)
+    size = min(size, 100)  # cap so nobody requests 1,000,000 rows
+
+    sort = (request.GET.get("sort") or "asc").lower()
+    if sort not in ("asc", "desc"):
+        return JsonResponse({"error": "sort must be 'asc' or 'desc'."}, status=400)
+
+    # --- query ---
     queryset = User.objects.all()
     search = (request.GET.get("search") or "").strip()
     if search:
@@ -844,14 +870,27 @@ def admin_users(request):
             | Q(first_name__icontains=search)
             | Q(last_name__icontains=search)
         )
-    queryset = queryset.order_by(*_ordering(direction, "pk"))
-    result = _page_response(queryset, page_number, size, "users", _serialize_user)
-    result["total"] = result["pagination"]["total_items"]
-    result["total_pages"] = result["pagination"]["total_pages"]
-    result["page"] = page_number
-    result["size"] = size
-    return JsonResponse(result)
+    queryset = queryset.order_by("-pk" if sort == "desc" else "pk")
 
+    # --- paginate ---
+    paginator = Paginator(queryset, size)
+    page = paginator.get_page(page_number)
+
+    return JsonResponse({
+        "users": [_user_row(u) for u in page.object_list],
+        "pagination": {
+            "page": page.number,
+            "size": size,
+            "total_items": paginator.count,
+            "total_pages": paginator.num_pages,
+            "has_next": page.has_next(),
+            "has_previous": page.has_previous(),
+        },
+        "total": paginator.count,
+        "total_pages": paginator.num_pages,
+        "page": page.number,
+        "size": size,
+    })
 
 # --------------------------------------------------------------------------- #
 # Profiles and passwords
@@ -1055,6 +1094,11 @@ def page_content(request, slug):
     if slug not in PAGE_DEFAULTS:
         return JsonResponse({"error": "Page not found."}, status=404)
     return _page_api(request, slug)
+
+
+
+
+ALLOWED = ["main_heading", "subheading_description", "hero_image", "button_text", "button_link"]
 
 
 @_admin_api("GET", "PATCH")
