@@ -8,7 +8,7 @@
 
 {% block body %}
 {# Field names match the login API (/api/login/): username, password. #}
-<form method="post" action="" data-endpoint="{% url 'login api endpoint' %}" class="mt-10 flex w-full max-w-[400px] flex-col items-center sm:mt-[47px]">
+<form method="post" action="" data-endpoint="{% url 'login_api' %}" class="mt-10 flex w-full max-w-[400px] flex-col items-center sm:mt-[47px]">
     {% csrf_token %}
 
     {% with 'block h-9 w-full rounded-xl border border-black bg-[#f8c8c8] pl-[41px] pr-3 text-[11px] font-medium text-black shadow-[0_3px_4px_rgba(0,0,0,0.3)] outline-none transition duration-300 placeholder:text-black focus:ring-2 focus:ring-red-500/60' as field %}
