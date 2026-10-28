@@ -1,7 +1,7 @@
 import json
 from datetime import timedelta
-from functools import wraps
 from decimal import Decimal, InvalidOperation
+from functools import wraps
 
 from django.contrib.auth import authenticate, login, logout, update_session_auth_hash
 from django.contrib.auth.password_validation import validate_password
@@ -14,6 +14,7 @@ from django.http import JsonResponse
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt, csrf_protect
 from django.views.decorators.http import require_http_methods
+
 
 from core.models import (
     ContactMessage,
@@ -31,13 +32,19 @@ from core.models import (
 )
 from .forms import ContactMessageForm, FoodItemForm, form_errors, parse_payload
 
+# --------------------------------------------------------------------------- #
+# Constants
+# --------------------------------------------------------------------------- #
+
 DEFAULT_PAGE_SIZE = 10
 MAX_PAGE_SIZE = 100
+
 PENDING_STATUSES = (
     Order.Status.PENDING,
     Order.Status.CONFIRMED,
     Order.Status.PREPARING,
 )
+
 PAGE_DEFAULTS = {
     "menu": {
         "title": "SIGNATURE FRIED CHICKEN",
@@ -52,6 +59,19 @@ PAGE_DEFAULTS = {
         "description": "Get in touch with the BJFC team.",
     },
 }
+
+LANDING_FIELDS = (
+    "main_heading",
+    "subheading_description",
+    "hero_image",
+    "button_text",
+    "button_link",
+)
+LANDING_DEFAULTS = {
+    "main_heading": "Welcome to BJFC",
+    "subheading_description": "Fresh, crispy favorites made for you.",
+}
+
 MENU_SORT_FIELDS = {
     "id": "id",
     "name": "name",
@@ -59,6 +79,10 @@ MENU_SORT_FIELDS = {
     "category": "category__name",
 }
 
+
+# --------------------------------------------------------------------------- #
+# Generic helpers
+# --------------------------------------------------------------------------- #
 
 def _json_body(request):
     try:
@@ -71,6 +95,8 @@ def _json_body(request):
 
 
 def _admin_api(*methods):
+    """Allow only the given HTTP methods and only authenticated staff users."""
+
     def decorator(view):
         @wraps(view)
         def wrapped(request, *args, **kwargs):
@@ -100,18 +126,41 @@ def _require_customer(request, user_id=None):
 
 
 def _pagination(request):
+    error = JsonResponse(
+        {"error": "'page' and 'size' must be positive integers."}, status=400
+    )
     try:
         page = int(request.GET.get("page", "1"))
         size = int(request.GET.get("size", str(DEFAULT_PAGE_SIZE)))
     except (TypeError, ValueError):
-        return None, JsonResponse(
-            {"error": "'page' and 'size' must be positive integers."}, status=400
-        )
+        return None, error
     if page < 1 or size < 1:
-        return None, JsonResponse(
-            {"error": "'page' and 'size' must be positive integers."}, status=400
-        )
+        return None, error
     return (page, min(size, MAX_PAGE_SIZE)), None
+
+
+def _item_sort(request):
+    direction = request.GET.get("sort", "asc").lower()
+    if direction not in ("asc", "desc"):
+        return None, JsonResponse({"error": "'sort' must be 'asc' or 'desc'."}, status=400)
+    return direction, None
+
+
+def _list_params(request):
+    """Validate ?page=&size=&sort= and return ((page, size, direction), error)."""
+    pagination, error = _pagination(request)
+    if error:
+        return None, error
+    direction, error = _item_sort(request)
+    if error:
+        return None, error
+    page_number, size = pagination
+    return (page_number, size, direction), None
+
+
+def _ordering(direction, *fields):
+    prefix = "-" if direction == "desc" else ""
+    return [f"{prefix}{field}" for field in fields]
 
 
 def _page_response(queryset, page_number, size, key, serializer):
@@ -137,6 +186,10 @@ def _page_response(queryset, page_number, size, key, serializer):
         },
     }
 
+
+# --------------------------------------------------------------------------- #
+# Serializers
+# --------------------------------------------------------------------------- #
 
 def _serialize_addon(addon):
     return {
@@ -168,26 +221,36 @@ def _serialize_food_item(item):
     }
 
 
+def _orders_with_relations(queryset=None):
+    """Orders with everything `_serialize_order` needs, fetched up front."""
+    if queryset is None:
+        queryset = Order.objects.all()
+    return queryset.select_related("customer").prefetch_related(
+        "items__food_item", "items__selected_addons"
+    )
+
+
 def _serialize_order(order):
+    customer_name = order.customer.get_full_name() or order.customer.username
+    estimated = order.estimated_time.isoformat() if order.estimated_time else None
     return {
         "id": order.pk,
         "order_number": f"BJFC-{order.pk:06d}",
         "customer": {
             "id": order.customer_id,
-            "name": order.customer.get_full_name() or order.customer.username,
+            "name": customer_name,
             "username": order.customer.username,
             "email": order.customer.email,
             "phone": order.customer.phone_number,
         },
-        "customer_name": order.customer.get_full_name() or order.customer.username,
+        "customer_name": customer_name,
         "status": order.status,
         "status_display": order.get_status_display(),
         "created_at": order.created_at.isoformat(),
-        "estimated_time": (
-            order.estimated_time.isoformat() if order.estimated_time else None
-        ),
-        "eta": order.estimated_time.isoformat() if order.estimated_time else None,
+        "estimated_time": estimated,
+        "eta": estimated,
         "total_amount": str(order.total_amount),
+        # Uses the prefetched data; do not add select_related/prefetch_related here.
         "items": [
             {
                 "food_item_id": item.food_item_id,
@@ -199,10 +262,31 @@ def _serialize_order(order):
                     for addon in item.selected_addons.all()
                 ],
             }
-            for item in order.items.select_related("food_item").prefetch_related(
-                "selected_addons"
-            )
+            for item in order.items.all()
         ],
+    }
+
+
+def _serialize_feedback(rating):
+    customer_name = rating.customer.get_full_name() or rating.customer.username
+    date = rating.date.isoformat()
+    return {
+        "id": rating.pk,
+        "customer": {
+            "id": rating.customer_id,
+            "name": customer_name,
+            "email": rating.customer.email,
+            "phone": rating.customer.phone_number,
+        },
+        "customer_name": customer_name,
+        "email": rating.customer.email,
+        "phone": rating.customer.phone_number,
+        "rating": rating.score,
+        "score": rating.score,
+        "review": rating.review,
+        "message": rating.review,
+        "date": date,
+        "created_at": date,
     }
 
 
@@ -232,14 +316,21 @@ def _serialize_user(user):
     }
 
 
-def _item_sort(request):
-    direction = request.GET.get("sort", "asc").lower()
-    if direction not in ("asc", "desc"):
-        return None, JsonResponse(
-            {"error": "'sort' must be 'asc' or 'desc'."}, status=400
-        )
-    return direction, None
+def _serialize_landing_page(page):
+    return {"id": page.pk, **{field: getattr(page, field) for field in LANDING_FIELDS}}
 
+
+def _serialize_page(page):
+    return {"title": page.title, "description": page.description}
+
+
+def _serialize_store(store):
+    return {"storename": store.storename, "contact": store.contact, "address": store.address}
+
+
+# --------------------------------------------------------------------------- #
+# Health check, authentication
+# --------------------------------------------------------------------------- #
 
 @require_http_methods(["GET"])
 def test_api_response(request):
@@ -255,18 +346,14 @@ def login_api(request):
     username = data.get("username")
     password = data.get("password")
     if not isinstance(username, str) or not isinstance(password, str) or not username or not password:
-        return JsonResponse(
-            {"error": "Username and password are required."}, status=400
-        )
+        return JsonResponse({"error": "Username and password are required."}, status=400)
     user = authenticate(request=request, username=username, password=password)
     if user is None:
         return JsonResponse({"error": "Invalid username or password."}, status=401)
     if not user.is_active:
         return JsonResponse({"error": "Account is inactive."}, status=403)
     login(request, user)
-    return JsonResponse(
-        {"message": "Login successful.", "user": _serialize_user(user)}, status=200
-    )
+    return JsonResponse({"message": "Login successful.", "user": _serialize_user(user)}, status=200)
 
 
 @csrf_protect
@@ -277,10 +364,12 @@ def register(request):
         return error
     required = ("username", "last_name", "first_name", "email", "password", "confirm_password")
     if any(not isinstance(data.get(field), str) for field in required):
-        return JsonResponse(
-            {"error": "All fields are required and must be strings."}, status=400
-        )
-    values = {field: data[field].strip() for field in required if field not in ("password", "confirm_password")}
+        return JsonResponse({"error": "All fields are required and must be strings."}, status=400)
+    values = {
+        field: data[field].strip()
+        for field in required
+        if field not in ("password", "confirm_password")
+    }
     password = data["password"]
     confirm_password = data["confirm_password"]
     if not all(values.values()) or not password or not confirm_password:
@@ -291,14 +380,14 @@ def register(request):
         return JsonResponse({"error": "Invalid email address."}, status=400)
     if password != confirm_password:
         return JsonResponse({"error": "Passwords do not match."}, status=400)
-    user = User(
+    candidate = User(
         username=values["username"],
         email=values["email"].lower(),
         first_name=values["first_name"],
         last_name=values["last_name"],
     )
     try:
-        validate_password(password, user=user)
+        validate_password(password, user=candidate)
     except ValidationError as exc:
         return JsonResponse({"errors": exc.messages}, status=400)
     if User.objects.filter(email__iexact=values["email"]).exists():
@@ -316,30 +405,35 @@ def register(request):
     return JsonResponse({"message": "Account created.", "user": _serialize_user(user)}, status=201)
 
 
+# --------------------------------------------------------------------------- #
+# Admin: orders
+# --------------------------------------------------------------------------- #
+
+def _filter_orders_by_status(queryset, raw_filter):
+    status_filter = (raw_filter or "").lower()
+    if not status_filter:
+        return queryset, None
+    if status_filter == "pending":
+        return queryset.filter(status__in=PENDING_STATUSES), None
+    if status_filter == "completed":
+        return queryset.filter(status=Order.Status.COMPLETED), None
+    if status_filter.upper() in Order.Status.values:
+        return queryset.filter(status=status_filter.upper()), None
+    return None, JsonResponse({"error": "Invalid status filter."}, status=400)
+
+
 @_admin_api("GET")
 def admin_orders(request):
-    queryset = Order.objects.select_related("customer").prefetch_related(
-        "items__food_item", "items__selected_addons"
+    queryset, error = _filter_orders_by_status(
+        _orders_with_relations(), request.GET.get("filter")
     )
-    status_filter = request.GET.get("filter", "").lower()
-    if status_filter:
-        if status_filter == "pending":
-            queryset = queryset.filter(status__in=PENDING_STATUSES)
-        elif status_filter == "completed":
-            queryset = queryset.filter(status=Order.Status.COMPLETED)
-        elif status_filter.upper() in Order.Status.values:
-            queryset = queryset.filter(status=status_filter.upper())
-        else:
-            return JsonResponse({"error": "Invalid status filter."}, status=400)
-    pagination, error = _pagination(request)
     if error:
         return error
-    direction, error = _item_sort(request)
+    params, error = _list_params(request)
     if error:
         return error
-    page_number, size = pagination
-    prefix = "-" if direction == "desc" else ""
-    queryset = queryset.order_by(f"{prefix}created_at", f"{prefix}pk")
+    page_number, size, direction = params
+    queryset = queryset.order_by(*_ordering(direction, "created_at", "pk"))
     result = _page_response(queryset, page_number, size, "orders", _serialize_order)
     result.update(result["pagination"])
     return JsonResponse(result)
@@ -358,7 +452,7 @@ def _set_order_status(request, order_id):
     if status not in Order.Status.values:
         return JsonResponse({"error": "Invalid order status."}, status=400)
     try:
-        order = Order.objects.select_related("customer").get(pk=order_id)
+        order = _orders_with_relations().get(pk=order_id)
     except Order.DoesNotExist:
         return JsonResponse({"error": "Order not found."}, status=404)
     order.status = status
@@ -382,6 +476,10 @@ def orders_info(request):
     return JsonResponse({"pending_orders": pending, "completed_today": completed_today})
 
 
+# --------------------------------------------------------------------------- #
+# Admin: feedbacks
+# --------------------------------------------------------------------------- #
+
 @_admin_api("GET")
 def admin_feedbacks(request):
     queryset = Rating.objects.select_related("customer")
@@ -394,40 +492,12 @@ def admin_feedbacks(request):
         if score not in range(1, 6):
             return JsonResponse({"error": "'rating' must be between 1 and 5."}, status=400)
         queryset = queryset.filter(score=score)
-    pagination, error = _pagination(request)
+    params, error = _list_params(request)
     if error:
         return error
-    direction, error = _item_sort(request)
-    if error:
-        return error
-    page_number, size = pagination
-    queryset = queryset.order_by(
-        f"{'-' if direction == 'desc' else ''}date",
-        f"{'-' if direction == 'desc' else ''}pk",
-    )
-
-    def serialize(rating):
-        return {
-            "id": rating.pk,
-            "customer": {
-                "id": rating.customer_id,
-                "name": rating.customer.get_full_name() or rating.customer.username,
-                "email": rating.customer.email,
-                "phone": rating.customer.phone_number,
-            },
-            "customer_name": rating.customer.get_full_name() or rating.customer.username,
-            "email": rating.customer.email,
-            "phone": rating.customer.phone_number,
-            "rating": rating.score,
-            "score": rating.score,
-            "review": rating.review,
-            "message": rating.review,
-            "date": rating.date.isoformat(),
-            "created_at": rating.date.isoformat(),
-        }
-
-    result = _page_response(queryset, page_number, size, "feedbacks", serialize)
-    return JsonResponse(result)
+    page_number, size, direction = params
+    queryset = queryset.order_by(*_ordering(direction, "date", "pk"))
+    return JsonResponse(_page_response(queryset, page_number, size, "feedbacks", _serialize_feedback))
 
 
 @_admin_api("GET")
@@ -447,6 +517,10 @@ def feedbacks_info(request):
         }
     )
 
+
+# --------------------------------------------------------------------------- #
+# Menu items (admin + customer)
+# --------------------------------------------------------------------------- #
 
 def _menu_queryset(request, customer=False):
     queryset = FoodItem.objects.select_related("category").prefetch_related("addons")
@@ -469,42 +543,33 @@ def _menu_queryset(request, customer=False):
 
 
 def _list_menu_items(request, customer=False):
-    pagination, error = _pagination(request)
+    params, error = _list_params(request)
     if error:
         return error
-    direction, error = _item_sort(request)
-    if error:
-        return error
+    page_number, size, direction = params
+
     sort_by = request.GET.get("sort_by", "id").lower()
     if sort_by not in MENU_SORT_FIELDS:
         return JsonResponse(
             {"error": f"'sort_by' must be one of: {', '.join(MENU_SORT_FIELDS)}."},
             status=400,
         )
+
+    queryset = _menu_queryset(request, customer=customer)
     if not customer and request.GET.get("available") is not None:
         raw = request.GET["available"].lower()
         if raw not in ("true", "false"):
             return JsonResponse({"error": "'available' must be 'true' or 'false'."}, status=400)
-        queryset = _menu_queryset(request).filter(available=raw == "true")
-    else:
-        queryset = _menu_queryset(request, customer=customer)
-    prefix = "-" if direction == "desc" else ""
-    queryset = queryset.order_by(
-        f"{prefix}{MENU_SORT_FIELDS[sort_by]}",
-        f"{prefix}pk",
-    )
-    page_number, size = pagination
+        queryset = queryset.filter(available=raw == "true")
+
+    queryset = queryset.order_by(*_ordering(direction, MENU_SORT_FIELDS[sort_by], "pk"))
     result = _page_response(queryset, page_number, size, "items", _serialize_food_item)
     result["sort"] = direction
     result["sort_by"] = sort_by
     return JsonResponse(result)
 
 
-def _save_menu_item(request, item=None):
-    try:
-        data, files = parse_payload(request)
-    except ValueError as exc:
-        return JsonResponse({"error": str(exc)}, status=400)
+def _parse_addon_input(data):
     addon_input = data.get("addons", data.get("addon_ids", []))
     if isinstance(addon_input, str):
         try:
@@ -512,46 +577,73 @@ def _save_menu_item(request, item=None):
         except json.JSONDecodeError:
             addon_input = [part.strip() for part in addon_input.split(",") if part.strip()]
     if not isinstance(addon_input, list):
-        return JsonResponse({"error": "'addons' must be a list."}, status=400)
+        return None, JsonResponse({"error": "'addons' must be a list."}, status=400)
+    return addon_input, None
 
-    form_data = data.copy()
-    if item is not None:
-        for field in ("name", "description", "category", "price", "available"):
-            if field not in form_data:
-                value = getattr(item, f"{field}_id") if field == "category" else getattr(item, field)
-                form_data[field] = value
-    elif "available" not in form_data:
-        form_data["available"] = True
-    form = FoodItemForm(form_data, files, instance=item)
-    if not form.is_valid():
-        return JsonResponse(
-            {"error": "Validation failed.", "errors": form_errors(form)}, status=400
-        )
-    prepared_addons = []
+
+def _prepare_addons(addon_input):
+    """Return ([("new" | "existing", addon), ...], error)."""
+    prepared = []
     for value in addon_input:
         if isinstance(value, dict):
             name = value.get("name")
             raw_price = value.get("price", "0")
             if not isinstance(name, str) or not name.strip():
-                return JsonResponse({"error": "Each add-on needs a name."}, status=400)
+                return None, JsonResponse({"error": "Each add-on needs a name."}, status=400)
             try:
                 price = Decimal(str(raw_price))
             except (InvalidOperation, TypeError, ValueError):
-                return JsonResponse({"error": "Add-on prices must be valid numbers."}, status=400)
+                return None, JsonResponse({"error": "Add-on prices must be valid numbers."}, status=400)
             if not price.is_finite() or price < 0:
-                return JsonResponse({"error": "Add-on prices must be finite and non-negative."}, status=400)
+                return None, JsonResponse(
+                    {"error": "Add-on prices must be finite and non-negative."}, status=400
+                )
             addon = FoodAddon(name=name.strip(), price=price)
             try:
                 addon.full_clean()
             except ValidationError as exc:
-                return JsonResponse({"errors": exc.message_dict}, status=400)
-            prepared_addons.append(("new", addon))
+                return None, JsonResponse({"errors": exc.message_dict}, status=400)
+            prepared.append(("new", addon))
         else:
             try:
                 addon = FoodAddon.objects.get(pk=int(value), available=True)
             except (TypeError, ValueError, FoodAddon.DoesNotExist):
-                return JsonResponse({"error": "Invalid add-on ID."}, status=400)
-            prepared_addons.append(("existing", addon))
+                return None, JsonResponse({"error": "Invalid add-on ID."}, status=400)
+            prepared.append(("existing", addon))
+    return prepared, None
+
+
+def _save_menu_item(request, item=None):
+    try:
+        data, files = parse_payload(request)
+    except ValueError as exc:
+        return JsonResponse({"error": str(exc)}, status=400)
+
+    addon_input, error = _parse_addon_input(data)
+    if error:
+        return error
+
+    form_data = data.copy()
+    if item is not None:
+        # PATCH: fall back to the current values for any field not sent.
+        for field in ("name", "description", "category", "price", "available"):
+            if field not in form_data:
+                form_data[field] = (
+                    item.category_id if field == "category" else getattr(item, field)
+                )
+    elif "available" not in form_data:
+        form_data["available"] = True
+
+    form = FoodItemForm(form_data, files, instance=item)
+    if not form.is_valid():
+        return JsonResponse(
+            {"error": "Validation failed.", "errors": form_errors(form)}, status=400
+        )
+
+    prepared_addons, error = _prepare_addons(addon_input)
+    if error:
+        return error
+
     try:
         with transaction.atomic():
             saved_item = form.save()
@@ -594,6 +686,10 @@ def customer_menu_items(request):
     return _list_menu_items(request, customer=True)
 
 
+# --------------------------------------------------------------------------- #
+# Customer: orders
+# --------------------------------------------------------------------------- #
+
 def _order_lines(requested_items):
     if not isinstance(requested_items, list) or not requested_items:
         return None, JsonResponse({"error": "'items' must be a non-empty list."}, status=400)
@@ -606,7 +702,9 @@ def _order_lines(requested_items):
         quantity = requested.get("quantity")
         try:
             quantity = int(quantity)
-            food_item = FoodItem.objects.prefetch_related("addons").get(pk=int(item_id), available=True)
+            food_item = FoodItem.objects.prefetch_related("addons").get(
+                pk=int(item_id), available=True
+            )
         except (TypeError, ValueError, FoodItem.DoesNotExist):
             return None, JsonResponse({"error": "Invalid or unavailable menu item."}, status=400)
         if quantity < 1 or quantity > 99:
@@ -625,7 +723,8 @@ def _order_lines(requested_items):
                 return None, JsonResponse({"error": "Invalid add-on for menu item."}, status=400)
             selected.append(addon)
         lines.append((food_item, quantity, selected))
-        total += (food_item.price + sum((addon.price for addon in selected), Decimal("0.00"))) * quantity
+        addons_total = sum((addon.price for addon in selected), Decimal("0.00"))
+        total += (food_item.price + addons_total) * quantity
     return (lines, total), None
 
 
@@ -651,28 +750,16 @@ def customer_orders(request, user_id=None):
     error = _require_customer(request, user_id)
     if error:
         return error
-    pagination, error = _pagination(request)
+    params, error = _list_params(request)
     if error:
         return error
-    direction, error = _item_sort(request)
-    if error:
-        return error
-    queryset = request.user.orders.select_related("customer").prefetch_related(
-        "items__food_item", "items__selected_addons"
+    page_number, size, direction = params
+    queryset, error = _filter_orders_by_status(
+        _orders_with_relations(request.user.orders.all()), request.GET.get("filter")
     )
-    status_filter = request.GET.get("filter", "").lower()
-    if status_filter:
-        if status_filter == "pending":
-            queryset = queryset.filter(status__in=PENDING_STATUSES)
-        elif status_filter == "completed":
-            queryset = queryset.filter(status=Order.Status.COMPLETED)
-        elif status_filter.upper() in Order.Status.values:
-            queryset = queryset.filter(status=status_filter.upper())
-        else:
-            return JsonResponse({"error": "Invalid status filter."}, status=400)
-    page_number, size = pagination
-    prefix = "-" if direction == "desc" else ""
-    queryset = queryset.order_by(f"{prefix}created_at", f"{prefix}pk")
+    if error:
+        return error
+    queryset = queryset.order_by(*_ordering(direction, "created_at", "pk"))
     return JsonResponse(_page_response(queryset, page_number, size, "orders", _serialize_order))
 
 
@@ -697,9 +784,7 @@ def customer_create_order(request):
             estimated_time=timezone.now() + timedelta(minutes=30),
         )
         _write_order_items(order, lines)
-    order = Order.objects.select_related("customer").prefetch_related(
-        "items__food_item", "items__selected_addons"
-    ).get(pk=order.pk)
+    order = _orders_with_relations().get(pk=order.pk)
     return JsonResponse(
         {
             "order_number": f"BJFC-{order.pk:06d}",
@@ -735,20 +820,21 @@ def customer_update_order(request, user_id):
         order.total_amount = total
         order.save(update_fields=["total_amount"])
         _write_order_items(order, lines)
-    order = Order.objects.select_related("customer").prefetch_related(
-        "items__food_item", "items__selected_addons"
-    ).get(pk=order.pk)
+    order = _orders_with_relations().get(pk=order.pk)
     return JsonResponse({"order": _serialize_order(order)})
 
 
+# --------------------------------------------------------------------------- #
+# Admin: users
+# --------------------------------------------------------------------------- #
+
 @_admin_api("GET")
 def admin_users(request):
-    pagination, error = _pagination(request)
+    """GET /api/admin/users?size=10&page=2&sort=asc|desc[&search=...]"""
+    params, error = _list_params(request)
     if error:
         return error
-    direction, error = _item_sort(request)
-    if error:
-        return error
+    page_number, size, direction = params
     queryset = User.objects.all()
     search = (request.GET.get("search") or "").strip()
     if search:
@@ -758,9 +844,7 @@ def admin_users(request):
             | Q(first_name__icontains=search)
             | Q(last_name__icontains=search)
         )
-    page_number, size = pagination
-    prefix = "-" if direction == "desc" else ""
-    queryset = queryset.order_by(f"{prefix}pk")
+    queryset = queryset.order_by(*_ordering(direction, "pk"))
     result = _page_response(queryset, page_number, size, "users", _serialize_user)
     result["total"] = result["pagination"]["total_items"]
     result["total_pages"] = result["pagination"]["total_pages"]
@@ -768,6 +852,10 @@ def admin_users(request):
     result["size"] = size
     return JsonResponse(result)
 
+
+# --------------------------------------------------------------------------- #
+# Profiles and passwords
+# --------------------------------------------------------------------------- #
 
 @_admin_api("GET", "PATCH")
 def admin_profile(request):
@@ -804,8 +892,7 @@ def admin_profile(request):
             return JsonResponse({"error": "Email already registered."}, status=409)
     if "username" in data and User.objects.filter(username=user.username).exclude(pk=user.pk).exists():
         return JsonResponse({"error": "Username already taken."}, status=409)
-    fields = sorted(set(data) - {"display_name"})
-    user.save(update_fields=fields)
+    user.save(update_fields=sorted(data))
     return JsonResponse(_serialize_user(user))
 
 
@@ -820,7 +907,12 @@ def _change_password(request, admin=False):
         return error
     old_password = data.get("old_password")
     new_password = data.get("new_password")
-    if not isinstance(old_password, str) or not isinstance(new_password, str) or not old_password or not new_password:
+    if (
+        not isinstance(old_password, str)
+        or not isinstance(new_password, str)
+        or not old_password
+        or not new_password
+    ):
         return JsonResponse({"error": "Old and new passwords are required."}, status=400)
     if not user.check_password(old_password):
         return JsonResponse({"error": "Current password is incorrect."}, status=400)
@@ -855,8 +947,10 @@ def customer_profile(request, user_id=None):
     if error:
         return error
     user = request.user
+
     if request.method == "GET":
         return JsonResponse(_serialize_user(user))
+
     if request.method == "PATCH":
         data, error = _json_body(request)
         if error:
@@ -883,6 +977,7 @@ def customer_profile(request, user_id=None):
             return JsonResponse({"error": "Email already registered."}, status=409)
         user.save(update_fields=sorted(data))
         return JsonResponse({"message": "Profile updated.", "user": _serialize_user(user)})
+
     if request.method == "DELETE":
         data, error = _json_body(request)
         if error:
@@ -897,10 +992,15 @@ def customer_profile(request, user_id=None):
         user.delete()
         logout(request)
         return JsonResponse({"message": "Account deleted successfully."})
+
     response = JsonResponse({"error": "Method not allowed."}, status=405)
     response["Allow"] = "GET, PATCH, DELETE"
     return response
 
+
+# --------------------------------------------------------------------------- #
+# Admin: editable pages (menu / about / contact via PageInfo, landing via LandingPage)
+# --------------------------------------------------------------------------- #
 
 def _get_page(slug):
     defaults = PAGE_DEFAULTS[slug]
@@ -912,14 +1012,14 @@ def _get_page(slug):
 
 
 def _page_api(request, slug):
+    """Shared GET/PATCH logic for PageInfo-backed pages."""
     if request.method == "GET":
-        page = _get_page(slug)
-        return JsonResponse({"title": page.title, "description": page.description})
+        return JsonResponse(_serialize_page(_get_page(slug)))
+
     data, error = _json_body(request)
     if error:
         return error
-    allowed = {"title", "description"}
-    unknown = set(data) - allowed
+    unknown = set(data) - {"title", "description"}
     if unknown:
         return JsonResponse({"error": "Unknown page fields.", "fields": sorted(unknown)}, status=400)
     if not data:
@@ -927,11 +1027,12 @@ def _page_api(request, slug):
     for field, value in data.items():
         if not isinstance(value, str) or not value.strip():
             return JsonResponse({"error": f"'{field}' must be a non-empty string."}, status=400)
+
     page = _get_page(slug)
     for field, value in data.items():
         setattr(page, field, value.strip())
     page.save(update_fields=list(data))
-    return JsonResponse({"title": page.title, "description": page.description})
+    return JsonResponse(_serialize_page(page))
 
 
 @_admin_api("GET", "PATCH")
@@ -953,41 +1054,27 @@ def contact_page(request):
 def page_content(request, slug):
     if slug not in PAGE_DEFAULTS:
         return JsonResponse({"error": "Page not found."}, status=404)
-    if request.method not in ("GET", "PATCH"):
-        response = JsonResponse({"error": "Method not allowed."}, status=405)
-        response["Allow"] = "GET, PATCH"
-        return response
-    if not request.user.is_authenticated or not request.user.is_staff:
-        return JsonResponse({"error": "Admin access required."}, status=403)
     return _page_api(request, slug)
 
 
 @_admin_api("GET", "PATCH")
+@csrf_exempt
 def admin_landing_page(request):
     page = LandingPage.objects.order_by("pk").first()
     if page is None:
-        page = LandingPage.objects.create(
-            main_heading="Welcome to BJFC",
-            subheading_description="Fresh, crispy favorites made for you.",
-        )
+        page = LandingPage.objects.create(**LANDING_DEFAULTS)
+
     if request.method == "GET":
-        return JsonResponse(
-            {
-                "id": page.pk,
-                "main_heading": page.main_heading,
-                "subheading_description": page.subheading_description,
-                "hero_image": page.hero_image,
-                "button_text": page.button_text,
-                "button_link": page.button_link,
-            }
-        )
+        return JsonResponse(_serialize_landing_page(page))
+
     data, error = _json_body(request)
     if error:
         return error
-    allowed = {"main_heading", "subheading_description", "hero_image", "button_text", "button_link"}
-    unknown = set(data) - allowed
+    unknown = set(data) - set(LANDING_FIELDS)
     if unknown:
-        return JsonResponse({"error": "Unknown landing-page fields.", "fields": sorted(unknown)}, status=400)
+        return JsonResponse(
+            {"error": "Unknown landing-page fields.", "fields": sorted(unknown)}, status=400
+        )
     if not data:
         return JsonResponse({"error": "Provide at least one field to update."}, status=400)
     for field, value in data.items():
@@ -999,16 +1086,7 @@ def admin_landing_page(request):
     except ValidationError as exc:
         return JsonResponse({"errors": exc.message_dict}, status=400)
     page.save(update_fields=[*data, "updated_at"])
-    return JsonResponse(
-        {
-            "id": page.pk,
-            "main_heading": page.main_heading,
-            "subheading_description": page.subheading_description,
-            "hero_image": page.hero_image,
-            "button_text": page.button_text,
-            "button_link": page.button_link,
-        }
-    )
+    return JsonResponse(_serialize_landing_page(page))
 
 
 @_admin_api("GET", "PATCH")
@@ -1017,12 +1095,12 @@ def store_information(request):
     if request.method == "GET":
         if store is None:
             return JsonResponse({"error": "Store information not found."}, status=404)
-        return JsonResponse({"storename": store.storename, "contact": store.contact, "address": store.address})
+        return JsonResponse(_serialize_store(store))
+
     data, error = _json_body(request)
     if error:
         return error
-    allowed = {"storename", "contact", "address"}
-    if set(data) - allowed or not data:
+    if set(data) - {"storename", "contact", "address"} or not data:
         return JsonResponse({"error": "Provide one or more valid store fields."}, status=400)
     if store is None:
         store = StoreInformation(storename="", contact="", address="")
@@ -1033,27 +1111,27 @@ def store_information(request):
     if not store.storename or not store.contact or not store.address:
         return JsonResponse({"error": "Store name, contact and address are required."}, status=400)
     store.save()
-    return JsonResponse({"storename": store.storename, "contact": store.contact, "address": store.address})
+    return JsonResponse(_serialize_store(store))
 
+
+# --------------------------------------------------------------------------- #
+# Contact messages
+# --------------------------------------------------------------------------- #
 
 @_admin_api("GET")
 def admin_contact_messages(request):
     queryset = ContactMessage.objects.all()
     status_filter = request.GET.get("status")
-    valid_statuses = [status for status, _ in ContactMessage.Status.choices]
     if status_filter:
+        valid_statuses = [value for value, _ in ContactMessage.Status.choices]
         if status_filter not in valid_statuses:
             return JsonResponse({"error": "Invalid message status."}, status=400)
         queryset = queryset.filter(status=status_filter)
-    pagination, error = _pagination(request)
+    params, error = _list_params(request)
     if error:
         return error
-    direction, error = _item_sort(request)
-    if error:
-        return error
-    page_number, size = pagination
-    prefix = "-" if direction == "desc" else ""
-    queryset = queryset.order_by(f"{prefix}created_at", f"{prefix}pk")
+    page_number, size, direction = params
+    queryset = queryset.order_by(*_ordering(direction, "created_at", "pk"))
     return JsonResponse(_page_response(queryset, page_number, size, "messages", _serialize_contact))
 
 
@@ -1094,25 +1172,33 @@ def contact_messages(request):
     )
 
 
+# --------------------------------------------------------------------------- #
+# Customer: favorites
+# --------------------------------------------------------------------------- #
+
 @require_http_methods(["GET"])
 def customer_favorites(request):
     error = _require_customer(request)
     if error:
         return error
-    queryset = Favorite.objects.filter(customer=request.user).select_related(
-        "food_item__category"
-    ).prefetch_related("food_item__addons")
-    pagination, error = _pagination(request)
+    params, error = _list_params(request)
     if error:
         return error
-    direction, error = _item_sort(request)
-    if error:
-        return error
-    page_number, size = pagination
-    prefix = "-" if direction == "desc" else ""
-    queryset = queryset.order_by(f"{prefix}created_at", f"{prefix}pk")
+    page_number, size, direction = params
+    queryset = (
+        Favorite.objects.filter(customer=request.user)
+        .select_related("food_item__category")
+        .prefetch_related("food_item__addons")
+        .order_by(*_ordering(direction, "created_at", "pk"))
+    )
     return JsonResponse(
-        _page_response(queryset, page_number, size, "items", lambda favorite: _serialize_food_item(favorite.food_item))
+        _page_response(
+            queryset,
+            page_number,
+            size,
+            "items",
+            lambda favorite: _serialize_food_item(favorite.food_item),
+        )
     )
 
 
