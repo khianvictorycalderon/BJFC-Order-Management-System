@@ -44,6 +44,33 @@
 </form>
 
 {% include 'components/social_login.html' with bold="LOG IN" after="with others" %}
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const form = document.querySelector("form[data-endpoint]");
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const response = await fetch(form.dataset.endpoint, {
+      method: "POST",
+      credentials: "same-origin",
+      headers: {
+        "Content-Type": "application/json",
+        "X-CSRFToken": form.querySelector("[name=csrfmiddlewaretoken]").value,
+      },
+      body: JSON.stringify({
+        username: form.querySelector("#username").value,
+        password: form.querySelector("#password").value,
+      }),
+    });
+    const data = await response.json().catch(() => ({}));
+    if (response.ok) {
+      window.location.href = data.user.is_staff ? "/dashboard/" : "/";
+    } else {
+      alert(data.error || "Login failed.");
+    }
+  });
+});
+</script>
 {% endblock %}
 
 {% block bottom %}You dont have account? <a href="{% url 'signup' %}" class="text-[#6a8fcf] transition duration-300 hover:underline">Sign up here</a>{% endblock %}

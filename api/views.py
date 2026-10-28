@@ -118,7 +118,7 @@ def _admin_api(*methods):
 def _require_customer(request, user_id=None):
     if not request.user.is_authenticated:
         return JsonResponse({"error": "Authentication required."}, status=401)
-    if user_id is not None and request.user.pk != user_id:
+    if user_id is not None and request.user.pk != int(user_id):
         return JsonResponse({"error": "You can only access your own account."}, status=403)
     if request.user.is_staff:
         return JsonResponse({"error": "Customer access required."}, status=403)
@@ -318,6 +318,7 @@ def _serialize_user(user):
 
 def _serialize_landing_page(page):
     return {"id": page.pk, **{field: getattr(page, field) for field in LANDING_FIELDS}}
+
 
 
 def _serialize_page(page):
