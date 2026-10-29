@@ -23,7 +23,7 @@
                     </svg>
                 </span>
             </div>
-            <p class="mt-5 text-4xl font-black tracking-tight text-[#342724]">6</p>
+            <p id="fb-total" class="mt-5 text-4xl font-black tracking-tight text-[#342724]">6</p>
             <p class="mt-1 text-sm font-semibold text-[#89776e]">Customer responses</p>
         </section>
 
@@ -37,7 +37,7 @@
                 </span>
             </div>
             <div class="mt-5 flex items-baseline gap-2">
-                <p class="text-4xl font-black tracking-tight text-[#342724]">3.2</p>
+                <p id="fb-average" class="text-4xl font-black tracking-tight text-[#342724]">3.2</p>
                 <span class="text-sm font-bold text-[#89776e]">/ 5.0</span>
             </div>
             <p class="mt-1 text-sm font-semibold text-[#89776e]">Across all ratings</p>
@@ -53,7 +53,7 @@
                     </svg>
                 </span>
             </div>
-            <p class="mt-5 text-4xl font-black tracking-tight text-[#342724]">55%</p>
+            <p id="fb-positive" class="mt-5 text-4xl font-black tracking-tight text-[#342724]">55%</p>
             <p class="mt-1 text-sm font-semibold text-[#89776e]">4–5 star ratings</p>
         </section>
     </div>
@@ -88,7 +88,7 @@
                         <th scope="col" class="w-12 px-3 py-3"><span class="sr-only">Details</span></th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-[#f0e8df]">
+                <tbody id="fb-body" class="divide-y divide-[#f0e8df]">
                     <tr class="transition hover:bg-[#fffdfa]">
                         <td class="px-5 py-4 align-top sm:px-6">
                             <p class="text-sm font-extrabold text-[#342724]">Doggy</p>
@@ -130,4 +130,75 @@
         </div>
     </section>
 </div>
+
+<script>
+    const esc = (v) => String(v ?? "").replace(/[&<>"']/g, c => ({
+        "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+    }[c]));
+
+    // GET ALL FEEDBACKS  
+    async function fetchFeedbacks(size = 10, page = 1, sort = "desc") {
+        try {
+            const params = new URLSearchParams({ size, page, sort });
+            const response = await fetch(`/api/admin/feedbacks/?${params}`);
+            if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+
+            const data = await response.json();
+            console.log("Feedbacks:", data);
+            renderFeedbacks(data.feedbacks ?? []);
+        } catch (error) {
+            console.error("Error fetching feedbacks:", error);
+            document.getElementById("fb-body").innerHTML =
+                `<tr><td colspan="5" class="px-6 py-8 text-center text-red-500">Failed to load feedback.</td></tr>`;
+        }
+    }
+
+    // GET FEEDBACK INFORMATION
+    async function fetchFeedbackInfo() {
+        try {
+            const response = await fetch("/api/admin/feedbacks/info/");
+            if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+
+            const data = await response.json();
+            console.log("Feedback Information:", data);
+
+            document.getElementById("fb-total").textContent = data.total_feedback;
+            document.getElementById("fb-average").textContent = Number(data.average_rating).toFixed(1);
+            document.getElementById("fb-positive").textContent = `${data.positive_feedback_percent}%`;
+        } catch (error) {
+            console.error("Error fetching feedback information:", error);
+        }
+    }
+
+    function renderFeedbacks(items) {
+        const body = document.getElementById("fb-body");
+        if (!items.length) {
+            body.innerHTML = `<tr><td colspan="5" class="px-6 py-8 text-center text-gray-500">No feedback yet.</td></tr>`;
+            return;
+        }
+
+        body.innerHTML = items.map(f => {
+            const rating = Math.max(0, Math.min(5, Number(f.rating) || 0));
+            return `
+            <tr class="transition hover:bg-[#fffdfa]">
+                <td class="px-5 py-4 align-top sm:px-6">
+                    <p class="text-sm font-extrabold text-[#342724]">${esc(f.customer_name || "Anonymous")}</p>
+                    <div class="mt-1 flex gap-0.5 text-sm text-[#c38b16]" aria-label="${rating} out of 5 stars">${"★".repeat(rating)}</div>
+                </td>
+                <td class="break-all px-5 py-4 align-top text-sm font-semibold text-[#594941]">${esc(f.email || "—")}</td>
+                <td class="px-5 py-4 align-top text-sm font-semibold text-[#89776e]">${esc(f.phone || "—")}</td>
+                <td class="max-w-xs break-words px-5 py-4 align-top text-sm font-semibold text-[#594941]">${esc(f.message || "—")}</td>
+                <td class="px-3 py-4 align-top text-center text-[#89776e]">
+                    <svg class="mx-auto h-5 w-5" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="m4 8 8 9 8-9Z"/></svg>
+                </td>
+            </tr>`;
+        }).join("");
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+        fetchFeedbacks();
+        fetchFeedbackInfo();
+    });
+</script>
+
 {% endblock %}
