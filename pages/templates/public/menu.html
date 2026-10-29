@@ -598,6 +598,49 @@
         }
     }
 
+    // ADD TO FAVORITES
+    async function addFavorite(menuItemId) {
+        try {
+            const response = await fetch(`/api/customer/favorites/${menuItemId}/`, {
+                method: "PUT",
+                headers: {
+                    "X-CSRFToken": document.cookie.match(/csrftoken=([^;]+)/)?.[1]
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! Status: ${response.status}`);
+            }
+
+            const data = await response.json();
+            console.log("Favorite Added:", data.message, data.item);
+
+        } catch (error) {
+            console.error("Error adding favorite:", error);
+        }
+    }
+
+    // REMOVE FROM FAVORITES
+    async function removeFavorite(menuItemId) {
+        try {
+            const response = await fetch(`/api/customer/favorites/${menuItemId}/`, {
+                method: "DELETE",
+                headers: {
+                    "X-CSRFToken": document.cookie.match(/csrftoken=([^;]+)/)?.[1]
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! Status: ${response.status}`);
+            }
+
+            const data = await response.json();
+            console.log("Favorite Removed:", data.message);
+
+        } catch (error) {
+            console.error("Error removing favorite:", error);
+        }
+    }
 
 </script>
 
