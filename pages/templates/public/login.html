@@ -8,8 +8,8 @@
 
 {% block body %}
 {# Field names match the login API (/api/login/): username, password. #}
-<form method="post" action="" data-endpoint="{% url 'login api endpoint' %}" class="mt-10 flex w-full max-w-[400px] flex-col items-center sm:mt-[47px]">
-    {% csrf_token %}
+<form id="loginForm" method="post" action="" data-endpoint="{% url 'login_api' %}" class="mt-10 flex w-full max-w-[400px] flex-col items-center sm:mt-[47px]">
+        {% csrf_token %}
 
     {% with 'block h-9 w-full rounded-xl border border-black bg-[#f8c8c8] pl-[41px] pr-3 text-[11px] font-medium text-black shadow-[0_3px_4px_rgba(0,0,0,0.3)] outline-none transition duration-300 placeholder:text-black focus:ring-2 focus:ring-red-500/60' as field %}
     <div class="relative w-full">
@@ -41,7 +41,49 @@
             class="mt-[24px] h-9 w-[131px] rounded-xl bg-gradient-to-r from-[#f96e70] to-[#f92e2e] text-base font-bold uppercase text-white shadow-[0_4px_4px_rgba(0,0,0,0.25)] transition duration-300 hover:-translate-y-0.5 hover:brightness-105 active:translate-y-0">
         Log In
     </button>
+
+    <p id="loginMessage" class="mt-3 text-sm text-center" role="alert"></p>
+
 </form>
+
+
+<script>
+document.getElementById("loginForm").addEventListener("submit", async function (e) {
+    e.preventDefault();
+
+    const form = this;
+    const message = document.getElementById("loginMessage");
+
+    try {
+        message.textContent = "Logging in...";
+
+        const response = await fetch(form.dataset.endpoint, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-CSRFToken": form.querySelector('[name="csrfmiddlewaretoken"]').value
+            },
+            credentials: "same-origin",
+            body: JSON.stringify({
+                username: form.username.value.trim(),
+                password: form.password.value
+            })
+        });
+
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || "Login failed.");
+
+        message.textContent = "Login successful!";
+        message.className = "mt-3 text-sm text-center text-green-700";
+        window.location.href = "/";
+
+    } catch (error) {
+        message.textContent = error.message;
+        message.className = "mt-3 text-sm text-center text-red-600";
+    }
+});
+</script>
+
 
 {% include 'components/social_login.html' with bold="LOG IN" after="with others" %}
 {% endblock %}

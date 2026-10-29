@@ -8,7 +8,8 @@
 
 {% block body %}
 {# Field names match the register API (/api/register/): username, email, password, confirm_password. #}
-<form method="post" action="" data-endpoint="{% url 'register' %}" class="mt-12 flex w-full flex-col items-center sm:mt-[68px]">
+<form id="registerForm" method="post" action="" data-endpoint="{% url 'register' %}" class="mt-12 flex w-full flex-col items-center sm:mt-[68px]">
+    
     {% csrf_token %}
 
     <div class="grid w-full max-w-[624px] grid-cols-1 gap-x-5 gap-y-[19px] md:grid-flow-col md:grid-cols-2 md:grid-rows-3">
@@ -38,6 +39,53 @@
         Sign Up
     </button>
 </form>
+
+<script>
+    document.getElementById("registerForm").addEventListener("submit", async function (event) {
+        event.preventDefault();
+
+        const form = this;
+
+        const userData = {
+            first_name: form.first_name.value.trim(),
+            last_name: form.last_name.value.trim(),
+            username: form.username.value.trim(),
+            email: form.email.value.trim(),
+            password: form.password.value,
+            confirm_password: form.confirm_password.value
+        };
+
+        try {
+            const response = await fetch(form.dataset.endpoint, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": form.querySelector('[name="csrfmiddlewaretoken"]').value
+                },
+                credentials: "same-origin",
+                body: JSON.stringify(userData)
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                const errorMessage = data.error ||
+                    (data.errors ? data.errors.join(", ") : "Registration failed.");
+
+                throw new Error(errorMessage);
+            }
+
+            alert(data.message || "Account created successfully!");
+
+            // Redirect to login after successful registration
+            window.location.href = "{% url 'login' %}";
+
+        } catch (error) {
+            console.error("Registration error:", error);
+            alert(error.message);
+        }
+    });
+</script>
 
 {% include 'components/social_login.html' with before="or" bold="SIGN IN" after="with" %}
 {% endblock %}

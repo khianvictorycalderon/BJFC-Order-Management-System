@@ -15,7 +15,7 @@
 
     <div class="grid gap-6 xl:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
         <section aria-labelledby="myOrdersTitle" class="rounded-3xl border border-[#eadfd2] bg-white p-5 shadow-sm sm:p-6">
-            <h3 id="myOrdersTitle" class="text-xl font-black text-[#342724]">My Orders</h3>
+            <h3 id="myOrdersTitle" class="text-xl font-black text-[#342724]">Menu</h3>
             <ul class="mt-5 grid gap-4 sm:grid-cols-2">
                 {% for item in order_items %}
                 <li class="flex flex-col rounded-2xl border border-[#eadfd2] bg-[#fffdf9] p-4 transition hover:-translate-y-0.5 hover:shadow-md">
@@ -61,5 +61,384 @@
             </div>
         </div>
     </div>
+
+    {# ===== ORDER HISTORY: GET /api/customer/my-orders (page, size, sort) ===== #}
+    <section aria-labelledby="orderHistoryTitle" class="rounded-3xl border border-[#eadfd2] bg-white p-5 shadow-sm sm:p-6">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+            <h3 id="orderHistoryTitle" class="text-xl font-black text-[#342724]">My Orders</h3>
+            <div class="flex items-center gap-2 text-xs font-bold text-[#89776e]">
+                <label for="ordersSort">Sort</label>
+                <select id="ordersSort" class="rounded-lg border border-[#eadfd2] bg-white px-2 py-1">
+                    <option value="desc">Newest first</option>
+                    <option value="asc">Oldest first</option>
+                </select>
+                <label for="ordersSize">Per page</label>
+                <select id="ordersSize" class="rounded-lg border border-[#eadfd2] bg-white px-2 py-1">
+                    <option value="5">5</option>
+                    <option value="10" selected>10</option>
+                    <option value="20">20</option>
+                </select>
+            </div>
+        </div>
+        <p id="ordersEmpty" class="mt-5 text-sm text-[#89776e]" style="display:none"></p>
+        <ul id="ordersList" class="mt-5 space-y-3"></ul>
+        <div class="mt-5 flex items-center justify-between">
+            <button type="button" id="ordersPrev" class="h-9 rounded-lg border border-[#eadfd2] px-4 text-xs font-extrabold" disabled>Previous</button>
+            <span id="ordersPageInfo" class="text-xs font-bold text-[#89776e]"></span>
+            <button type="button" id="ordersNext" class="h-9 rounded-lg border border-[#eadfd2] px-4 text-xs font-extrabold" disabled>Next</button>
+        </div>
+    </section>
 </div>
+
+{# ===== ADDED FUNCTIONALITY: paste this directly above the final {% endblock %}. Nothing above it changes. ===== #}
+<form id="csrfForm" hidden>{% csrf_token %}</form>
+
+<script>
+(() => {
+    const API = "/api/customer";
+    const MAX_QTY = 99;
+
+    const norm = (s) => String(s || "").replace(/\s+/g, " ").trim().toLowerCase();
+    const peso = (n) => "₱" + Number(n).toFixed(2);
+    const esc = (s) =>
+        String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+    // ---------- API helper (session auth + CSRF) ----------
+    function csrfToken() {
+        const input = document.querySelector("#csrfForm [name=csrfmiddlewaretoken]");
+        if (input && input.value) return input.value;
+        const m = document.cookie.match(/(?:^|; )csrftoken=([^;]*)/);
+        return m ? decodeURIComponent(m[1]) : "";
+    }
+
+    async function api(path, opts = {}) {
+        const method = opts.method || "GET";
+        const qs = opts.query ? "?" + new URLSearchParams(opts.query) : "";
+        const headers = {};
+        if (opts.body) headers["Content-Type"] = "application/json";
+        if (method !== "GET") headers["X-CSRFToken"] = csrfToken();
+        const res = await fetch(API + path + qs, {
+            method,
+            headers,
+            credentials: "same-origin",
+            body: opts.body ? JSON.stringify(opts.body) : undefined,
+        });
+        const text = await res.text();
+        let data = {};
+        try { data = text ? JSON.parse(text) : {}; } catch (e) { /* non-JSON error page */ }
+        if (!res.ok) {
+            const err = new Error(data.error || "Something went wrong (" + res.status + ").");
+            err.status = res.status;
+            throw err;
+        }
+        return data;
+    }
+
+    async function loadAll(path) {
+        const out = [];
+        for (let page = 1; ; page++) {
+            const data = await api(path, { query: { page, size: 100 } });
+            out.push(...data.items);
+            if (!data.pagination.has_next) break;
+        }
+        return out;
+    }
+
+    // ---------- Find the existing markup ----------
+    const menuCards = [...document.querySelectorAll("#myOrdersTitle ~ ul > li")].map((li) => {
+        const buttons = li.querySelectorAll("button");
+        return {
+            li,
+            label: (li.querySelector("h4") || {}).textContent || "",
+            name: norm((li.querySelector("h4") || {}).textContent),
+            favBtn: buttons[0],
+            addBtn: buttons[buttons.length - 1],
+        };
+    });
+    const addonCards = [...document.querySelectorAll("#addonsTitle ~ ul > li")].map((li) => ({
+        label: ((li.querySelector("p") || {}).textContent || "").trim(),
+        name: norm((li.querySelector("p") || {}).textContent),
+        btn: li.querySelector("button"),
+    }));
+    const actions = document.querySelector("#addonsTitle").closest("section").nextElementSibling;
+    const cancelBtn = actions.querySelectorAll("button")[0];
+    const orderBtn = actions.querySelectorAll("button")[1];
+
+    // ---------- Inject the order summary (above Cancel / Order Now) ----------
+    const summary = document.createElement("section");
+    summary.setAttribute("aria-labelledby", "summaryTitle");
+    summary.className = "rounded-3xl border border-[#eadfd2] bg-white p-5 shadow-sm sm:p-6";
+    summary.innerHTML = `
+        <h3 id="summaryTitle" class="text-xl font-black text-[#342724]">Order summary</h3>
+        <p id="cartEmpty" class="mt-5 text-sm text-[#89776e]">No items yet. Press Add on a meal, then pick its add-ons.</p>
+        <ul id="cartList" class="mt-5 space-y-3"></ul>
+        <div class="mt-5 flex items-center justify-between border-t border-[#eadfd2] pt-4">
+            <span class="text-sm font-extrabold uppercase tracking-wide text-[#89776e]">Total</span>
+            <span id="cartTotal" class="text-2xl font-black text-[#342724]">₱0.00</span>
+        </div>
+        <p id="orderMessage" role="status" aria-live="polite" style="display:none;margin-top:1rem;padding:.75rem 1rem;border-radius:.75rem;font-size:.875rem;font-weight:700"></p>`;
+    actions.parentNode.insertBefore(summary, actions);
+
+    const $ = (id) => document.getElementById(id);
+
+    function setMsg(text, isError) {
+        const el = $("orderMessage");
+        el.textContent = text;
+        el.style.display = "block";
+        el.style.background = isError ? "#fff1f1" : "#eef8ee";
+        el.style.color = isError ? "#c41d1d" : "#2f6b2f";
+    }
+    const clearMsg = () => { $("orderMessage").style.display = "none"; };
+
+    // ---------- State ----------
+    const byName = new Map();   // normalized name -> API menu item
+    const byId = new Map();     // id -> API menu item
+    const cart = new Map();     // id -> { qty, addons: Set<addon id> }  (insertion order = recency)
+    const favs = new Set();
+
+    function lineInfo(id) {
+        const item = byId.get(id);
+        const line = cart.get(id);
+        const chosen = item.addons.filter((a) => line.addons.has(a.id));
+        const unit = Number(item.price) + chosen.reduce((s, a) => s + Number(a.price), 0);
+        return { item, line, chosen, total: unit * line.qty };
+    }
+
+    function render() {
+        const list = $("cartList");
+        list.innerHTML = "";
+        let total = 0;
+        for (const id of cart.keys()) {
+            const { item, line, chosen, total: lt } = lineInfo(id);
+            total += lt;
+            const li = document.createElement("li");
+            li.dataset.id = id;
+            li.className = "rounded-2xl border border-[#eadfd2] bg-[#fffdf9] p-3";
+            li.innerHTML = `
+                <div class="flex items-start justify-between gap-3">
+                    <p class="min-w-0 truncate text-sm font-extrabold text-[#2b201d]">${esc(item.name)}</p>
+                    <span class="text-sm font-black text-[#342724]">${peso(lt)}</span>
+                </div>
+                ${chosen.length ? `<div class="mt-2 flex flex-wrap gap-1.5">${chosen.map((a) => `
+                    <span class="inline-flex items-center gap-1 rounded-full bg-[#fff1e3] px-2 py-0.5 text-[11px] font-bold text-[#342724]">
+                        ${esc(a.name)} (+${peso(a.price)})
+                        <button type="button" data-act="rmaddon" data-addon="${a.id}" aria-label="Remove ${esc(a.name)}" class="font-black text-[#e62727]">×</button>
+                    </span>`).join("")}</div>` : ""}
+                <div class="mt-3 flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <button type="button" data-act="dec" aria-label="Decrease quantity of ${esc(item.name)}" class="h-7 w-7 rounded-full border border-[#eadfd2] bg-white font-black text-[#342724]">−</button>
+                        <span class="w-6 text-center text-sm font-extrabold">${line.qty}</span>
+                        <button type="button" data-act="inc" aria-label="Increase quantity of ${esc(item.name)}" class="h-7 w-7 rounded-full border border-[#eadfd2] bg-white font-black text-[#342724]">+</button>
+                    </div>
+                    <button type="button" data-act="remove" class="text-xs font-bold text-[#e62727] underline">Remove</button>
+                </div>`;
+            list.appendChild(li);
+        }
+        $("cartEmpty").style.display = cart.size ? "none" : "block";
+        $("cartTotal").textContent = peso(total);
+        orderBtn.disabled = cart.size === 0;
+        orderBtn.style.opacity = cart.size === 0 ? "0.6" : "";
+        orderBtn.style.cursor = cart.size === 0 ? "not-allowed" : "";
+
+        // keep each menu card's Add button in sync with the cart
+        menuCards.forEach((c) => {
+            const item = byName.get(c.name);
+            if (!item) return;
+            const line = cart.get(item.id);
+            c.addBtn.textContent = line ? "Add (" + line.qty + ")" : "Add";
+        });
+    }
+
+    function setHeart(card, on) {
+        const svg = card.favBtn.querySelector("svg");
+        if (svg) svg.setAttribute("fill", on ? "currentColor" : "none");
+        card.favBtn.setAttribute("aria-pressed", String(on));
+        card.favBtn.setAttribute("aria-label", (on ? "Remove " : "Add ") + card.label.trim() + (on ? " from favorites" : " to favorites"));
+    }
+
+    function disable(btn, reason) {
+        btn.disabled = true;
+        btn.title = reason;
+        btn.style.opacity = "0.5";
+        btn.style.cursor = "not-allowed";
+    }
+
+    // ---------- Wire up the existing buttons ----------
+    function bind() {
+        menuCards.forEach((card) => {
+            const item = byName.get(card.name);
+            if (!item) {
+                disable(card.addBtn, "This item isn't on the menu right now.");
+                disable(card.favBtn, "This item isn't on the menu right now.");
+                return;
+            }
+            setHeart(card, favs.has(item.id));
+
+            card.addBtn.addEventListener("click", () => {
+                clearMsg();
+                const line = cart.get(item.id) || { qty: 0, addons: new Set() };
+                line.qty = Math.min(MAX_QTY, line.qty + 1);
+                cart.delete(item.id);        // re-insert so this meal counts as "most recent"
+                cart.set(item.id, line);
+                render();
+            });
+
+            card.favBtn.addEventListener("click", async () => {
+                clearMsg();
+                const on = favs.has(item.id);
+                try {
+                    await api("/favorites/" + item.id, { method: on ? "DELETE" : "PUT" });
+                    if (on) favs.delete(item.id); else favs.add(item.id);
+                    setHeart(card, !on);
+                } catch (err) {
+                    setMsg(err.message, true);
+                }
+            });
+        });
+
+        // Add-ons are per meal in the backend, so a global add-on goes to the most recently
+        // added meal that offers an add-on with that name.
+        addonCards.forEach((a) => {
+            a.btn.addEventListener("click", () => {
+                clearMsg();
+                if (!cart.size) return setMsg("Add a meal first, then pick its add-ons.", true);
+                for (const id of [...cart.keys()].reverse()) {
+                    const item = byId.get(id);
+                    const addon = item.addons.find((x) => norm(x.name) === a.name);
+                    if (!addon) continue;
+                    const line = cart.get(id);
+                    if (line.addons.has(addon.id)) return setMsg(a.label + " is already added to " + item.name + ".", true);
+                    line.addons.add(addon.id);
+                    render();
+                    return setMsg("Added " + a.label + " to " + item.name + ".", false);
+                }
+                setMsg("None of the meals in your order offer " + a.label + ".", true);
+            });
+        });
+
+        $("cartList").addEventListener("click", (e) => {
+            const btn = e.target.closest("[data-act]");
+            if (!btn) return;
+            const id = Number(btn.closest("li").dataset.id);
+            const line = cart.get(id);
+            if (!line) return;
+            clearMsg();
+            const act = btn.dataset.act;
+            if (act === "inc") line.qty = Math.min(MAX_QTY, line.qty + 1);
+            else if (act === "dec") line.qty -= 1;
+            else if (act === "remove") line.qty = 0;
+            else if (act === "rmaddon") line.addons.delete(Number(btn.dataset.addon));
+            if (line.qty < 1) cart.delete(id);
+            render();
+        });
+
+        cancelBtn.addEventListener("click", () => {
+            cart.clear();
+            clearMsg();
+            render();
+        });
+
+        orderBtn.addEventListener("click", async () => {
+            if (!cart.size) return;
+            const items = [...cart].map(([id, line]) => ({
+                menu_item_id: id,
+                quantity: line.qty,
+                addon_ids: [...line.addons],
+            }));
+            const original = orderBtn.textContent;
+            orderBtn.disabled = true;
+            orderBtn.textContent = "Placing order…";
+            try {
+                const res = await api("/orders", { method: "POST", body: { items } });
+                cart.clear();
+                render();
+                const eta = res.eta
+                    ? " Estimated ready time: " + new Date(res.eta).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) + "."
+                    : "";
+                setMsg("Order " + res.order_number + " placed!" + eta, false);
+                ordersState.page = 1;
+                loadOrders();
+            } catch (err) {
+                setMsg(err.status === 401 ? "Please log in to place an order." : err.message, true);
+            } finally {
+                orderBtn.textContent = original;
+                orderBtn.disabled = cart.size === 0;
+            }
+        });
+    }
+
+    // ---------- My orders (GET /api/customer/my-orders) ----------
+    const ordersState = { page: 1, size: 10, sort: "desc" };
+
+    function renderOrders(data) {
+        const { page, total_pages, total_items, has_next, has_previous } = data.pagination;
+        $("ordersList").innerHTML = data.orders.map((o) => `
+            <li class="rounded-2xl border border-[#eadfd2] bg-[#fffdf9] p-4">
+                <div class="flex flex-wrap items-center justify-between gap-2">
+                    <p class="text-sm font-extrabold text-[#2b201d]">${esc(o.order_number)}</p>
+                    <span class="rounded-full bg-[#fff1e3] px-2 py-0.5 text-[11px] font-bold text-[#342724]">${esc(o.status_display)}</span>
+                </div>
+                <p class="mt-1 text-xs text-[#89776e]">${esc(new Date(o.created_at).toLocaleString([], { dateStyle: "medium", timeStyle: "short" }))}</p>
+                <ul class="mt-2 text-xs text-[#342724]">
+                    ${o.items.map((i) => `<li>${i.quantity} × ${esc(i.food_item_name)}${i.addons.length ? " (" + i.addons.map((a) => esc(a.name)).join(", ") + ")" : ""}</li>`).join("")}
+                </ul>
+                <p class="mt-2 text-right text-base font-black text-[#342724]">${peso(o.total_amount)}</p>
+            </li>`).join("");
+        const empty = $("ordersEmpty");
+        empty.style.display = data.orders.length ? "none" : "block";
+        empty.textContent = total_items ? "No orders on this page." : "You haven't placed any orders yet.";
+        $("ordersPageInfo").textContent = total_items ? "Page " + page + " of " + total_pages + " (" + total_items + " orders)" : "";
+        setPager(has_previous, has_next);
+    }
+
+    function setPager(hasPrev, hasNext) {
+        [["ordersPrev", hasPrev], ["ordersNext", hasNext]].forEach(([id, on]) => {
+            const b = $(id);
+            b.disabled = !on;
+            b.style.opacity = on ? "" : "0.5";
+            b.style.cursor = on ? "" : "not-allowed";
+        });
+    }
+
+    async function loadOrders() {
+        try {
+            renderOrders(await api("/my-orders", { query: ordersState }));
+        } catch (err) {
+            $("ordersList").innerHTML = "";
+            $("ordersPageInfo").textContent = "";
+            setPager(false, false);
+            const empty = $("ordersEmpty");
+            empty.style.display = "block";
+            empty.textContent = err.status === 401 ? "Please log in to see your orders." : err.message;
+        }
+    }
+
+    $("ordersSort").addEventListener("change", (e) => { ordersState.sort = e.target.value; ordersState.page = 1; loadOrders(); });
+    $("ordersSize").addEventListener("change", (e) => { ordersState.size = Number(e.target.value); ordersState.page = 1; loadOrders(); });
+    $("ordersPrev").addEventListener("click", () => { if (ordersState.page > 1) { ordersState.page -= 1; loadOrders(); } });
+    $("ordersNext").addEventListener("click", () => { ordersState.page += 1; loadOrders(); });
+
+    // ---------- Load real menu data, then bind ----------
+    render();
+    setPager(false, false);
+    loadOrders();
+    (async () => {
+        try {
+            const [items, favItems] = await Promise.all([
+                loadAll("/menu/items"),
+                loadAll("/favorites").catch(() => []),
+            ]);
+            items.forEach((i) => {
+                byId.set(i.id, i);
+                if (!byName.has(norm(i.name))) byName.set(norm(i.name), i);
+            });
+            favItems.forEach((i) => favs.add(i.id));
+            bind();
+        } catch (err) {
+            setMsg(err.status === 401 ? "Please log in to place an order." : err.message, true);
+        }
+    })();
+})();
+</script>
+
 {% endblock %}
