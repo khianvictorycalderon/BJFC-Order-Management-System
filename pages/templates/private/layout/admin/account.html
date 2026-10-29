@@ -116,10 +116,55 @@ async function initProfile() {
     });
 }
 
-if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", initProfile);
-} else {
+function updatePassword(oldPassword, newPassword) {
+    return apiRequest("/password", "PATCH", {
+        old_password: oldPassword,
+        new_password: newPassword,
+    });
+}
+
+function initPassword() {
+    const current = document.getElementById("currentPassword");
+    const next = document.getElementById("newPassword");
+    const confirm = document.getElementById("confirmPassword");
+    if (!current || !next || !confirm) return;
+
+    // Walang id ang button sa shared card, kaya hanapin ito sa loob ng form
+    const btn = current.closest("form").querySelector("button");
+
+    btn.addEventListener("click", async function () {
+        if (!current.value || !next.value) {
+            alert("Please enter your current and new password.");
+            return;
+        }
+        if (next.value !== confirm.value) {
+            alert("New passwords do not match.");
+            return;
+        }
+        btn.disabled = true;
+        try {
+            await updatePassword(current.value, next.value);
+            current.value = "";
+            next.value = "";
+            confirm.value = "";
+            alert("Password updated!");
+        } catch (err) {
+            alert("Update failed: " + err.message);
+        } finally {
+            btn.disabled = false;
+        }
+    });
+}
+
+function initAccountPage() {
     initProfile();
+    initPassword();
+}
+
+if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initAccountPage);
+} else {
+    initAccountPage();
 }
 </script>
 
