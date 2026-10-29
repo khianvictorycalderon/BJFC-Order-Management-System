@@ -243,4 +243,81 @@
 </main>
 
 {% include 'components/footer.html' %}
+
+<script>
+    let messages = [];
+    let currentPage = 1;
+    let totalPages = 1;
+    let currentStatus = "";
+    let currentSort = "desc";
+
+    function getUrl() {
+        const params = new URLSearchParams({
+            page: currentPage,
+            size: 10,
+            sort: currentSort
+        });
+
+        if (currentStatus) params.set("status", currentStatus);
+
+        return "/admin/contact/messages/?" + params.toString();
+    }
+
+    function renderMessages() {
+        const list = document.getElementById("messages-list");
+        const pageInfo = document.getElementById("page-info");
+
+        if (!list) return;
+
+        list.innerHTML = "";
+
+        messages.forEach(message => {
+            const item = document.createElement("li");
+            item.textContent = message.name + " (" + message.email + ") - " + message.status + ": " + message.message;
+            list.appendChild(item);
+        });
+
+        if (pageInfo) pageInfo.textContent = "Page " + currentPage + " of " + totalPages;
+    }
+
+    async function loadMessages() {
+        const response = await fetch(getUrl(), { credentials: "same-origin" });
+        const data = await response.json();
+
+        if (!response.ok) {
+            console.log("Error:", data.error);
+            return;
+        }
+
+        messages = data.messages || [];
+        totalPages = Number(data.total_pages) || 1;
+
+        renderMessages();
+        console.log("Messages:", messages);
+    }
+
+    function changeStatus(status) {
+        currentStatus = status || "";
+        currentPage = 1;
+        loadMessages();
+    }
+
+    function changeSort(direction) {
+        currentSort = direction === "asc" ? "asc" : "desc";
+        currentPage = 1;
+        loadMessages();
+    }
+
+    function changePage(change) {
+        const nextPage = Math.min(Math.max(1, currentPage + change), totalPages);
+
+        if (nextPage === currentPage) return;
+
+        currentPage = nextPage;
+        loadMessages();
+    }
+
+    loadMessages();
+</script>
+
 {% endblock %}
