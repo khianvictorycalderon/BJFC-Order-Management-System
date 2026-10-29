@@ -275,6 +275,68 @@
             console.error("Error fetching contact messages:", error);
         }
     }
+
+    // UPDATE CONTACT MESSAGE STATUS (read / resolved)
+    async function updateContactMessageStatus(pk, status) {
+        try {
+            if (!["read", "resolved"].includes(status)) {
+                throw new Error("Status must be 'read' or 'resolved'.");
+            }
+
+            const response = await fetch(`/api/admin/contact/messages/${pk}/`, {
+                method: "PATCH",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({ status })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.error || `HTTP error! Status: ${response.status}`);
+            }
+
+            const updated = await response.json();
+            console.log("Updated Contact Message:", updated);
+
+            return updated;
+
+        } catch (error) {
+            console.error("Error updating contact message:", error);
+        }
+    }
+
+    // SUBMIT CONTACT FORM MESSAGE
+    async function submitContactMessage({ name, email, phone = "", message }) {
+        try {
+            const response = await fetch("/api/contact/messages/", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({ name, email, phone, message })
+            });
+
+            const data = await response.json().catch(() => ({}));
+
+            if (!response.ok) {
+                // 400 returns { error, errors } with per-field validation details
+                if (data.errors) {
+                    console.error("Validation errors:", data.errors);
+                }
+                throw new Error(data.error || `HTTP error! Status: ${response.status}`);
+            }
+
+            console.log("Contact Message Sent:", data);
+            // data = { message: "Thank you! ...", id: 15 }
+
+            return data;
+
+        } catch (error) {
+            console.error("Error submitting contact message:", error);
+        }
+    }
+
 </script>
 
 {% endblock %}
