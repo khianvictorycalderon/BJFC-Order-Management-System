@@ -14,17 +14,85 @@
         <form onsubmit="return false" class="space-y-5 pt-6" novalidate>
             <div>
                 <label for="mainHeading" class="mb-2 block text-[11px] font-extrabold uppercase tracking-[0.14em] text-[#89776e]">Main heading title</label>
-                <input id="mainHeading" type="text" value="wow and sarap" class="h-12 w-full rounded-xl border border-[#eadfd2] bg-[#fffaf4] px-4 text-sm font-semibold text-[#342724] outline-none transition focus:border-[#800000] focus:bg-white focus:ring-4 focus:ring-[#800000]/10">
+                <input id="mainHeading" type="text" value="" class="h-12 w-full rounded-xl border border-[#eadfd2] bg-[#fffaf4] px-4 text-sm font-semibold text-[#342724] outline-none transition focus:border-[#800000] focus:bg-white focus:ring-4 focus:ring-[#800000]/10">
             </div>
             <div>
                 <label for="subHeading" class="mb-2 block text-[11px] font-extrabold uppercase tracking-[0.14em] text-[#89776e]">Subheading description</label>
-                <textarea id="subHeading" rows="4" class="w-full rounded-xl border border-[#eadfd2] bg-[#fffaf4] px-4 py-3 text-sm font-semibold leading-6 text-[#342724] outline-none transition focus:border-[#800000] focus:bg-white focus:ring-4 focus:ring-[#800000]/10">dasdasdasdasfasfas
-fafafasfasfasfasf
-fasfasfasfaf</textarea>
+                <textarea id="subHeading" rows="4" class="w-full rounded-xl border border-[#eadfd2] bg-[#fffaf4] px-4 py-3 text-sm font-semibold leading-6 text-[#342724] outline-none transition focus:border-[#800000] focus:bg-white focus:ring-4 focus:ring-[#800000]/10"></textarea>
             </div>
             <div class="flex justify-end border-t border-[#f0e7de] pt-6">
-                <button type="button" class="inline-flex h-11 items-center justify-center rounded-xl bg-[#800000] px-6 text-sm font-extrabold text-white shadow-sm transition hover:bg-[#650000] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#800000]/25">Save changes</button>
+                <button id="saveLandingBtn" type="button" class="inline-flex h-11 items-center justify-center rounded-xl bg-[#800000] px-6 text-sm font-extrabold text-white shadow-sm transition hover:bg-[#650000] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#800000]/25">Save changes</button>
             </div>
         </form>
     </section>
+
+    <script>
+    const API_BASE = "/api/admin";
+
+    // Shared helper para sa admin API requests
+    async function apiRequest(path, method = "GET", body = null) {
+        const options = {
+            method: method,
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+        };
+        if (body !== null) options.body = JSON.stringify(body);
+
+        const res = await fetch(API_BASE + path, options);
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+            throw new Error(data.error || data.message || "Request failed (" + res.status + ")");
+        }
+        return data;
+    }
+
+    // GET /api/admin/landing-page
+    function getLandingPage() {
+        return apiRequest("/landing-page", "GET");
+    }
+
+    // PATCH /api/admin/landing-page
+    function updateLandingPage(fields) {
+        return apiRequest("/landing-page", "PATCH", fields);
+    }
+
+    async function initLandingPage() {
+        const heading = document.getElementById("mainHeading");
+        const sub = document.getElementById("subHeading");
+        const saveBtn = document.getElementById("saveLandingBtn");
+
+        // Punuin ang form mula sa GET
+        try {
+            const page = await getLandingPage();
+            heading.value = page.main_heading || "";
+            sub.value = page.subheading_description || "";
+        } catch (err) {
+            alert("Could not load landing page: " + err.message);
+        }
+
+        // I-save gamit ang PATCH
+        saveBtn.addEventListener("click", async function () {
+            saveBtn.disabled = true;
+            try {
+                await updateLandingPage({
+                    main_heading: heading.value,
+                    subheading_description: sub.value,
+                });
+                const frame = document.getElementById("previewFrame");
+                if (frame) frame.src = frame.src;   // i-reload ang preview
+                alert("Saved!");
+            } catch (err) {
+                alert("Save failed: " + err.message);
+            } finally {
+                saveBtn.disabled = false;
+            }
+        });
+    }
+
+    if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", initLandingPage);
+    } else {
+        initLandingPage();
+    }
+    </script>
 {% endblock %}
