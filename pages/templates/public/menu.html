@@ -573,6 +573,32 @@
         }
     }
 
+    // GET CUSTOMER FAVORITES
+    async function fetchFavorites(params = {}) {
+        try {
+            const query = new URLSearchParams(params).toString();
+
+            const response = await fetch(`/api/customer/favorites/?${query}`, {
+                method: "GET"
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! Status: ${response.status}`);
+            }
+
+            const data = await response.json();
+            console.log("Favorites:", data);
+
+            if (Array.isArray(data.items)) {
+                renderMenuItems(data.items);
+            }
+
+        } catch (error) {
+            console.error("Error fetching favorites:", error);
+        }
+    }
+
+
 </script>
 
 {% endblock %}
