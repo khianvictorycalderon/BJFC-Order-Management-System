@@ -12,17 +12,100 @@
             <p class="mt-0.5 text-sm text-[#89776e]">Headline and description shown at the top of the Menu page.</p>
         </header>
         <form onsubmit="return false" class="space-y-5 pt-6" novalidate>
+            {% csrf_token %}
             <div>
                 <label for="mainHeading" class="mb-2 block text-[11px] font-extrabold uppercase tracking-[0.14em] text-[#89776e]">Main heading title</label>
-                <input id="mainHeading" type="text" value="SIGNATURE FRIED CHICKEN" class="h-12 w-full rounded-xl border border-[#eadfd2] bg-[#fffaf4] px-4 text-sm font-semibold text-[#342724] outline-none transition focus:border-[#800000] focus:bg-white focus:ring-4 focus:ring-[#800000]/10">
+                <input id="mainHeading" type="text" value="" class="h-12 w-full rounded-xl border border-[#eadfd2] bg-[#fffaf4] px-4 text-sm font-semibold text-[#342724] outline-none transition focus:border-[#800000] focus:bg-white focus:ring-4 focus:ring-[#800000]/10">
             </div>
             <div>
                 <label for="subHeading" class="mb-2 block text-[11px] font-extrabold uppercase tracking-[0.14em] text-[#89776e]">Subheading description</label>
-                <textarea id="subHeading" rows="4" class="w-full rounded-xl border border-[#eadfd2] bg-[#fffaf4] px-4 py-3 text-sm font-semibold leading-6 text-[#342724] outline-none transition focus:border-[#800000] focus:bg-white focus:ring-4 focus:ring-[#800000]/10">Golden, crunchy, and juicy chicken with our signature crispy coating.</textarea>
+                <textarea id="subHeading" rows="4" class="w-full rounded-xl border border-[#eadfd2] bg-[#fffaf4] px-4 py-3 text-sm font-semibold leading-6 text-[#342724] outline-none transition focus:border-[#800000] focus:bg-white focus:ring-4 focus:ring-[#800000]/10"></textarea>
             </div>
             <div class="flex justify-end border-t border-[#f0e7de] pt-6">
-                <button type="button" class="inline-flex h-11 items-center justify-center rounded-xl bg-[#800000] px-6 text-sm font-extrabold text-white shadow-sm transition hover:bg-[#650000] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#800000]/25">Save changes</button>
+                <button id="saveMenuBtn" type="button" class="inline-flex h-11 items-center justify-center rounded-xl bg-[#800000] px-6 text-sm font-extrabold text-white shadow-sm transition hover:bg-[#650000] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#800000]/25">Save changes</button>
             </div>
         </form>
     </section>
+
+    <script>
+    const API_BASE = "/api/admin";
+
+    // Kunin ang CSRF token mula sa hidden input ng form (o sa cookie)
+    function getCsrfToken() {
+        const input = document.querySelector("[name=csrfmiddlewaretoken]");
+        if (input) return input.value;
+        const match = document.cookie.match(/(?:^|;\s*)csrftoken=([^;]+)/);
+        return match ? decodeURIComponent(match[1]) : "";
+    }
+
+    // Shared helper para sa admin API requests
+    async function apiRequest(path, method = "GET", body = null) {
+        const headers = { "Content-Type": "application/json" };
+        if (method !== "GET") headers["X-CSRFToken"] = getCsrfToken();
+
+        const options = {
+            method: method,
+            headers: headers,
+            credentials: "include",
+        };
+        if (body !== null) options.body = JSON.stringify(body);
+
+        const res = await fetch(API_BASE + path, options);
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+            throw new Error(data.error || data.message || "Request failed (" + res.status + ")");
+        }
+        return data;
+    }
+
+    // GET /api/admin/menu-page
+    function getMenuPage() {
+        return apiRequest("/menu-page", "GET");
+    }
+
+    // PATCH /api/admin/menu-page
+    // fields: title at/o description (hindi puwedeng walang laman)
+    function updateMenuPage(fields) {
+        return apiRequest("/menu-page", "PATCH", fields);
+    }
+
+    async function initMenuPage() {
+        const heading = document.getElementById("mainHeading");
+        const sub = document.getElementById("subHeading");
+        const saveBtn = document.getElementById("saveMenuBtn");
+
+        // Punuin ang form mula sa GET
+        try {
+            const page = await getMenuPage();
+            heading.value = page.title || "";
+            sub.value = page.description || "";
+        } catch (err) {
+            alert("Could not load menu page: " + err.message);
+        }
+
+        // I-save gamit ang PATCH
+        saveBtn.addEventListener("click", async function () {
+            saveBtn.disabled = true;
+            try {
+                await updateMenuPage({
+                    title: heading.value,
+                    description: sub.value,
+                });
+                const frame = document.getElementById("previewFrame");
+                if (frame) frame.src = frame.src;   // i-reload ang preview
+                alert("Saved!");
+            } catch (err) {
+                alert("Save failed: " + err.message);
+            } finally {
+                saveBtn.disabled = false;
+            }
+        });
+    }
+
+    if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", initMenuPage);
+    } else {
+        initMenuPage();
+    }
+    </script>
 {% endblock %}
