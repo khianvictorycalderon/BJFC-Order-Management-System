@@ -27,6 +27,7 @@
         </header>
 
         <form onsubmit="return false" class="pt-6" novalidate>
+            {% csrf_token %}
             <div class="grid gap-5 sm:grid-cols-2">
                 <div>
                     <label for="adminName" class="mb-2 block text-[11px] font-extrabold uppercase tracking-[0.14em] text-[#89776e]">Display name</label>
@@ -38,11 +39,88 @@
                 </div>
             </div>
             <div class="mt-7 flex justify-end border-t border-[#f0e7de] pt-6">
-                <button type="button" class="inline-flex h-11 items-center justify-center rounded-xl bg-[#800000] px-6 text-sm font-extrabold text-white shadow-sm transition hover:bg-[#650000] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#800000]/25">Update profile</button>
+                <button id="saveProfileBtn" type="button" class="inline-flex h-11 items-center justify-center rounded-xl bg-[#800000] px-6 text-sm font-extrabold text-white shadow-sm transition hover:bg-[#650000] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#800000]/25">Update profile</button>
             </div>
         </form>
     </section>
 
     {% include "components/security_card.html" %}
 </div>
+
+<script>
+const API_BASE = "/api/admin";
+
+function getCsrfToken() {
+    const input = document.querySelector("[name=csrfmiddlewaretoken]");
+    if (input) return input.value;
+    const match = document.cookie.match(/(?:^|;\s*)csrftoken=([^;]+)/);
+    return match ? decodeURIComponent(match[1]) : "";
+}
+
+async function apiRequest(path, method = "GET", body = null) {
+    const headers = { "Content-Type": "application/json" };
+    if (method !== "GET") headers["X-CSRFToken"] = getCsrfToken();
+
+    const options = {
+        method: method,
+        headers: headers,
+        credentials: "include",
+    };
+    if (body !== null) options.body = JSON.stringify(body);
+
+    const res = await fetch(API_BASE + path, options);
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+
+        const message = (Array.isArray(data.errors) && data.errors.join(" ")) ||
+            data.error || data.message || "Request failed (" + res.status + ")";
+        throw new Error(message);
+    }
+    return data;
+}
+
+function getProfile() {
+    return apiRequest("/profile", "GET");
+}
+
+function updateProfile(fields) {
+    return apiRequest("/profile", "PATCH", fields);
+}
+
+async function initProfile() {
+    const nameInput = document.getElementById("adminName");
+    const emailInput = document.getElementById("adminEmail");
+    const saveBtn = document.getElementById("saveProfileBtn");
+
+    try {
+        const profile = await getProfile();
+        nameInput.value = profile.display_name || "";
+        emailInput.value = profile.email || "";
+    } catch (err) {
+        alert("Could not load profile: " + err.message);
+    }
+
+    saveBtn.addEventListener("click", async function () {
+        saveBtn.disabled = true;
+        try {
+            await updateProfile({
+                display_name: nameInput.value,
+                email: emailInput.value,
+            });
+            alert("Profile updated!");
+        } catch (err) {
+            alert("Update failed: " + err.message);
+        } finally {
+            saveBtn.disabled = false;
+        }
+    });
+}
+
+if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initProfile);
+} else {
+    initProfile();
+}
+</script>
+
 {% endblock %}
