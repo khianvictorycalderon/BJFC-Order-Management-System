@@ -573,7 +573,6 @@
         }
     }
 
-
     //  UPDATE MENU ITEM (PATCH)
     async function updateMenuItem(id, itemData) {
         try {
@@ -585,18 +584,26 @@
                 },
                 body: JSON.stringify(itemData)
             });
+            const data = await response.json();
 
             if (!response.ok) {
-                throw new Error(`HTTP error! Status: ${response.status}`);
+                console.error("Update failed:", data);
+                alert(
+                    data.errors
+                        ? JSON.stringify(data.errors, null, 2)
+                        : data.error || "Failed to update menu item."
+                );
+                return false;
             }
 
-            return true; 
+            console.log("Updated menu item:", data);
+            return true;
         } catch (error) {
             console.error("Error updating menu item:", error);
+            alert("Something went wrong while updating the menu item.");
             return false;
         }
     }
-
 
     //  DELETE MENU ITEM
     async function deleteMenuItem(id) {
@@ -617,7 +624,6 @@
             return false;
         }
     }
-    
         function renderMenuItems(items) {
         const body = document.getElementById("menu-items-body");
 
@@ -689,12 +695,66 @@
         if (!ok) toggle.checked = !toggle.checked;   // undo if it failed
     });
 
-    // delete -> DELETE
-    menuBody.addEventListener("click", async (e) => {
-        const btn = e.target.closest("[data-delete]");
-        if (!btn) return;
-        if (!confirm("Delete this menu item?")) return;
-        if (await deleteMenuItem(btn.dataset.delete)) fetchMenuItems();
+   
+// EDIT and DELETE menu items
+menuBody.addEventListener("click", async (e) => {
+
+    // EDIT ITEM
+    const editBtn = e.target.closest("[data-edit]");
+
+    if (editBtn) {
+        const id = editBtn.dataset.edit;
+        const row = editBtn.closest("tr");
+
+        const currentName = row.querySelector("td:nth-child(1) p.font-bold").textContent.trim();
+
+        const currentPriceText = row.querySelector("td:nth-child(2) span").textContent;
+        const currentPrice = currentPriceText.replace(/[₱,]/g, "").trim();
+
+        const newName = prompt("Enter item name:", currentName);
+
+        if (newName === null) return;
+        if (!newName.trim()) {
+            alert("Item name cannot be empty.");
+            return;
+        }
+
+        const newPrice = prompt("Enter item price:", currentPrice);
+
+        if (newPrice === null) return;
+
+        if (newPrice.trim() === "" || isNaN(Number(newPrice)) || Number(newPrice) < 0) {
+            alert("Please enter a valid price.");
+            return;
+        }
+
+        const ok = await updateMenuItem(id, {
+            name: newName.trim(),
+            price: Number(newPrice)
+        });
+
+        if (ok) {
+            alert("Menu item updated successfully!");
+            fetchMenuItems();
+        } else {
+            alert("Failed to update menu item.");
+        }
+
+        return;
+    }
+
+    // DELETE ITEM
+    const deleteBtn = e.target.closest("[data-delete]");
+
+        if (deleteBtn) {
+            if (!confirm("Delete this menu item?")) return;
+
+            if (await deleteMenuItem(deleteBtn.dataset.delete)) {
+                fetchMenuItems();
+            } else {
+                alert("Failed to delete menu item.");
+            }
+        }
     });
 
     document.addEventListener("DOMContentLoaded", fetchMenuItems);

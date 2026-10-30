@@ -66,13 +66,21 @@
                     <p class="mt-0.5 text-xs font-semibold text-[#89776e]">Browse feedback by star rating</p>
                 </div>
                 <div class="flex flex-wrap items-center gap-2">
-                    <span class="mr-1 text-[10px] font-extrabold uppercase tracking-[0.14em] text-[#89776e]">Rating</span>
-                    <span class="rounded-full bg-[#800000] px-3.5 py-1.5 text-[10px] font-extrabold uppercase tracking-wider text-white">All stars</span>
-                    <span class="inline-flex items-center gap-1 rounded-full border border-[#eadfd2] bg-[#fffdfa] px-3 py-1 text-xs font-extrabold text-[#594941]">5 <span class="text-[#c38b16]" aria-hidden="true">★</span></span>
-                    <span class="inline-flex items-center gap-1 rounded-full border border-[#eadfd2] bg-[#fffdfa] px-3 py-1 text-xs font-extrabold text-[#594941]">4 <span class="text-[#c38b16]" aria-hidden="true">★</span></span>
-                    <span class="inline-flex items-center gap-1 rounded-full border border-[#eadfd2] bg-[#fffdfa] px-3 py-1 text-xs font-extrabold text-[#594941]">3 <span class="text-[#c38b16]" aria-hidden="true">★</span></span>
-                    <span class="inline-flex items-center gap-1 rounded-full border border-[#eadfd2] bg-[#fffdfa] px-3 py-1 text-xs font-extrabold text-[#594941]">2 <span class="text-[#c38b16]" aria-hidden="true">★</span></span>
-                    <span class="inline-flex items-center gap-1 rounded-full border border-[#eadfd2] bg-[#fffdfa] px-3 py-1 text-xs font-extrabold text-[#594941]">1 <span class="text-[#c38b16]" aria-hidden="true">★</span></span>
+                    <span class="mr-1 text-[10px] font-extrabold uppercase tracking-[0.14em] text-[#89776e]">
+                        Rating
+                    </span>
+
+                    <button type="button" data-rating=""
+                        class="rating-filter rounded-full bg-[#800000] px-3.5 py-1.5 text-[10px] font-extrabold uppercase tracking-wider text-white">
+                        All stars
+                    </button>
+
+                    {% for star in "54321" %}
+                    <button type="button" data-rating="{{ star }}"
+                        class="rating-filter inline-flex items-center gap-1 rounded-full border border-[#eadfd2] bg-[#fffdfa] px-3 py-1 text-xs font-extrabold text-[#594941]">
+                        {{ star }} <span class="text-[#c38b16]">★</span>
+                    </button>
+                    {% endfor %}
                 </div>
             </div>
         </div>
@@ -137,17 +145,31 @@
     }[c]));
 
     // GET ALL FEEDBACKS  
+    let selectedRating = "";
+
     async function fetchFeedbacks(size = 10, page = 1, sort = "desc") {
         try {
             const params = new URLSearchParams({ size, page, sort });
+
+            if (selectedRating) {
+                params.set("rating", selectedRating);
+            }
+
             const response = await fetch(`/api/admin/feedbacks/?${params}`);
-            if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! Status: ${response.status}`);
+            }
 
             const data = await response.json();
-            console.log("Feedbacks:", data);
+
+            console.log("Filtered Feedbacks:", data);
+
             renderFeedbacks(data.feedbacks ?? []);
+
         } catch (error) {
             console.error("Error fetching feedbacks:", error);
+
             document.getElementById("fb-body").innerHTML =
                 `<tr><td colspan="5" class="px-6 py-8 text-center text-red-500">Failed to load feedback.</td></tr>`;
         }
@@ -195,10 +217,30 @@
         }).join("");
     }
 
+    
     document.addEventListener("DOMContentLoaded", () => {
         fetchFeedbacks();
         fetchFeedbackInfo();
+
+        document.querySelectorAll(".rating-filter").forEach(button => {
+            button.addEventListener("click", () => {
+                selectedRating = button.dataset.rating;
+
+                // Update active button appearance
+                document.querySelectorAll(".rating-filter").forEach(btn => {
+                    btn.classList.remove("bg-[#800000]", "text-white");
+                    btn.classList.add("bg-[#fffdfa]", "text-[#594941]", "border");
+                });
+
+                button.classList.add("bg-[#800000]", "text-white");
+                button.classList.remove("bg-[#fffdfa]", "text-[#594941]", "border");
+
+                // Reload feedback using selected rating
+                fetchFeedbacks();
+            });
+        });
     });
+
 </script>
 
 {% endblock %}
