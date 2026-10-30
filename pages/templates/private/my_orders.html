@@ -5,7 +5,7 @@
 {% block page_heading %}My orders{% endblock %}
 
 {% block content %}
-{# Mock UI only: heart, ADD, Cancel and Order Now buttons are inert until the backend is wired up. #}
+{# Menu, add-ons, order history and edit order are wired to /api/customer/... by the script at the bottom. #}
 <div class="space-y-6">
     <div>
         <p class="text-xs font-extrabold uppercase tracking-[0.18em] text-[#a87864]">Build your order</p>
@@ -90,13 +90,15 @@
     </section>
 </div>
 
-{# ===== ADDED FUNCTIONALITY: paste this directly above the final {% endblock %}. Nothing above it changes. ===== #}
-<form id="csrfForm" hidden>{% csrf_token %}</form>
+{# ===== ADDED FUNCTIONALITY ===== #}
+<form id="csrfForm" hidden data-user-id="{{ request.user.id|default:'' }}">{% csrf_token %}</form>
 
 <script>
 (() => {
     const API = "/api/customer";
     const MAX_QTY = 99;
+    const USER_ID = Number(document.getElementById("csrfForm").dataset.userId) || null;
+    let editingOrderId = null;
 
     const norm = (s) => String(s || "").replace(/\s+/g, " ").trim().toLowerCase();
     const peso = (n) => "₱" + Number(n).toFixed(2);
@@ -163,6 +165,8 @@
     const actions = document.querySelector("#addonsTitle").closest("section").nextElementSibling;
     const cancelBtn = actions.querySelectorAll("button")[0];
     const orderBtn = actions.querySelectorAll("button")[1];
+    const CANCEL_LABEL = cancelBtn.textContent;
+    const ORDER_LABEL = orderBtn.textContent;
 
     // ---------- Inject the order summary (above Cancel / Order Now) ----------
     const summary = document.createElement("section");
@@ -263,6 +267,44 @@
         btn.style.cursor = "not-allowed";
     }
 
+    // ---------- Edit a pending order (PATCH /api/customer/{id}/my-orders) ----------
+    function exitEdit() {
+        editingOrderId = null;
+        cancelBtn.textContent = CANCEL_LABEL;
+        orderBtn.textContent = ORDER_LABEL;
+    }
+
+    function startEdit(orderId) {
+        const order = currentOrders.find((o) => o.id === orderId);
+        if (!order) return;
+        if (!byId.size) return setMsg("Menu is still loading, please try again in a moment.", true);
+        const next = new Map();
+        const skipped = [];
+        order.items.forEach((i) => {
+            const item = byId.get(i.food_item_id);
+            if (!item) { skipped.push(i.food_item_name); return; }
+            const line = next.get(item.id) || { qty: 0, addons: new Set() };
+            line.qty = Math.min(MAX_QTY, line.qty + i.quantity);
+            i.addons.forEach((a) => {
+                const match = item.addons.find((x) => norm(x.name) === norm(a.name));
+                if (match) line.addons.add(match.id);
+            });
+            next.set(item.id, line);
+        });
+        if (!next.size) return setMsg("None of the items in this order are available anymore.", true);
+        cart.clear();
+        next.forEach((line, id) => cart.set(id, line));
+        editingOrderId = orderId;
+        cancelBtn.textContent = "Cancel edit";
+        orderBtn.textContent = "Save changes";
+        render();
+        window.scrollTo({ top: 0, behavior: "smooth" });
+        setMsg(
+            "Editing " + order.order_number + "." + (skipped.length ? " Unavailable and removed: " + skipped.join(", ") + "." : ""),
+            false
+        );
+    }
+
     // ---------- Wire up the existing buttons ----------
     function bind() {
         menuCards.forEach((card) => {
@@ -334,6 +376,7 @@
 
         cancelBtn.addEventListener("click", () => {
             cart.clear();
+            exitEdit();
             clearMsg();
             render();
         });
@@ -345,23 +388,32 @@
                 quantity: line.qty,
                 addon_ids: [...line.addons],
             }));
-            const original = orderBtn.textContent;
+            const editing = editingOrderId;
+            if (editing && !USER_ID) return setMsg("Please log in to edit an order.", true);
             orderBtn.disabled = true;
-            orderBtn.textContent = "Placing order…";
+            orderBtn.textContent = editing ? "Saving…" : "Placing order…";
             try {
-                const res = await api("/orders", { method: "POST", body: { items } });
+                const res = editing
+                    ? await api("/" + USER_ID + "/my-orders", { method: "PATCH", body: { order_id: editing, items } })
+                    : await api("/orders", { method: "POST", body: { items } });
                 cart.clear();
+                exitEdit();
                 render();
-                const eta = res.eta
-                    ? " Estimated ready time: " + new Date(res.eta).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) + "."
-                    : "";
-                setMsg("Order " + res.order_number + " placed!" + eta, false);
-                ordersState.page = 1;
+                if (editing) {
+                    setMsg("Order " + res.order.order_number + " updated.", false);
+                } else {
+                    const eta = res.eta
+                        ? " Estimated ready time: " + new Date(res.eta).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) + "."
+                        : "";
+                    setMsg("Order " + res.order_number + " placed!" + eta, false);
+                    ordersState.page = 1;
+                }
                 loadOrders();
             } catch (err) {
+                if (editing && err.status === 409) { cart.clear(); exitEdit(); render(); loadOrders(); }
                 setMsg(err.status === 401 ? "Please log in to place an order." : err.message, true);
             } finally {
-                orderBtn.textContent = original;
+                orderBtn.textContent = editingOrderId ? "Save changes" : ORDER_LABEL;
                 orderBtn.disabled = cart.size === 0;
             }
         });
@@ -369,14 +421,19 @@
 
     // ---------- My orders (GET /api/customer/my-orders) ----------
     const ordersState = { page: 1, size: 10, sort: "desc" };
+    let currentOrders = [];
 
     function renderOrders(data) {
+        currentOrders = data.orders;
         const { page, total_pages, total_items, has_next, has_previous } = data.pagination;
         $("ordersList").innerHTML = data.orders.map((o) => `
             <li class="rounded-2xl border border-[#eadfd2] bg-[#fffdf9] p-4">
                 <div class="flex flex-wrap items-center justify-between gap-2">
                     <p class="text-sm font-extrabold text-[#2b201d]">${esc(o.order_number)}</p>
-                    <span class="rounded-full bg-[#fff1e3] px-2 py-0.5 text-[11px] font-bold text-[#342724]">${esc(o.status_display)}</span>
+                    <div class="flex items-center gap-2">
+                        <span class="rounded-full bg-[#fff1e3] px-2 py-0.5 text-[11px] font-bold text-[#342724]">${esc(o.status_display)}</span>
+                        ${o.status === "PENDING" ? `<button type="button" data-edit="${o.id}" class="h-7 rounded-lg border border-[#e62727] px-3 text-[11px] font-extrabold text-[#e62727]">Edit</button>` : ""}
+                    </div>
                 </div>
                 <p class="mt-1 text-xs text-[#89776e]">${esc(new Date(o.created_at).toLocaleString([], { dateStyle: "medium", timeStyle: "short" }))}</p>
                 <ul class="mt-2 text-xs text-[#342724]">
@@ -417,6 +474,10 @@
     $("ordersSize").addEventListener("change", (e) => { ordersState.size = Number(e.target.value); ordersState.page = 1; loadOrders(); });
     $("ordersPrev").addEventListener("click", () => { if (ordersState.page > 1) { ordersState.page -= 1; loadOrders(); } });
     $("ordersNext").addEventListener("click", () => { ordersState.page += 1; loadOrders(); });
+    $("ordersList").addEventListener("click", (e) => {
+        const btn = e.target.closest("[data-edit]");
+        if (btn) startEdit(Number(btn.dataset.edit));
+    });
 
     // ---------- Load real menu data, then bind ----------
     render();
