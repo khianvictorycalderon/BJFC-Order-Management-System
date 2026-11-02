@@ -4,7 +4,7 @@
 {% block page_heading %}My account{% endblock %}
 
 {% block content %}
-{# Mock UI only: forms are inert until the backend is wired up. #}
+{# Profile is wired to /api/customer/{id}/profile by the script at the bottom. #}
 <div class="mx-auto max-w-4xl space-y-6">
     <div>
         <p class="text-xs font-extrabold uppercase tracking-[0.18em] text-[#a87864]">Profile</p>
@@ -48,4 +48,169 @@
 
     {% include "components/security_card.html" %}
 </div>
+
+{# ===== ADDED FUNCTIONALITY ===== #}
+<form id="accountCsrf" hidden data-user-id="{{ request.user.id|default:'' }}">{% csrf_token %}</form>
+
+<script>
+(() => {
+    const API = "/api/customer";
+    const USER_ID = Number(document.getElementById("accountCsrf").dataset.userId) || null;
+    const $ = (id) => document.getElementById(id);
+
+    // API field name -> input id (rename the keys if your API uses different names)
+    const FIELDS = { first_name: "firstName", last_name: "lastName", username: "userName", email: "userEmail" };
+
+    // ---------- API helper (session auth + CSRF) ----------
+    function csrfToken() {
+        const input = document.querySelector("#accountCsrf [name=csrfmiddlewaretoken]");
+        if (input && input.value) return input.value;
+        const m = document.cookie.match(/(?:^|; )csrftoken=([^;]*)/);
+        return m ? decodeURIComponent(m[1]) : "";
+    }
+
+    async function api(path, opts = {}) {
+        const method = opts.method || "GET";
+        const headers = {};
+        if (opts.body) headers["Content-Type"] = "application/json";
+        if (method !== "GET") headers["X-CSRFToken"] = csrfToken();
+        const res = await fetch(API + path, {
+            method,
+            headers,
+            credentials: "same-origin",
+            body: opts.body ? JSON.stringify(opts.body) : undefined,
+        });
+        const text = await res.text();
+        let data = {};
+        try { data = text ? JSON.parse(text) : {}; } catch (e) { /* non-JSON error page */ }
+        if (!res.ok) {
+            const err = new Error(
+                data.error ||
+                (Array.isArray(data.errors) ? data.errors.join(" ") : "") ||
+                data.detail ||
+                "Something went wrong (" + res.status + ")."
+            );
+            err.status = res.status;
+            throw err;
+        }
+        return data;
+    }
+
+    // ---------- Find existing markup + inject message area ----------
+    const form = $("firstName").closest("form");
+    const profileSection = form.closest("section");
+    const updateBtn = form.querySelector("button");
+    const avatar = profileSection.querySelector("header span");
+
+    const msg = document.createElement("p");
+    msg.setAttribute("role", "status");
+    msg.setAttribute("aria-live", "polite");
+    msg.style.cssText = "display:none;margin-bottom:1.25rem;padding:.75rem 1rem;border-radius:.75rem;font-size:.875rem;font-weight:700";
+    form.before(msg);
+
+    function setMsg(text, isError) {
+        msg.textContent = text;
+        msg.style.display = "block";
+        msg.style.background = isError ? "#fff1f1" : "#eef8ee";
+        msg.style.color = isError ? "#c41d1d" : "#2f6b2f";
+    }
+
+    async function busy(btn, fn) {
+        btn.disabled = true;
+        btn.style.opacity = "0.6";
+        try { await fn(); } catch (err) {
+            setMsg(err.message, true);
+        } finally {
+            btn.disabled = false;
+            btn.style.opacity = "";
+        }
+    }
+
+    function fillProfile(data) {
+        const p = data.profile || data.user || data;   // tolerate either response shape
+        Object.entries(FIELDS).forEach(([key, id]) => { $(id).value = p[key] || ""; });
+        if (avatar) avatar.textContent = (($("firstName").value || $("userName").value || "?").trim()[0] || "?").toUpperCase();
+    }
+
+    // ---------- GET /api/customer/{id}/profile ----------
+    async function loadProfile() {
+        if (!USER_ID) return setMsg("Please log in to manage your account.", true);
+        try { fillProfile(await api("/" + USER_ID + "/profile")); }
+        catch (err) { setMsg(err.message, true); }
+    }
+
+    // ---------- PATCH /api/customer/{id}/profile ----------
+    updateBtn.addEventListener("click", () => busy(updateBtn, async () => {
+        if (!USER_ID) throw new Error("Please log in to update your profile.");
+        const body = {};
+        Object.entries(FIELDS).forEach(([key, id]) => { body[key] = $(id).value.trim(); });
+        if (!body.email) throw new Error("Email is required.");
+        fillProfile(await api("/" + USER_ID + "/profile", { method: "PATCH", body }));
+        setMsg("Profile updated.", false);
+    }));
+
+    // ---------- DELETE /api/customer/{id}/profile ----------
+    const danger = document.createElement("section");
+    danger.className = "rounded-3xl border border-[#eadfd2] bg-white p-6 shadow-sm sm:p-8";
+    danger.innerHTML = `
+        <h3 class="text-lg font-extrabold text-[#2b201d]">Delete account</h3>
+        <p class="mt-1 text-sm text-[#89776e]">This permanently removes your account and cannot be undone.</p>
+        <input id="deletePassword" type="password" placeholder="Enter your password to confirm" autocomplete="current-password" class="mt-4 block h-12 w-full max-w-sm rounded-xl border border-[#eadfd2] bg-[#fffaf4] px-4 text-sm font-semibold text-[#342724] outline-none transition placeholder:font-medium placeholder:text-[#b9a79d] focus:border-[#800000] focus:bg-white focus:ring-4 focus:ring-[#800000]/10">
+        <input id="deleteConfirmation" type="text" placeholder="Type DELETE_MY_ACCOUNT to confirm" autocomplete="off" class="mt-4 block h-12 w-full max-w-sm rounded-xl border border-[#eadfd2] bg-[#fffaf4] px-4 text-sm font-semibold text-[#342724] outline-none transition placeholder:font-medium placeholder:text-[#b9a79d] focus:border-[#800000] focus:bg-white focus:ring-4 focus:ring-[#800000]/10">
+        <button type="button" id="deleteAccount" class="mt-4 inline-flex h-11 items-center justify-center rounded-xl border-2 border-[#e62727] bg-white px-6 text-sm font-extrabold text-[#e62727] transition hover:bg-[#fff1f1]">Delete my account</button>`;
+    profileSection.after(danger);
+
+    $("deleteAccount").addEventListener("click", (e) => busy(e.currentTarget, async () => {
+        if (!USER_ID) throw new Error("Please log in to delete your account.");
+        const password = $("deletePassword").value;
+        const confirmation = $("deleteConfirmation").value.trim();
+        if (!password) throw new Error("Enter your password to delete your account.");
+        if (confirmation !== "DELETE_MY_ACCOUNT") throw new Error('Type DELETE_MY_ACCOUNT in the confirmation box.');
+        if (!confirm("Delete your account permanently? This cannot be undone.")) return;
+        await api("/" + USER_ID + "/profile", { method: "DELETE", body: { password, confirm_deletion: confirmation } });
+        window.location.href = "/";   // change to your login URL if different
+    }));
+
+    // ---------- PATCH /api/customer/{id}/password (card from components/security_card.html) ----------
+    const pwForm = $("currentPassword").closest("form");
+    const pwBtn = pwForm.querySelector("button");
+
+    const pwMsg = document.createElement("p");
+    pwMsg.setAttribute("role", "status");
+    pwMsg.setAttribute("aria-live", "polite");
+    pwMsg.style.cssText = "display:none;margin-bottom:1.25rem;padding:.75rem 1rem;border-radius:.75rem;font-size:.875rem;font-weight:700";
+    pwForm.before(pwMsg);
+
+    function setPwMsg(text, isError) {
+        pwMsg.textContent = text;
+        pwMsg.style.display = "block";
+        pwMsg.style.background = isError ? "#fff1f1" : "#eef8ee";
+        pwMsg.style.color = isError ? "#c41d1d" : "#2f6b2f";
+    }
+
+    pwBtn.addEventListener("click", async () => {
+        pwBtn.disabled = true;
+        pwBtn.style.opacity = "0.6";
+        try {
+            if (!USER_ID) throw new Error("Please log in to change your password.");
+            const old_password = $("currentPassword").value;
+            const new_password = $("newPassword").value;
+            if (!old_password || !new_password) throw new Error("Enter both your current and new password.");
+            if (new_password.length < 8) throw new Error("New password must be at least 8 characters.");
+            if (new_password !== $("confirmPassword").value) throw new Error("New passwords do not match.");
+            if (new_password === old_password) throw new Error("New password must be different from the current one.");
+            await api("/" + USER_ID + "/password", { method: "PATCH", body: { old_password, new_password } });
+            ["currentPassword", "newPassword", "confirmPassword"].forEach((id) => { $(id).value = ""; });
+            setPwMsg("Password updated.", false);
+        } catch (err) {
+            setPwMsg(err.status === 401 ? "Please log in again." : err.message, true);
+        } finally {
+            pwBtn.disabled = false;
+            pwBtn.style.opacity = "";
+        }
+    });
+
+    loadProfile();
+})();
+</script>
 {% endblock %}
