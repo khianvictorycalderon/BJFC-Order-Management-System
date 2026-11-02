@@ -20,8 +20,7 @@
                 <h3 class="font-extrabold text-[#342724]">All users</h3>
                 <p class="mt-0.5 text-xs font-semibold text-[#89776e]">Sample customer profiles</p>
             </div>
-            <span class="inline-flex w-fit items-center rounded-full bg-[#f7f1e9] px-3 py-1 text-xs font-extrabold text-[#594941]">{{ users|length }} users</span>
-        </div>
+            <span id="userCount" class="inline-flex w-fit items-center rounded-full bg-[#f7f1e9] px-3 py-1 text-xs font-extrabold text-[#594941]">0 users</span>        </div>
 
         <div class="overflow-x-auto">
             <table class="w-full min-w-[760px] border-collapse text-left">
@@ -34,39 +33,84 @@
                         <th scope="col" class="px-5 py-3 text-[10px] font-extrabold uppercase tracking-[0.14em] text-[#89776e]">Status</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-[#f0e8df]">
-                    {% for user in users %}
-                    <tr class="transition hover:bg-[#fffdfa]">
-                        <td class="px-5 py-4 sm:px-6">
-                            <div class="flex items-center gap-3">
-                                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#fff0ed] text-sm font-black text-[#800000]" aria-hidden="true">{{ user.name|slice:":1" }}</span>
-                                <span>
-                                    <span class="block text-sm font-extrabold text-[#342724]">{{ user.name }}</span>
-                                    <span class="mt-0.5 block text-xs font-semibold text-[#89776e]">@{{ user.username }}</span>
-                                </span>
-                            </div>
-                        </td>
-                        <td class="px-5 py-4 text-sm font-semibold text-[#594941]">{{ user.email }}</td>
-                        <td class="px-5 py-4 text-sm font-semibold text-[#594941]">{{ user.phone }}</td>
-                        <td class="px-5 py-4 text-sm font-semibold text-[#594941]">{{ user.joined }}</td>
-                        <td class="px-5 py-4">
-                            {% if user.status == "Active" %}
-                            <span class="inline-flex items-center gap-1.5 rounded-full bg-[#edf7ef] px-2.5 py-1 text-xs font-extrabold text-[#32744a]">
-                                <span class="h-1.5 w-1.5 rounded-full bg-[#32744a]"></span>
-                                {{ user.status }}
-                            </span>
-                            {% else %}
-                            <span class="inline-flex items-center gap-1.5 rounded-full bg-[#f3f0ed] px-2.5 py-1 text-xs font-extrabold text-[#746b65]">
-                                <span class="h-1.5 w-1.5 rounded-full bg-[#8f837b]"></span>
-                                {{ user.status }}
-                            </span>
-                            {% endif %}
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
+                <tbody id="usersTableBody" class="divide-y divide-[#f0e8df]"></tbody>
             </table>
         </div>
     </section>
 </div>
+
+<script>
+const API_BASE = "/api/admin";
+
+async function apiRequest(path, method = "GET", body = null) {
+    const options = {
+        method: method,
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+    };
+    if (body !== null) options.body = JSON.stringify(body);
+
+    const res = await fetch(API_BASE + path, options);
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+        throw new Error(data.error || data.message || "Request failed (" + res.status + ")");
+    }
+    return data;
+}
+
+function getUsers(page = 1, size = 10, sort = "asc") {
+    const params = new URLSearchParams({ page: page, size: size, sort: sort });
+    return apiRequest("/users?" + params.toString(), "GET");
+}
+
+function escapeHtml(text) {
+    const div = document.createElement("div");
+    div.textContent = text == null ? "" : String(text);
+    return div.innerHTML;
+}
+
+function renderUsers(users) {
+    const body = document.getElementById("usersTableBody");
+    if (users.length === 0) {
+        body.innerHTML = '<tr><td colspan="5" class="px-5 py-6 text-center text-sm font-semibold text-[#89776e]">No users found.</td></tr>';
+        return;
+    }
+    body.innerHTML = users.map(function (u) {
+        const fullName = ((u.first_name || "") + " " + (u.last_name || "")).trim() || u.username;
+        const joined = u.date_joined ? new Date(u.date_joined).toLocaleDateString() : "—";
+        const role = u.is_staff ? "Admin" : "Customer";
+        return '<tr class="transition hover:bg-[#fffdfa]">' +
+            '<td class="px-5 py-4 sm:px-6">' +
+                '<div class="flex items-center gap-3">' +
+                    '<span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#fff0ed] text-sm font-black text-[#800000]" aria-hidden="true">' + escapeHtml(fullName.charAt(0).toUpperCase()) + '</span>' +
+                    '<span>' +
+                        '<span class="block text-sm font-extrabold text-[#342724]">' + escapeHtml(fullName) + '</span>' +
+                        '<span class="mt-0.5 block text-xs font-semibold text-[#89776e]">@' + escapeHtml(u.username) + '</span>' +
+                    '</span>' +
+                '</div>' +
+            '</td>' +
+            '<td class="px-5 py-4 text-sm font-semibold text-[#594941]">' + escapeHtml(u.email) + '</td>' +
+            '<td class="px-5 py-4 text-sm font-semibold text-[#594941]">—</td>' +
+            '<td class="px-5 py-4 text-sm font-semibold text-[#594941]">' + escapeHtml(joined) + '</td>' +
+            '<td class="px-5 py-4 text-sm font-semibold text-[#594941]">' + escapeHtml(role) + '</td>' +
+        '</tr>';
+    }).join("");
+}
+
+async function loadUsers() {
+    try {
+        const data = await getUsers(1, 10, "asc");
+        renderUsers(data.users);
+        document.getElementById("userCount").textContent = data.pagination.total_items + " users";
+    } catch (err) {
+        alert("Could not load users: " + err.message);
+    }
+}
+
+if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", loadUsers);
+} else {
+    loadUsers();
+}
+</script>
 {% endblock %}

@@ -10,9 +10,10 @@
         <section class="rounded-3xl border border-[#eadfd2] bg-white p-6 shadow-sm sm:p-8">
             <header class="border-b border-[#f0e7de] pb-5"><h3 class="text-lg font-extrabold text-[#2b201d]">Hero headline &amp; text</h3><p class="mt-0.5 text-sm text-[#89776e]">The banner at the top of the Contact page.</p></header>
             <form onsubmit="return false" class="space-y-5 pt-6" novalidate>
+                {% csrf_token %}
                 <div><label for="mainHeading" class="mb-2 block text-[11px] font-extrabold uppercase tracking-[0.14em] text-[#89776e]">Main heading title</label><input id="mainHeading" type="text" value="CONTACT US" class="h-12 w-full rounded-xl border border-[#eadfd2] bg-[#fffaf4] px-4 text-sm font-semibold text-[#342724] outline-none transition focus:border-[#800000] focus:bg-white focus:ring-4 focus:ring-[#800000]/10"></div>
                 <div><label for="subHeading" class="mb-2 block text-[11px] font-extrabold uppercase tracking-[0.14em] text-[#89776e]">Subheading description</label><textarea id="subHeading" rows="4" class="w-full rounded-xl border border-[#eadfd2] bg-[#fffaf4] px-4 py-3 text-sm font-semibold leading-6 text-[#342724] outline-none transition focus:border-[#800000] focus:bg-white focus:ring-4 focus:ring-[#800000]/10">We'd love to hear from you! Whether you have a question, want to place a bulk order, or just want to say hello, our team is ready to help.</textarea></div>
-                <div class="flex justify-end border-t border-[#f0e7de] pt-6"><button type="button" class="inline-flex h-11 items-center justify-center rounded-xl bg-[#800000] px-6 text-sm font-extrabold text-white shadow-sm transition hover:bg-[#650000] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#800000]/25">Update text</button></div>
+                <div class="flex justify-end border-t border-[#f0e7de] pt-6"><button id="saveContactBtn" type="button" class="inline-flex h-11 items-center justify-center rounded-xl bg-[#800000] px-6 text-sm font-extrabold text-white shadow-sm transition hover:bg-[#650000] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#800000]/25">Update text</button></div>
             </form>
         </section>
         <section class="rounded-3xl border border-[#eadfd2] bg-white p-6 shadow-sm sm:p-8">
@@ -21,8 +22,81 @@
                 <div><label for="storeAddress" class="mb-2 block text-[11px] font-extrabold uppercase tracking-[0.14em] text-[#89776e]">Address</label><input id="storeAddress" type="text" value="Your Street, City, Province" class="h-12 w-full rounded-xl border border-[#eadfd2] bg-[#fffaf4] px-4 text-sm font-semibold text-[#342724] outline-none transition focus:border-[#800000] focus:bg-white focus:ring-4 focus:ring-[#800000]/10"></div>
                 <div><label for="storePhone" class="mb-2 block text-[11px] font-extrabold uppercase tracking-[0.14em] text-[#89776e]">Phone</label><input id="storePhone" type="tel" value="Your Phone Number" class="h-12 w-full rounded-xl border border-[#eadfd2] bg-[#fffaf4] px-4 text-sm font-semibold text-[#342724] outline-none transition focus:border-[#800000] focus:bg-white focus:ring-4 focus:ring-[#800000]/10"></div>
                 <div><label for="storeEmail" class="mb-2 block text-[11px] font-extrabold uppercase tracking-[0.14em] text-[#89776e]">Email</label><input id="storeEmail" type="email" value="Your Email Address" class="h-12 w-full rounded-xl border border-[#eadfd2] bg-[#fffaf4] px-4 text-sm font-semibold text-[#342724] outline-none transition focus:border-[#800000] focus:bg-white focus:ring-4 focus:ring-[#800000]/10"></div>
-                <div class="flex justify-end border-t border-[#f0e7de] pt-6"><button type="button" class="inline-flex h-11 items-center justify-center rounded-xl bg-[#800000] px-6 text-sm font-extrabold text-white shadow-sm transition hover:bg-[#650000] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#800000]/25">Update information</button></div>
+                <div class="flex justify-end border-t border-[#f0e7de] pt-6"><button id="saveContactBtn" type="button" class="inline-flex h-11 items-center justify-center rounded-xl bg-[#800000] px-6 text-sm font-extrabold text-white shadow-sm transition hover:bg-[#650000] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#800000]/25">Update information</button></div>
             </form>
         </section>
     </div>
+        <script>
+    const API_BASE = "/api/admin";
+
+    function getCsrfToken() {
+        const input = document.querySelector("[name=csrfmiddlewaretoken]");
+        if (input) return input.value;
+        const match = document.cookie.match(/(?:^|;\s*)csrftoken=([^;]+)/);
+        return match ? decodeURIComponent(match[1]) : "";
+    }
+
+    async function apiRequest(path, method = "GET", body = null) {
+        const headers = { "Content-Type": "application/json" };
+        if (method !== "GET") headers["X-CSRFToken"] = getCsrfToken();
+
+        const options = {
+            method: method,
+            headers: headers,
+            credentials: "include",
+        };
+        if (body !== null) options.body = JSON.stringify(body);
+
+        const res = await fetch(API_BASE + path, options);
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+            throw new Error(data.error || data.message || "Request failed (" + res.status + ")");
+        }
+        return data;
+    }
+
+    function getContactPage() {
+        return apiRequest("/contact-page", "GET");
+    }
+    function updateContactPage(fields) {
+        return apiRequest("/contact-page", "PATCH", fields);
+    }
+
+    async function initContactPage() {
+        const heading = document.getElementById("mainHeading");
+        const sub = document.getElementById("subHeading");
+        const saveBtn = document.getElementById("saveContactBtn");
+
+        try {
+            const page = await getContactPage();
+            heading.value = page.title || "";
+            sub.value = page.description || "";
+        } catch (err) {
+            alert("Could not load contact page: " + err.message);
+        }
+
+        saveBtn.addEventListener("click", async function () {
+            saveBtn.disabled = true;
+            try {
+                await updateContactPage({
+                    title: heading.value,
+                    description: sub.value,
+                });
+                const frame = document.getElementById("previewFrame");
+                if (frame) frame.src = frame.src;   // i-reload ang preview
+                alert("Saved!");
+            } catch (err) {
+                alert("Save failed: " + err.message);
+            } finally {
+                saveBtn.disabled = false;
+            }
+        });
+    }
+
+    if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", initContactPage);
+    } else {
+        initContactPage();
+    }
+    </script>
 {% endblock %}
