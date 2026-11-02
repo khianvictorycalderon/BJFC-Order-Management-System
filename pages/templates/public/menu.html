@@ -523,6 +523,125 @@
         addProductToCart(id);
         console.log("Buy now:", cart);
     }
+
+    // GET CUSTOMER MENU ITEMS
+    async function fetchCustomerMenuItems(params = {}) {
+        try {
+            const query = new URLSearchParams(params).toString();
+
+            const response = await fetch(`/api/customer/menu/items/?${query}`, {
+                method: "GET"
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! Status: ${response.status}`);
+            }
+
+            const data = await response.json();
+            console.log("Customer Menu Items:", data);
+
+            if (Array.isArray(data.items)) {
+                renderCustomerMenuItems(data.items);
+            }
+
+        } catch (error) {
+            console.error("Error fetching customer menu items:", error);
+        }
+    }
+
+    // PLACE CUSTOMER ORDER
+    async function createOrder(items) {
+        try {
+            const response = await fetch("/api/customer/orders/", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": document.cookie.match(/csrftoken=([^;]+)/)?.[1]
+                },
+                body: JSON.stringify({ items })
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! Status: ${response.status}`);
+            }
+
+            const data = await response.json();
+            console.log("Order Placed:", data.order_number, data.status, data.eta);
+
+        } catch (error) {
+            console.error("Error placing order:", error);
+        }
+    }
+
+    // GET CUSTOMER FAVORITES
+    async function fetchFavorites(params = {}) {
+        try {
+            const query = new URLSearchParams(params).toString();
+
+            const response = await fetch(`/api/customer/favorites/?${query}`, {
+                method: "GET"
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! Status: ${response.status}`);
+            }
+
+            const data = await response.json();
+            console.log("Favorites:", data);
+
+            if (Array.isArray(data.items)) {
+                renderMenuItems(data.items);
+            }
+
+        } catch (error) {
+            console.error("Error fetching favorites:", error);
+        }
+    }
+
+    // ADD TO FAVORITES
+    async function addFavorite(menuItemId) {
+        try {
+            const response = await fetch(`/api/customer/favorites/${menuItemId}/`, {
+                method: "PUT",
+                headers: {
+                    "X-CSRFToken": document.cookie.match(/csrftoken=([^;]+)/)?.[1]
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! Status: ${response.status}`);
+            }
+
+            const data = await response.json();
+            console.log("Favorite Added:", data.message, data.item);
+
+        } catch (error) {
+            console.error("Error adding favorite:", error);
+        }
+    }
+
+    // REMOVE FROM FAVORITES
+    async function removeFavorite(menuItemId) {
+        try {
+            const response = await fetch(`/api/customer/favorites/${menuItemId}/`, {
+                method: "DELETE",
+                headers: {
+                    "X-CSRFToken": document.cookie.match(/csrftoken=([^;]+)/)?.[1]
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! Status: ${response.status}`);
+            }
+
+            const data = await response.json();
+            console.log("Favorite Removed:", data.message);
+
+        } catch (error) {
+            console.error("Error removing favorite:", error);
+        }
+    }
+
 </script>
 
 {% endblock %}
