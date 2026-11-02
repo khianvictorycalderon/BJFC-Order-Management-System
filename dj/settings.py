@@ -131,7 +131,7 @@ STATICFILES_DIRS = [
     BASE_DIR / "static",
 ]
 
-
+DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 # Email
 # https://docs.djangoproject.com/en/6.1/topics/email/#topic-email-configuration
 
