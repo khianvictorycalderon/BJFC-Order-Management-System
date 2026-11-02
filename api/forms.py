@@ -39,6 +39,8 @@ class FoodItemForm(forms.ModelForm):
         image = self.cleaned_data.get("image")
         if not image:
             return image
+        if self.instance.pk and image == self.instance.image:
+            return image
         if image.size > MAX_IMAGE_BYTES:
             raise forms.ValidationError("Image must be 5 MB or smaller.")
         fmt = getattr(getattr(image, "image", None), "format", None)

@@ -14,6 +14,7 @@ urlpatterns = [
     path("my-orders/", views.my_orders),
     path("account", views.customer_account, name="customer_account"),
     path("account/", views.customer_account),
+    path("logout/", views.logout_view, name="logout"),
 
     # Admin Pages
     path("admin-panel/dashboard/", views.admin_dashboard, name="admin_dashboard"),

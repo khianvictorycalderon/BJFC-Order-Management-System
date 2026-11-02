@@ -28,6 +28,7 @@ class StoreInformation(models.Model):
     storename = models.CharField(max_length=255)
     contact = models.CharField(max_length=20)
     address = models.CharField(max_length=255)
+    email = models.EmailField(blank=True)
     def __str__(self):
         return self.storename
 
@@ -194,6 +195,13 @@ class ContactMessage(models.Model):
     email = models.EmailField()
     phone = models.CharField(max_length=20, blank=True)
     message = models.TextField()
+    sender = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="contact_messages",
+    )
     status = models.CharField(
         max_length=20,
         choices=Status.choices,

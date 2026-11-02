@@ -39,6 +39,10 @@
                     <label for="userEmail" class="mb-2 block text-[11px] font-extrabold uppercase tracking-[0.14em] text-[#89776e]">Email</label>
                     <input id="userEmail" type="email" value="jollibee@gmail.com" class="h-12 w-full rounded-xl border border-[#eadfd2] bg-[#fffaf4] px-4 text-sm font-semibold text-[#342724] outline-none transition focus:border-[#800000] focus:bg-white focus:ring-4 focus:ring-[#800000]/10">
                 </div>
+                <div>
+                    <label for="phoneNumber" class="mb-2 block text-[11px] font-extrabold uppercase tracking-[0.14em] text-[#89776e]">Phone number</label>
+                    <input id="phoneNumber" type="tel" autocomplete="tel" class="h-12 w-full rounded-xl border border-[#eadfd2] bg-[#fffaf4] px-4 text-sm font-semibold text-[#342724] outline-none transition focus:border-[#800000] focus:bg-white focus:ring-4 focus:ring-[#800000]/10">
+                </div>
             </div>
             <div class="mt-7 flex justify-end border-t border-[#f0e7de] pt-6">
                 <button type="button" class="inline-flex h-11 items-center justify-center rounded-xl bg-[#800000] px-6 text-sm font-extrabold text-white shadow-sm transition hover:bg-[#650000] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#800000]/25">Update profile</button>
@@ -59,7 +63,13 @@
     const $ = (id) => document.getElementById(id);
 
     // API field name -> input id (rename the keys if your API uses different names)
-    const FIELDS = { first_name: "firstName", last_name: "lastName", username: "userName", email: "userEmail" };
+    const FIELDS = {
+        first_name: "firstName",
+        last_name: "lastName",
+        username: "userName",
+        email: "userEmail",
+        phone_number: "phoneNumber",
+    };
 
     // ---------- API helper (session auth + CSRF) ----------
     function csrfToken() {

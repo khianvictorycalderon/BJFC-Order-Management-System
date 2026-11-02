@@ -7,6 +7,8 @@ Web Development (ITPS309) + Professional Elective 3 (PELEC304) Finals Project.
 - Tailwind CSS (via CDN)
 - JavaScript
 
+Page templates, including shared components, are stored in `pages/templates/` and are owned by the `pages` app.
+
 ### Prerequisites:
 If you don't have the following, install it.
 - Git *(CLI is recommended instead of GitHub Desktop)*
@@ -73,10 +75,11 @@ Below are the steps you will do for first time setting up this project.
 10. You can code now!
 
 ### Admin Access
-1. Create a superuser via `python manage.py createsuperuser`.
-2. Fill out the necessary information being asked.
-3. Go to `/admin` of your django url project and login.
-4. Done!
+1. Set non-empty `ADMIN_DEFAULT_USERNAME` and `ADMIN_DEFAULT_PASSWORD` values in the root `.env` file.
+2. Run `python manage.py migrate`. Django creates the configured staff account if it does not already exist. Its password is hashed and is not reset on later migrations.
+3. Sign in at `/admin-login/` with those credentials to open the custom admin panel.
+
+The configured account must not already belong to a non-staff user. These credentials are for initial account creation; changing the `.env` password later does not change an existing account's password.
 
 ### Pull Guide:
 

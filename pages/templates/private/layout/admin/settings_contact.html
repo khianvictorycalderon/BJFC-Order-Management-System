@@ -19,10 +19,11 @@
         <section class="rounded-3xl border border-[#eadfd2] bg-white p-6 shadow-sm sm:p-8">
             <header class="border-b border-[#f0e7de] pb-5"><h3 class="text-lg font-extrabold text-[#2b201d]">Store information</h3><p class="mt-0.5 text-sm text-[#89776e]">Shown in the Contact page banner and footer.</p></header>
             <form onsubmit="return false" class="space-y-5 pt-6" novalidate>
-                <div><label for="storeAddress" class="mb-2 block text-[11px] font-extrabold uppercase tracking-[0.14em] text-[#89776e]">Address</label><input id="storeAddress" type="text" value="Your Street, City, Province" class="h-12 w-full rounded-xl border border-[#eadfd2] bg-[#fffaf4] px-4 text-sm font-semibold text-[#342724] outline-none transition focus:border-[#800000] focus:bg-white focus:ring-4 focus:ring-[#800000]/10"></div>
-                <div><label for="storePhone" class="mb-2 block text-[11px] font-extrabold uppercase tracking-[0.14em] text-[#89776e]">Phone</label><input id="storePhone" type="tel" value="Your Phone Number" class="h-12 w-full rounded-xl border border-[#eadfd2] bg-[#fffaf4] px-4 text-sm font-semibold text-[#342724] outline-none transition focus:border-[#800000] focus:bg-white focus:ring-4 focus:ring-[#800000]/10"></div>
-                <div><label for="storeEmail" class="mb-2 block text-[11px] font-extrabold uppercase tracking-[0.14em] text-[#89776e]">Email</label><input id="storeEmail" type="email" value="Your Email Address" class="h-12 w-full rounded-xl border border-[#eadfd2] bg-[#fffaf4] px-4 text-sm font-semibold text-[#342724] outline-none transition focus:border-[#800000] focus:bg-white focus:ring-4 focus:ring-[#800000]/10"></div>
-                <div class="flex justify-end border-t border-[#f0e7de] pt-6"><button id="saveContactBtn" type="button" class="inline-flex h-11 items-center justify-center rounded-xl bg-[#800000] px-6 text-sm font-extrabold text-white shadow-sm transition hover:bg-[#650000] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#800000]/25">Update information</button></div>
+                <div><label for="storeAddress" class="mb-2 block text-[11px] font-extrabold uppercase tracking-[0.14em] text-[#89776e]">Address</label><input id="storeAddress" type="text" value="" required class="h-12 w-full rounded-xl border border-[#eadfd2] bg-[#fffaf4] px-4 text-sm font-semibold text-[#342724] outline-none transition focus:border-[#800000] focus:bg-white focus:ring-4 focus:ring-[#800000]/10"></div>
+                <div><label for="storePhone" class="mb-2 block text-[11px] font-extrabold uppercase tracking-[0.14em] text-[#89776e]">Phone</label><input id="storePhone" type="tel" value="" required class="h-12 w-full rounded-xl border border-[#eadfd2] bg-[#fffaf4] px-4 text-sm font-semibold text-[#342724] outline-none transition focus:border-[#800000] focus:bg-white focus:ring-4 focus:ring-[#800000]/10"></div>
+                <div><label for="storeEmail" class="mb-2 block text-[11px] font-extrabold uppercase tracking-[0.14em] text-[#89776e]">Email</label><input id="storeEmail" type="email" value="" class="h-12 w-full rounded-xl border border-[#eadfd2] bg-[#fffaf4] px-4 text-sm font-semibold text-[#342724] outline-none transition focus:border-[#800000] focus:bg-white focus:ring-4 focus:ring-[#800000]/10"></div>
+                <p id="storeInfoMessage" role="status" aria-live="polite" class="hidden rounded-lg px-3 py-2 text-sm font-semibold"></p>
+                <div class="flex justify-end border-t border-[#f0e7de] pt-6"><button id="saveStoreBtn" type="button" class="inline-flex h-11 items-center justify-center rounded-xl bg-[#800000] px-6 text-sm font-extrabold text-white shadow-sm transition hover:bg-[#650000] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#800000]/25">Update information</button></div>
             </form>
         </section>
     </div>
@@ -50,7 +51,9 @@
         const res = await fetch(API_BASE + path, options);
         const data = await res.json().catch(() => ({}));
         if (!res.ok) {
-            throw new Error(data.error || data.message || "Request failed (" + res.status + ")");
+            const error = new Error(data.error || data.message || "Request failed (" + res.status + ")");
+            error.status = res.status;
+            throw error;
         }
         return data;
     }
@@ -61,11 +64,22 @@
     function updateContactPage(fields) {
         return apiRequest("/contact-page", "PATCH", fields);
     }
+    function getStoreInformation() {
+        return apiRequest("/store-information", "GET");
+    }
+    function updateStoreInformation(fields) {
+        return apiRequest("/store-information", "PATCH", fields);
+    }
 
     async function initContactPage() {
         const heading = document.getElementById("mainHeading");
         const sub = document.getElementById("subHeading");
         const saveBtn = document.getElementById("saveContactBtn");
+        const storeEmail = document.getElementById("storeEmail");
+        const storePhone = document.getElementById("storePhone");
+        const storeAddress = document.getElementById("storeAddress");
+        const storeMessage = document.getElementById("storeInfoMessage");
+        const storeSaveBtn = document.getElementById("saveStoreBtn");
 
         try {
             const page = await getContactPage();
@@ -73,6 +87,15 @@
             sub.value = page.description || "";
         } catch (err) {
             alert("Could not load contact page: " + err.message);
+        }
+
+        try {
+            const store = await getStoreInformation();
+            storeEmail.value = store.email || "";
+            storePhone.value = store.contact || "";
+            storeAddress.value = store.address || "";
+        } catch (err) {
+            if (err.status !== 404) alert("Could not load store information: " + err.message);
         }
 
         saveBtn.addEventListener("click", async function () {
@@ -89,6 +112,30 @@
                 alert("Save failed: " + err.message);
             } finally {
                 saveBtn.disabled = false;
+            }
+        });
+
+        storeSaveBtn.addEventListener("click", async function () {
+            storeSaveBtn.disabled = true;
+            storeMessage.className = "rounded-lg px-3 py-2 text-sm font-semibold";
+            try {
+                const store = await updateStoreInformation({
+                    email: storeEmail.value,
+                    contact: storePhone.value,
+                    address: storeAddress.value,
+                });
+                storeEmail.value = store.email || "";
+                storePhone.value = store.contact;
+                storeAddress.value = store.address;
+                storeMessage.classList.add("bg-green-50", "text-green-700");
+                storeMessage.textContent = "Store information updated.";
+                const frame = document.getElementById("previewFrame");
+                if (frame) frame.src = frame.src;
+            } catch (err) {
+                storeMessage.classList.add("bg-red-50", "text-red-700");
+                storeMessage.textContent = err.message;
+            } finally {
+                storeSaveBtn.disabled = false;
             }
         });
     }

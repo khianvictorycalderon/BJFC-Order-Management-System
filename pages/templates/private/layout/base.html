@@ -54,6 +54,12 @@
                     <span class="flex h-10 w-10 items-center justify-center rounded-full bg-[#800000] text-sm font-extrabold text-white" aria-hidden="true">
                         {% block account_initial %}{{ request.user.username|default:"G"|slice:":1"|upper }}{% endblock %}
                     </span>
+                    {% if request.user.is_authenticated %}
+                    <form method="post" action="{% url 'logout' %}">
+                        {% csrf_token %}
+                        <button type="submit" class="rounded-xl border border-[#eadfd2] px-3 py-2 text-sm font-bold text-[#800000] transition hover:bg-[#fff4e7]">Log out</button>
+                    </form>
+                    {% endif %}
                 </div>
             </header>
 
