@@ -8,7 +8,7 @@
 
 {% block body %}
 {# Field names match the register API (/api/register/): username, email, password, confirm_password. #}
-<form method="post" action="" data-endpoint="{% url 'register' %}" class="mt-12 flex w-full flex-col items-center sm:mt-[68px]">
+<form method="post" action="" data-endpoint="{% url 'register' %}" class="...keep your existing classes...">
     {% csrf_token %}
 
     <div class="grid w-full max-w-[624px] grid-cols-1 gap-x-5 gap-y-[19px] md:grid-flow-col md:grid-cols-2 md:grid-rows-3">
@@ -40,6 +40,33 @@
 </form>
 
 {% include 'components/social_login.html' with before="or" bold="SIGN IN" after="with" %}
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const form = document.querySelector("form[data-endpoint]");
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const payload = Object.fromEntries(new FormData(form));
+    delete payload.csrfmiddlewaretoken;
+    const response = await fetch(form.dataset.endpoint, {
+      method: "POST",
+      credentials: "same-origin",
+      headers: {
+        "Content-Type": "application/json",
+        "X-CSRFToken": form.querySelector("[name=csrfmiddlewaretoken]").value,
+      },
+      body: JSON.stringify(payload),
+    });
+    const data = await response.json().catch(() => ({}));
+    if (response.ok) {
+      window.location.href = "/login/";
+    } else {
+      alert(data.error || (data.errors || []).join("\n") || "Sign up failed.");
+    }
+  });
+});
+</script>
+
 {% endblock %}
 
 {% block bottom %}Already have an account? <a href="{% url 'login' %}" class="transition duration-300 hover:underline">Log in</a>{% endblock %}
