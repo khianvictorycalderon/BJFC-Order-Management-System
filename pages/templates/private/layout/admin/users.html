@@ -18,7 +18,7 @@
         <div class="flex flex-col gap-1 border-b border-[#f0e8df] px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
             <div>
                 <h3 class="font-extrabold text-[#342724]">All users</h3>
-                <p class="mt-0.5 text-xs font-semibold text-[#89776e]">Sample customer profiles</p>
+                <p class="mt-0.5 text-xs font-semibold text-[#89776e]">Registered account details</p>
             </div>
             <span id="userCount" class="inline-flex w-fit items-center rounded-full bg-[#f7f1e9] px-3 py-1 text-xs font-extrabold text-[#594941]">0 users</span>        </div>
 
@@ -90,7 +90,7 @@ function renderUsers(users) {
                 '</div>' +
             '</td>' +
             '<td class="px-5 py-4 text-sm font-semibold text-[#594941]">' + escapeHtml(u.email) + '</td>' +
-            '<td class="px-5 py-4 text-sm font-semibold text-[#594941]">—</td>' +
+            '<td class="px-5 py-4 text-sm font-semibold text-[#594941]">' + escapeHtml(u.phone_number || "—") + '</td>' +
             '<td class="px-5 py-4 text-sm font-semibold text-[#594941]">' + escapeHtml(joined) + '</td>' +
             '<td class="px-5 py-4 text-sm font-semibold text-[#594941]">' + escapeHtml(role) + '</td>' +
         '</tr>';

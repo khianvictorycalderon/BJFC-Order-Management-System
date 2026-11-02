@@ -18,18 +18,10 @@
             <p class="mt-1 text-sm text-[#89776e]">A snapshot of today's business.</p>
         </div>
 
-        <!-- DATE: DISPLAY ONLY -->
-        <div class="flex items-center gap-3 rounded-xl border border-[#eadfd2] bg-white px-4 py-2.5 text-sm font-bold text-[#594941] shadow-sm">
-            <svg class="h-5 w-5 text-gray-600"
-                 fill="none" stroke="currentColor"
-                 viewBox="0 0 24 24">
-                <rect x="3" y="5" width="18" height="16" rx="2"
-                      stroke-width="2"/>
-                <path d="M16 3v4M8 3v4M3 10h18"
-                      stroke-width="2" stroke-linecap="round"/>
-            </svg>
-            DATE
-            <span class="text-gray-500">⌄</span>
+        <div class="flex flex-wrap items-center gap-2">
+            <label for="dashboard-date" class="text-sm font-bold text-[#594941]">Date</label>
+            <input id="dashboard-date" type="date" class="rounded-xl border border-[#eadfd2] bg-white px-3 py-2 text-sm font-bold text-[#594941] shadow-sm">
+            <button id="dashboard-clear-date" type="button" class="rounded-xl border border-[#eadfd2] bg-white px-3 py-2 text-sm font-bold text-[#594941]">Clear</button>
         </div>
     </div>
 
@@ -49,13 +41,7 @@
                 </svg>
             </div>
 
-            <p class="mt-5 text-4xl font-black tracking-tight text-[#342724]">
-                ₱3,500
-            </p>
-
-            <p class="mt-3 text-sm font-bold text-green-700">
-                ↗ 6.5%
-            </p>
+            <p id="dashboard-sales" class="mt-5 text-4xl font-black tracking-tight text-[#342724]">₱0.00</p>
         </div>
 
         <!-- TOTAL ORDERS -->
@@ -73,9 +59,7 @@
                 </svg>
             </div>
 
-            <p class="mt-5 text-4xl font-black tracking-tight text-[#342724]">
-                75
-            </p>
+            <p id="dashboard-orders" class="mt-5 text-4xl font-black tracking-tight text-[#342724]">0</p>
 
         </div>
 
@@ -92,20 +76,16 @@
                 </svg>
             </div>
 
-            <p class="mt-5 text-4xl font-black tracking-tight text-[#342724]">
-                50
-            </p>
+            <p id="dashboard-customers" class="mt-5 text-4xl font-black tracking-tight text-[#342724]">0</p>
         </div>
 
         <!-- TOTAL REVENUE -->
         <div class="rounded-2xl border border-[#eadfd2] bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
             <div class="flex items-center justify-between">
-                <p class="text-xs font-extrabold uppercase tracking-wider text-[#75645d]">Total Revenue</p>
+                <p class="text-xs font-extrabold uppercase tracking-wider text-[#75645d]">Completed orders</p>
             </div>
 
-            <p class="mt-5 text-4xl font-black tracking-tight text-[#342724]">
-                ₱50
-            </p>
+            <p id="dashboard-completed" class="mt-5 text-4xl font-black tracking-tight text-[#342724]">0</p>
         </div>
 
     </div>
@@ -118,12 +98,12 @@
             <div class="mb-5 flex flex-wrap items-center justify-between gap-2">
                 <h2 class="text-lg font-extrabold text-[#342724]">Sales performance</h2>
 
-                <!-- FILTER: DISPLAY ONLY -->
-                <div class="flex items-center gap-2 rounded-full bg-gray-200 px-3 py-1.5 text-sm font-bold text-gray-800">
-                    <span>▦</span>
-                    All week
-                    <span>⌄</span>
-                </div>
+                <label for="dashboard-period" class="sr-only">Sales period</label>
+                <select id="dashboard-period" class="rounded-full bg-gray-100 px-3 py-1.5 text-sm font-bold text-gray-800">
+                    <option value="week">Last 7 days</option>
+                    <option value="month">Last 30 days</option>
+                    <option value="all">All time</option>
+                </select>
             </div>
 
             <div class="relative h-64 w-full">
@@ -138,95 +118,10 @@
                     Top selling items
                 </h2>
 
-                <!-- FILTER: DISPLAY ONLY -->
-                <div class="flex items-center gap-2 rounded-full bg-gray-200 px-3 py-1.5 text-sm font-bold text-gray-800">
-                    FILTER
-                    <span>⌄</span>
-                </div>
             </div>
 
-            <div class="space-y-4">
-
-                <!-- ITEM 1 -->
-                <div class="flex items-center gap-3">
-                    <span class="w-5 text-lg font-extrabold">1</span>
-
-                    <div class="flex h-12 w-16 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-orange-50">
-                        <img src="{% static 'images/menu/chicken1.png' %}"
-                             alt="Fried Chicken"
-                             class="h-full w-full object-contain">
-                    </div>
-
-                    <div class="min-w-0 flex-1">
-                        <p class="mb-1 truncate text-xs font-bold text-[#594941]">Fried Chicken</p>
-                        <div class="h-2 overflow-hidden rounded-full bg-gray-100">
-                            <div class="h-full rounded-full bg-[#800000]" style="width: 100%"></div>
-                        </div>
-                    </div>
-
-                    <span class="text-sm font-bold">35</span>
-                </div>
-
-                <!-- ITEM 2 -->
-                <div class="flex items-center gap-3">
-                    <span class="w-5 text-lg font-extrabold">2</span>
-
-                    <div class="flex h-12 w-16 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-orange-50">
-                        <img src="{% static 'images/menu/chicken2.png' %}"
-                             alt="Fruit Soda"
-                             class="h-full w-full object-contain">
-                    </div>
-
-                    <div class="min-w-0 flex-1">
-                        <p class="mb-1 truncate text-xs font-bold text-[#594941]">Fruit Soda</p>
-                        <div class="h-2 overflow-hidden rounded-full bg-gray-100">
-                            <div class="h-full rounded-full bg-[#800000]" style="width: 86%"></div>
-                        </div>
-                    </div>
-
-                    <span class="text-sm font-bold">30</span>
-                </div>
-
-                <!-- ITEM 3 -->
-                <div class="flex items-center gap-3">
-                    <span class="w-5 text-lg font-extrabold">3</span>
-
-                    <div class="flex h-12 w-16 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-orange-50">
-                        <img src="{% static 'images/menu/chicken3.png' %}"
-                             alt="Bottled Water"
-                             class="h-full w-full object-contain">
-                    </div>
-
-                    <div class="min-w-0 flex-1">
-                        <p class="mb-1 truncate text-xs font-bold text-[#594941]">Bottled Water</p>
-                        <div class="h-2 overflow-hidden rounded-full bg-gray-100">
-                            <div class="h-full rounded-full bg-[#800000]" style="width: 57%"></div>
-                        </div>
-                    </div>
-
-                    <span class="text-sm font-bold">20</span>
-                </div>
-
-                <!-- ITEM 4 -->
-                <div class="flex items-center gap-3">
-                    <span class="w-5 text-lg font-extrabold">4</span>
-
-                    <div class="flex h-12 w-16 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-orange-50">
-                        <img src="{% static 'images/menu/chicken4.png' %}"
-                             alt="Milk Tea"
-                             class="h-full w-full object-contain">
-                    </div>
-
-                    <div class="min-w-0 flex-1">
-                        <p class="mb-1 truncate text-xs font-bold text-[#594941]">Milk Tea</p>
-                        <div class="h-2 overflow-hidden rounded-full bg-gray-100">
-                            <div class="h-full rounded-full bg-[#800000]" style="width: 23%"></div>
-                        </div>
-                    </div>
-
-                    <span class="text-sm font-bold">8</span>
-                </div>
-
+            <div id="top-items" class="space-y-4">
+                <p class="text-sm text-[#89776e]">Loading sales data…</p>
             </div>
         </section>
 
@@ -238,11 +133,6 @@
         <div class="mb-4 flex flex-wrap items-center justify-between gap-2">
             <h2 class="text-lg font-extrabold text-[#342724]">Recent orders</h2>
 
-            <!-- FILTER: DISPLAY ONLY -->
-            <div class="flex items-center gap-2 rounded-full bg-gray-200 px-3 py-1.5 text-sm font-bold text-gray-800">
-                FILTER
-                <span>⌄</span>
-            </div>
         </div>
 
         <div class="overflow-x-auto">
@@ -257,60 +147,13 @@
                         <th class="px-3 py-3 font-extrabold">Items</th>
                         <th class="px-3 py-3 font-extrabold">Amount</th>
                         <th class="px-3 py-3 font-extrabold">Status</th>
-                        <th class="rounded-r-lg px-3 py-3 font-extrabold">Time</th>
+                        <th class="px-3 py-3 font-extrabold">Order date</th>
+                        <th class="rounded-r-lg px-3 py-3 font-extrabold">Order time</th>
                     </tr>
                 </thead>
 
-                <tbody>
-
-                    <!-- ORDER 1 -->
-                    <tr class="border-b border-red-200 hover:bg-red-50">
-                        <td class="px-3 py-3 font-bold">023874</td>
-                        <td class="px-3 py-3">Mau</td>
-                        <td class="px-3 py-3">Chicken meal</td>
-                        <td class="px-3 py-3">₱232</td>
-                        <td class="px-3 py-3">
-                            <span class="rounded-full bg-green-500 px-3 py-1 font-bold text-white">
-                                Complete
-                            </span>
-                        </td>
-                        <td class="whitespace-nowrap px-3 py-3">
-                            09-15-26, 12:30PM
-                        </td>
-                    </tr>
-
-                    <!-- ORDER 2 -->
-                    <tr class="border-b border-red-200 hover:bg-red-50">
-                        <td class="px-3 py-3 font-bold">064897</td>
-                        <td class="px-3 py-3">Jay J.</td>
-                        <td class="px-3 py-3">Chicken combo</td>
-                        <td class="px-3 py-3">₱435</td>
-                        <td class="px-3 py-3">
-                            <span class="rounded-full bg-red-600 px-3 py-1 font-bold text-white">
-                                Cancelled
-                            </span>
-                        </td>
-                        <td class="whitespace-nowrap px-3 py-3">
-                            09-15-26, 12:30PM
-                        </td>
-                    </tr>
-
-                    <!-- ORDER 3 -->
-                    <tr class="hover:bg-red-50">
-                        <td class="px-3 py-3 font-bold">027468</td>
-                        <td class="px-3 py-3">Kein M.</td>
-                        <td class="px-3 py-3">Buffalo chicken</td>
-                        <td class="px-3 py-3">₱243</td>
-                        <td class="px-3 py-3">
-                            <span class="rounded-full bg-green-500 px-3 py-1 font-bold text-white">
-                                Complete
-                            </span>
-                        </td>
-                        <td class="whitespace-nowrap px-3 py-3">
-                            09-15-26, 12:30PM
-                        </td>
-                    </tr>
-
+                <tbody id="recent-orders">
+                    <tr><td colspan="7" class="px-3 py-6 text-center text-[#89776e]">Loading orders…</td></tr>
                 </tbody>
             </table>
         </div>
@@ -321,96 +164,117 @@
 
 <!-- SALES CHART -->
 <script>
-document.addEventListener("DOMContentLoaded", function () {
-    const canvas = document.getElementById("salesChart");
+(() => {
+    const escapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, (char) => ({
+        "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+    }[char]));
+    const peso = (value) => "₱" + Number(value || 0).toLocaleString("en-PH", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+    });
 
-    if (!canvas || typeof Chart === "undefined") {
-        return;
+    let salesChart;
+    async function loadDashboard() {
+        const params = new URLSearchParams();
+        const selectedDate = document.getElementById("dashboard-date").value;
+        if (selectedDate) params.set("date", selectedDate);
+        else params.set("period", document.getElementById("dashboard-period").value);
+        const response = await fetch("/api/admin/dashboard/?" + params);
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(data.error || `Request failed (${response.status}).`);
+
+        document.getElementById("dashboard-sales").textContent = peso(data.total_sales);
+        document.getElementById("dashboard-orders").textContent = data.total_orders;
+        document.getElementById("dashboard-customers").textContent = data.total_customers;
+        document.getElementById("dashboard-completed").textContent = data.completed_orders;
+
+        const topItems = document.getElementById("top-items");
+        const maxQuantity = Math.max(1, ...data.top_items.map((item) => item.quantity));
+        topItems.innerHTML = data.top_items.length
+            ? data.top_items.map((item, index) => `
+                <div class="flex items-center gap-3">
+                    <span class="w-5 text-lg font-extrabold">${index + 1}</span>
+                    <div class="min-w-0 flex-1">
+                        <p class="mb-1 truncate text-xs font-bold text-[#594941]">${escapeHtml(item.food_item__name)}</p>
+                        <div class="h-2 overflow-hidden rounded-full bg-gray-100">
+                            <div class="h-full rounded-full bg-[#800000]" style="width:${item.quantity / maxQuantity * 100}%"></div>
+                        </div>
+                    </div>
+                    <span class="text-sm font-bold">${item.quantity}</span>
+                </div>`).join("")
+            : '<p class="text-sm text-[#89776e]">No completed sales yet.</p>';
+
+        const recentOrders = document.getElementById("recent-orders");
+        recentOrders.innerHTML = data.recent_orders.length
+            ? data.recent_orders.map((order) => {
+                const items = order.items.map((item) =>
+                    `${item.quantity} × ${item.food_item_name}`
+                ).join(", ");
+                const created = new Date(order.created_at);
+                const orderDate = created.toLocaleDateString();
+                const orderTime = created.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+                return `<tr class="border-b border-red-100 hover:bg-red-50">
+                    <td class="px-3 py-3 font-bold">${escapeHtml(order.order_number)}</td>
+                    <td class="px-3 py-3">${escapeHtml(order.customer_name)}</td>
+                    <td class="px-3 py-3">${escapeHtml(items)}</td>
+                    <td class="px-3 py-3">${peso(order.total_amount)}</td>
+                    <td class="px-3 py-3">${escapeHtml(order.status_display)}</td>
+                    <td class="whitespace-nowrap px-3 py-3">${escapeHtml(orderDate)}</td>
+                    <td class="whitespace-nowrap px-3 py-3">${escapeHtml(orderTime)}</td>
+                </tr>`;
+            }).join("")
+            : '<tr><td colspan="7" class="px-3 py-6 text-center text-[#89776e]">No orders yet.</td></tr>';
+
+        const canvas = document.getElementById("salesChart");
+        if (typeof Chart !== "undefined" && canvas) {
+            if (salesChart) salesChart.destroy();
+            salesChart = new Chart(canvas, {
+                type: "bar",
+                data: {
+                    labels: data.weekly_sales.map((day) => new Date(day.date + "T12:00:00").toLocaleDateString([], {
+                        weekday: "short", day: "numeric",
+                    })),
+                    datasets: [{
+                        label: "Completed sales",
+                        data: data.weekly_sales.map((day) => Number(day.sales)),
+                        backgroundColor: "#800000",
+                        borderRadius: 4,
+                    }],
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: { callbacks: { label: (context) => "Sales: " + peso(context.raw) } },
+                    },
+                    scales: {
+                        y: { beginAtZero: true, ticks: { precision: 0 } },
+                        x: { grid: { display: false } },
+                    },
+                },
+            });
+        }
     }
 
-    const salesData = [80, 125, 90, 170, 95, 130, 200];
-
-    new Chart(canvas, {
-        type: "bar",
-
-        data: {
-            labels: [
-                "Sun 25",
-                "Mon 26",
-                "Tue 27",
-                "Wed 28",
-                "Thu 29",
-                "Fri 30",
-                "Sat 31"
-            ],
-
-            datasets: [
-                {
-                    type: "bar",
-                    label: "Sales",
-                    data: salesData,
-                    backgroundColor: "#800000",
-                    borderRadius: 4,
-                    barPercentage: 0.55,
-                    order: 2
-                },
-                {
-                    type: "line",
-                    label: "Sales Trend",
-                    data: salesData,
-                    borderColor: "#5f2929",
-                    backgroundColor: "#5f2929",
-                    pointBackgroundColor: "#ffffff",
-                    pointBorderColor: "#5f2929",
-                    pointBorderWidth: 2,
-                    pointRadius: 4,
-                    tension: 0.25,
-                    fill: false,
-                    order: 1
-                }
-            ]
-        },
-
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-
-            plugins: {
-                legend: {
-                    display: false
-                },
-
-                tooltip: {
-                    enabled: true,
-                    callbacks: {
-                        label: function (context) {
-                            return "Sales: ₱" +
-                                Number(context.raw).toLocaleString("en-PH");
-                        }
-                    }
-                }
-            },
-
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    grid: {
-                        color: "#eeeeee"
-                    },
-                    ticks: {
-                        precision: 0
-                    }
-                },
-
-                x: {
-                    grid: {
-                        display: false
-                    }
-                }
-            }
-        }
+    const reloadDashboard = () => loadDashboard().catch((error) => {
+        console.error("Could not load admin dashboard:", error);
+        document.getElementById("top-items").innerHTML =
+            `<p class="text-sm text-red-600">Could not load sales data: ${escapeHtml(error.message)}</p>`;
+        document.getElementById("recent-orders").innerHTML =
+            `<tr><td colspan="7" class="px-3 py-6 text-center text-red-600">Could not load orders.</td></tr>`;
     });
-});
+    document.getElementById("dashboard-period").addEventListener("change", () => {
+        document.getElementById("dashboard-date").value = "";
+        reloadDashboard();
+    });
+    document.getElementById("dashboard-date").addEventListener("change", reloadDashboard);
+    document.getElementById("dashboard-clear-date").addEventListener("click", () => {
+        document.getElementById("dashboard-date").value = "";
+        reloadDashboard();
+    });
+    reloadDashboard();
+})();
 </script>
 
 {% endblock %}

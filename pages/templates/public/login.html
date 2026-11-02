@@ -10,8 +10,6 @@
 {# Field names match the login API (/api/login/): username, password. #}
 <form id="loginForm" method="post" action="" data-endpoint="{% url 'login_api' %}" class="mt-10 flex w-full max-w-[400px] flex-col items-center sm:mt-[47px]">
         {% csrf_token %}
-<form method="post" action="" data-endpoint="{% url 'login_api' %}" class="mt-10 flex w-full max-w-[400px] flex-col items-center sm:mt-[47px]">
-    {% csrf_token %}
 
     {% with 'block h-9 w-full rounded-xl border border-black bg-[#f8c8c8] pl-[41px] pr-3 text-[11px] font-medium text-black shadow-[0_3px_4px_rgba(0,0,0,0.3)] outline-none transition duration-300 placeholder:text-black focus:ring-2 focus:ring-red-500/60' as field %}
     <div class="relative w-full">
@@ -30,14 +28,6 @@
         <input id="password" name="password" type="password" placeholder="Password" autocomplete="current-password" required class="{{ field }}">
     </div>
     {% endwith %}
-
-    <div class="mt-4 flex w-full items-center justify-between px-2 text-[10.5px] leading-[14px]">
-        <label class="flex cursor-pointer items-center gap-[5px]">
-            <input type="checkbox" name="remember" checked class="h-[13px] w-[13px] cursor-pointer accent-black">
-            Remember me
-        </label>
-        <a href="#" class="transition duration-300 hover:underline">Forgot Password?</a>
-    </div>
 
     <button type="submit"
             class="mt-[24px] h-9 w-[131px] rounded-xl bg-gradient-to-r from-[#f96e70] to-[#f92e2e] text-base font-bold uppercase text-white shadow-[0_4px_4px_rgba(0,0,0,0.25)] transition duration-300 hover:-translate-y-0.5 hover:brightness-105 active:translate-y-0">
@@ -77,7 +67,9 @@ document.getElementById("loginForm").addEventListener("submit", async function (
 
         message.textContent = "Login successful!";
         message.className = "mt-3 text-sm text-center text-green-700";
-        window.location.href = "/";
+        window.location.href = data.user.is_staff
+            ? "{% url 'admin_dashboard' %}"
+            : ("{{ next_url|escapejs }}" || "{% url 'dashboard' %}");
 
     } catch (error) {
         message.textContent = error.message;
@@ -87,34 +79,6 @@ document.getElementById("loginForm").addEventListener("submit", async function (
 </script>
 
 
-{% include 'components/social_login.html' with bold="LOG IN" after="with others" %}
-
-<script>
-document.addEventListener("DOMContentLoaded", () => {
-  const form = document.querySelector("form[data-endpoint]");
-  form.addEventListener("submit", async (event) => {
-    event.preventDefault();
-    const response = await fetch(form.dataset.endpoint, {
-      method: "POST",
-      credentials: "same-origin",
-      headers: {
-        "Content-Type": "application/json",
-        "X-CSRFToken": form.querySelector("[name=csrfmiddlewaretoken]").value,
-      },
-      body: JSON.stringify({
-        username: form.querySelector("#username").value,
-        password: form.querySelector("#password").value,
-      }),
-    });
-    const data = await response.json().catch(() => ({}));
-    if (response.ok) {
-      window.location.href = data.user.is_staff ? "/dashboard/" : "/";
-    } else {
-      alert(data.error || "Login failed.");
-    }
-  });
-});
-</script>
 {% endblock %}
 
 {% block bottom %}You dont have account? <a href="{% url 'signup' %}" class="text-[#6a8fcf] transition duration-300 hover:underline">Sign up here</a>{% endblock %}

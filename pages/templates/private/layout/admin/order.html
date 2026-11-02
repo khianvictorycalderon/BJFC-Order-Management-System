@@ -13,17 +13,19 @@
             <p class="mt-1 text-sm font-semibold text-[#89776e]">Review incoming orders and keep today's service moving.</p>
         </div>
 
-        <div class="inline-flex items-center gap-3 self-start rounded-xl border border-[#eadfd2] bg-white px-4 py-3 text-sm font-extrabold text-[#594941] shadow-sm sm:self-auto">
-            <svg class="h-5 w-5 text-[#800000]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <rect x="3" y="4" width="18" height="18" rx="2"/>
-                <path d="M16 2v4M8 2v4M3 10h18"/>
-            </svg>
-            <span class="uppercase tracking-wider">Today</span>
-            <span class="text-[#bba99e]">·</span>
-            <span class="text-[#89776e]">Date</span>
-            <svg class="h-4 w-4 text-[#89776e]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path d="m6 9 6 6 6-6"/>
-            </svg>
+        <div class="flex items-center gap-2">
+            <label for="ordersFilter" class="text-sm font-bold text-[#594941]">Status</label>
+            <select id="ordersFilter" class="rounded-xl border border-[#eadfd2] bg-white px-3 py-2 text-sm font-bold text-[#594941]">
+                <option value="">All orders</option>
+                <option value="pending">Pending</option>
+                <option value="completed">Completed</option>
+            </select>
+            <label for="ordersSize" class="sr-only">Orders per page</label>
+            <select id="ordersSize" class="rounded-xl border border-[#eadfd2] bg-white px-3 py-2 text-sm font-bold text-[#594941]">
+                <option value="10">10 per page</option>
+                <option value="20">20 per page</option>
+                <option value="50">50 per page</option>
+            </select>
         </div>
     </div>
 
@@ -37,7 +39,7 @@
                         <p id="stat-pending" class="text-4xl font-black tracking-tight text-[#342724]">0</p>
                         <span class="rounded-full bg-[#fff0ed] px-2.5 py-1 text-xs font-extrabold text-[#b42318]">Preparing</span>
                     </div>
-                    <p class="mt-2 text-sm font-semibold text-[#89776e]">↗ 6.5%</p>
+                    <p class="mt-2 text-sm font-semibold text-[#89776e]">Awaiting completion</p>
                 </div>
                 <span class="flex h-11 w-11 items-center justify-center rounded-xl bg-[#fff0ed] text-[#b42318]" aria-hidden="true">
                     <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
@@ -57,7 +59,7 @@
                         <p id="stat-completed" class="text-4xl font-black tracking-tight text-[#342724]">0</p>
                         <span class="rounded-full bg-[#fbf5e7] px-2.5 py-1 text-xs font-extrabold text-[#8a6414]">Orders complete</span>
                     </div>
-                    <p class="mt-2 text-sm font-semibold text-[#89776e]">↗ 5%</p>
+                    <p class="mt-2 text-sm font-semibold text-[#89776e]">Completed today</p>
                 </div>
                 <span class="flex h-11 w-11 items-center justify-center rounded-xl bg-[#fbf5e7] text-[#8a6414]" aria-hidden="true">
                     <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
@@ -80,121 +82,24 @@
                     </svg>
                 </span>
                 <div>
-                    <h3 class="font-extrabold text-[#342724]">Pending orders</h3>
-                    <p class="text-xs font-semibold text-[#89776e]">Orders being prepared</p>
+                    <h3 class="font-extrabold text-[#342724]">Orders</h3>
+                    <p class="text-xs font-semibold text-[#89776e]">Filter and update customer orders</p>
                 </div>
             </div>
             <span id="pending-badge" class="self-start rounded-full bg-[#fff0ed] px-3 py-1 text-xs font-extrabold text-[#b42318]">0 in progress</span>
         </div>
 
-        <div id="pending-list" class="grid gap-4 p-4 sm:p-5 xl:grid-cols-2">
-            <article class="rounded-xl border border-[#eee4db] bg-[#fffdfa] p-4 transition hover:border-[#dfc9b8] hover:shadow-sm sm:p-5">
-                <div class="flex flex-wrap items-start justify-between gap-3">
-                    <div>
-                        <div class="flex flex-wrap items-center gap-2">
-                            <h4 class="font-black text-[#342724]">Order #2974J</h4>
-                            <span class="rounded-full bg-[#fbf5e7] px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wider text-[#8a6414]">Preparing</span>
-                        </div>
-                        <p class="mt-1 text-sm font-semibold text-[#89776e]">Customer: Jane L.</p>
-                    </div>
-                    <button type="button" class="rounded-lg border border-[#800000] px-3.5 py-2 text-xs font-extrabold text-[#800000] transition hover:bg-[#800000] hover:text-white focus:outline-none focus:ring-2 focus:ring-[#800000]/30">
-                        Mark as Complete
-                    </button>
-                </div>
-                <p class="mt-4 text-sm font-bold text-[#594941]">1x Barbecue Chicken, 1x Juice</p>
-                <div class="mt-4 grid grid-cols-3 gap-3 border-t border-[#eee4db] pt-4">
-                    <div>
-                        <p class="text-[10px] font-extrabold uppercase tracking-wider text-[#a18e82]">Total</p>
-                        <p class="mt-1 text-sm font-extrabold text-[#342724]">₱543.00</p>
-                    </div>
-                    <div>
-                        <p class="text-[10px] font-extrabold uppercase tracking-wider text-[#a18e82]">Time</p>
-                        <p class="mt-1 text-sm font-extrabold text-[#342724]">12:30 PM</p>
-                    </div>
-                    <div>
-                        <p class="text-[10px] font-extrabold uppercase tracking-wider text-[#a18e82]">ETA</p>
-                        <p class="mt-1 text-sm font-extrabold text-[#342724]">1:00 PM</p>
-                    </div>
-                </div>
-            </article>
-
-            <article class="rounded-xl border border-[#eee4db] bg-[#fffdfa] p-4 transition hover:border-[#dfc9b8] hover:shadow-sm sm:p-5">
-                <div class="flex flex-wrap items-start justify-between gap-3">
-                    <div>
-                        <div class="flex flex-wrap items-center gap-2">
-                            <h4 class="font-black text-[#342724]">Order #2974J</h4>
-                            <span class="rounded-full bg-[#fbf5e7] px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wider text-[#8a6414]">Preparing</span>
-                        </div>
-                        <p class="mt-1 text-sm font-semibold text-[#89776e]">Customer: Jane L.</p>
-                    </div>
-                    <button type="button" class="rounded-lg border border-[#800000] px-3.5 py-2 text-xs font-extrabold text-[#800000] transition hover:bg-[#800000] hover:text-white focus:outline-none focus:ring-2 focus:ring-[#800000]/30">
-                        Mark as Complete
-                    </button>
-                </div>
-                <p class="mt-4 text-sm font-bold text-[#594941]">1x Barbecue Chicken, 1x Juice</p>
-                <div class="mt-4 grid grid-cols-3 gap-3 border-t border-[#eee4db] pt-4">
-                    <div>
-                        <p class="text-[10px] font-extrabold uppercase tracking-wider text-[#a18e82]">Total</p>
-                        <p class="mt-1 text-sm font-extrabold text-[#342724]">₱321.00</p>
-                    </div>
-                    <div>
-                        <p class="text-[10px] font-extrabold uppercase tracking-wider text-[#a18e82]">Time</p>
-                        <p class="mt-1 text-sm font-extrabold text-[#342724]">12:30 PM</p>
-                    </div>
-                    <div>
-                        <p class="text-[10px] font-extrabold uppercase tracking-wider text-[#a18e82]">ETA</p>
-                        <p class="mt-1 text-sm font-extrabold text-[#342724]">1:00 PM</p>
-                    </div>
-                </div>
-            </article>
+        <div id="pending-list" class="grid gap-4 p-4 sm:p-5 xl:grid-cols-2"></div>
+        <div class="flex items-center justify-between border-t border-[#f0e8df] px-5 py-4">
+            <button type="button" id="ordersPrev" class="rounded-lg border border-[#eadfd2] px-3 py-2 text-xs font-bold disabled:opacity-50">Previous</button>
+            <span id="ordersPageInfo" class="text-xs font-semibold text-[#89776e]"></span>
+            <button type="button" id="ordersNext" class="rounded-lg border border-[#eadfd2] px-3 py-2 text-xs font-bold disabled:opacity-50">Next</button>
         </div>
     </section>
 
-    <section class="overflow-hidden rounded-2xl border border-[#eadfd2] bg-white shadow-sm">
-        <div class="flex items-center gap-3 border-b border-[#f0e8df] px-5 py-4 sm:px-6">
-            <span class="flex h-9 w-9 items-center justify-center rounded-xl bg-[#edf7ef] text-[#32744a]" aria-hidden="true">
-                <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="m5 12 4 4L19 6"/>
-                    <circle cx="12" cy="12" r="9"/>
-                </svg>
-            </span>
-            <div>
-                <h3 class="font-extrabold text-[#342724]">Completed orders</h3>
-                <p class="text-xs font-semibold text-[#89776e]">Today's order history</p>
-            </div>
-        </div>
-
-        <div id="completed-list" class="grid gap-4 p-4 sm:p-5 xl:grid-cols-2">
-            <article class="rounded-xl border border-[#eee4db] bg-[#fffdfa] p-4 sm:p-5">
-                <div class="flex flex-wrap items-center justify-between gap-2">
-                    <div>
-                        <h4 class="font-black text-[#342724]">Order #2974J</h4>
-                        <p class="mt-1 text-sm font-semibold text-[#89776e]">Customer: Jane L.</p>
-                    </div>
-                    <span class="rounded-full bg-[#edf7ef] px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wider text-[#32744a]">Complete</span>
-                </div>
-                <p class="mt-4 text-sm font-bold text-[#594941]">1x Barbecue Chicken, 1x Juice</p>
-                <div class="mt-4 grid grid-cols-3 gap-3 border-t border-[#eee4db] pt-4">
-                    <div><p class="text-[10px] font-extrabold uppercase tracking-wider text-[#a18e82]">Total</p><p class="mt-1 text-sm font-extrabold text-[#342724]">₱343.00</p></div>
-                    <div><p class="text-[10px] font-extrabold uppercase tracking-wider text-[#a18e82]">Time</p><p class="mt-1 text-sm font-extrabold text-[#342724]">12:30 PM</p></div>
-                    <div><p class="text-[10px] font-extrabold uppercase tracking-wider text-[#a18e82]">ETA</p><p class="mt-1 text-sm font-extrabold text-[#342724]">1:00 PM</p></div>
-                </div>
-            </article>
-
-            <article class="rounded-xl border border-[#eee4db] bg-[#fffdfa] p-4 sm:p-5">
-                <div class="flex flex-wrap items-center justify-between gap-2">
-                    <h4 class="font-black text-[#342724]">Order #2974J</h4>
-                    <span class="rounded-full bg-[#edf7ef] px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wider text-[#32744a]">Complete</span>
-                </div>
-                <div class="mt-4 grid grid-cols-3 gap-3 border-t border-[#eee4db] pt-4">
-                    <div><p class="text-[10px] font-extrabold uppercase tracking-wider text-[#a18e82]">Total</p><p class="mt-1 text-sm font-extrabold text-[#342724]">₱234.00</p></div>
-                    <div><p class="text-[10px] font-extrabold uppercase tracking-wider text-[#a18e82]">Time</p><p class="mt-1 text-sm font-extrabold text-[#342724]">12:30 PM</p></div>
-                    <div><p class="text-[10px] font-extrabold uppercase tracking-wider text-[#a18e82]">ETA</p><p class="mt-1 text-sm font-extrabold text-[#342724]">1:00 PM</p></div>
-                </div>
-            </article>
-        </div>
-    </section>
 </div>
+
+<form id="orderCsrf" hidden>{% csrf_token %}</form>
 
 <script>
 
@@ -206,14 +111,14 @@
         const m = document.cookie.split("; ").find(r => r.startsWith(name + "="));
         return m ? decodeURIComponent(m.split("=")[1]) : "";
     }
-    const csrfToken = getCookie("csrftoken");
-
-    // Change these if your backend expects different values
-    const STATUS = { pending: "pending", completed: "completed" };
+    const csrfToken = document.querySelector("#orderCsrf [name=csrfmiddlewaretoken]")?.value || getCookie("csrftoken");
 
     const peso = (n) => "₱" + Number(n || 0).toLocaleString("en-PH", {
         minimumFractionDigits: 2, maximumFractionDigits: 2
     });
+    let ordersPage = 1;
+    document.getElementById("pending-list").innerHTML =
+        '<p class="col-span-full py-6 text-center text-sm font-semibold text-[#89776e]">Loading orders…</p>';
 
     
     function formatItems(items) {
@@ -254,16 +159,15 @@
 
 
     //  GET ALL ORDERS
-    async function fetchOrders(filter = "", size = 20, page = 1, sort = "desc") {
+    async function fetchOrders(filter = "", size = 10, page = 1, sort = "desc") {
         const params = new URLSearchParams({ size, page, sort });
         if (filter) params.set("filter", filter);
 
         const response = await fetch(`/api/admin/orders/?${params}`, { method: "GET" });
-        if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
-
         const data = await response.json();
-        console.log(`Orders (${filter}):`, data);
-        return Array.isArray(data) ? data : (data.orders ?? data.results ?? []);
+        if (!response.ok) throw new Error(data.error || `HTTP error! Status: ${response.status}`);
+
+        return data;
     }
 
 
@@ -289,14 +193,15 @@
     }
 
 
-    function orderCard(o, isPending) {
+    function orderCard(o) {
+    const isPending = o.status !== "COMPLETED";
     const badge = isPending
-        ? `<span class="rounded-full bg-[#fbf5e7] px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wider text-[#8a6414]">Preparing</span>`
-        : `<span class="rounded-full bg-[#edf7ef] px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wider text-[#32744a]">Complete</span>`;
-
+        ? `<span class="rounded-full bg-[#fbf5e7] px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wider text-[#8a6414]">${esc(o.status_display)}</span>`
+        : `<span class="rounded-full bg-[#edf7ef] px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wider text-[#32744a]">${esc(o.status_display)}</span>`;
     const button = isPending
-        ? `<button type="button" data-action="complete" data-id="${esc(o.id)}" class="rounded-lg border border-[#800000] px-3.5 py-2 text-xs font-extrabold text-[#800000] transition hover:bg-[#800000] hover:text-white focus:outline-none focus:ring-2 focus:ring-[#800000]/30 disabled:opacity-50">Mark as Complete</button>`
-        : `<button type="button" data-action="incomplete" data-id="${esc(o.id)}" class="rounded-lg border border-[#eadfd2] px-3.5 py-2 text-xs font-extrabold text-[#594941] transition hover:border-[#800000] hover:text-[#800000] focus:outline-none focus:ring-2 focus:ring-[#800000]/30 disabled:opacity-50">Mark as Incomplete</button>`;
+        ? `<button type="button" data-action="status" data-status="COMPLETED" data-id="${esc(o.id)}" class="rounded-lg border border-[#800000] px-3.5 py-2 text-xs font-extrabold text-[#800000] transition hover:bg-[#800000] hover:text-white disabled:opacity-50">Mark as Complete</button>`
+        : `<button type="button" data-action="status" data-status="PENDING" data-id="${esc(o.id)}" class="rounded-lg border border-[#eadfd2] px-3.5 py-2 text-xs font-extrabold text-[#594941] transition hover:border-[#800000] hover:text-[#800000] disabled:opacity-50">Mark as Pending</button>`;
+    const created = new Date(o.created_at);
 
     return `
     <article class="rounded-xl border border-[#eee4db] bg-[#fffdfa] p-4 transition hover:border-[#dfc9b8] hover:shadow-sm sm:p-5">
@@ -310,45 +215,43 @@
             </div>
             ${button}
         </div>
-        <p class="mt-4 text-sm font-bold text-[#594941]">${esc(formatItems(o.order_items ?? o.items)) || "—"}</p>
+        <p class="mt-4 text-sm font-bold text-[#594941]">${esc(formatItems(o.items)) || "—"}</p>
         <div class="mt-4 grid grid-cols-3 gap-3 border-t border-[#eee4db] pt-4">
             <div>
                 <p class="text-[10px] font-extrabold uppercase tracking-wider text-[#a18e82]">Total</p>
-                <p class="mt-1 text-sm font-extrabold text-[#342724]">${peso(o.total ?? o.total_amount)}</p>
+                <p class="mt-1 text-sm font-extrabold text-[#342724]">${peso(o.total_amount)}</p>
             </div>
             <div>
-                <p class="text-[10px] font-extrabold uppercase tracking-wider text-[#a18e82]">Time</p>
-                <p class="mt-1 text-sm font-extrabold text-[#342724]">${esc(o.time ?? "—")}</p>
+                <p class="text-[10px] font-extrabold uppercase tracking-wider text-[#a18e82]">Order date</p>
+                <p class="mt-1 text-sm font-extrabold text-[#342724]">${esc(created.toLocaleDateString())}</p>
             </div>
             <div>
-                <p class="text-[10px] font-extrabold uppercase tracking-wider text-[#a18e82]">ETA</p>
-                <p class="mt-1 text-sm font-extrabold text-[#342724]">${esc(o.eta ?? "—")}</p>
+                <p class="text-[10px] font-extrabold uppercase tracking-wider text-[#a18e82]">Order time</p>
+                <p class="mt-1 text-sm font-extrabold text-[#342724]">${esc(created.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }))}</p>
             </div>
         </div>
     </article>`;
 }
 
-    function renderOrders(containerId, orders, isPending, emptyText) {
-        const el = document.getElementById(containerId);
-        el.innerHTML = orders.length
-            ? orders.map(o => orderCard(o, isPending)).join("")
-            : `<p class="col-span-full py-6 text-center text-sm font-semibold text-[#89776e]">${emptyText}</p>`;
-    }
-
     async function loadOrders() {
         try {
-            const [pending, completed] = await Promise.all([
-                fetchOrders("pending"),
-                fetchOrders("completed")
-            ]);
-            renderOrders("pending-list", pending, true, "No pending orders right now.");
-            renderOrders("completed-list", completed, false, "No completed orders yet.");
-            document.getElementById("pending-badge").textContent = `${pending.length} in progress`;
+            const filter = document.getElementById("ordersFilter").value;
+            const size = Number(document.getElementById("ordersSize").value);
+            const data = await fetchOrders(filter, size, ordersPage, "desc");
+            const orders = data.orders || [];
+            document.getElementById("pending-list").innerHTML = orders.length
+                ? orders.map(orderCard).join("")
+                : `<p class="col-span-full py-6 text-center text-sm font-semibold text-[#89776e]">No orders found.</p>`;
+            const pagination = data.pagination;
+            document.getElementById("pending-badge").textContent = `${pagination.total_items} total`;
+            document.getElementById("ordersPageInfo").textContent =
+                pagination.total_items ? `Page ${pagination.page} of ${pagination.total_pages}` : "No orders";
+            document.getElementById("ordersPrev").disabled = !pagination.has_previous;
+            document.getElementById("ordersNext").disabled = !pagination.has_next;
         } catch (error) {
             console.error("Error fetching orders:", error);
             const msg = `<p class="col-span-full py-6 text-center text-sm font-semibold text-red-500">Failed to load orders.</p>`;
             document.getElementById("pending-list").innerHTML = msg;
-            document.getElementById("completed-list").innerHTML = msg;
         }
     }
 
@@ -356,12 +259,13 @@
         const btn = e.target.closest("button[data-action]");
         if (!btn) return;
 
-        const status = btn.dataset.action === "complete" ? STATUS.completed : STATUS.pending;
+        const status = btn.dataset.status;
         btn.disabled = true;
         btn.textContent = "Updating…";
 
         try {
             await updateOrderStatus(btn.dataset.id, { status });
+            ordersPage = 1;
             await Promise.all([fetchOrderInfo(), loadOrders()]);
         } catch (error) {
             console.error("Error updating order status:", error);
@@ -372,7 +276,24 @@
 
     document.addEventListener("DOMContentLoaded", () => {
         document.getElementById("pending-list").addEventListener("click", onActionClick);
-        document.getElementById("completed-list").addEventListener("click", onActionClick);
+        document.getElementById("ordersFilter").addEventListener("change", () => {
+            ordersPage = 1;
+            loadOrders();
+        });
+        document.getElementById("ordersSize").addEventListener("change", () => {
+            ordersPage = 1;
+            loadOrders();
+        });
+        document.getElementById("ordersPrev").addEventListener("click", () => {
+            if (ordersPage > 1) {
+                ordersPage -= 1;
+                loadOrders();
+            }
+        });
+        document.getElementById("ordersNext").addEventListener("click", () => {
+            ordersPage += 1;
+            loadOrders();
+        });
         fetchOrderInfo();
         loadOrders();
     });

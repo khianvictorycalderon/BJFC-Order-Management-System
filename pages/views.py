@@ -1,187 +1,252 @@
-from django.shortcuts import render
+from datetime import timedelta
+
+from django.contrib.admin.views.decorators import staff_member_required
+from django.contrib.auth import logout
+from django.contrib.auth.decorators import login_required, user_passes_test
+from django.db.models import Count
+from django.db.models.functions import TruncDate
+from django.shortcuts import redirect, render
+from django.utils import timezone
+from django.utils.http import url_has_allowed_host_and_scheme
+from django.views.decorators.http import require_POST
+
+from core.models import FoodItem, LandingPage, PageInfo, StoreInformation
+
+
+customer_required = user_passes_test(
+    lambda user: not user.is_staff,
+    login_url="admin_dashboard",
+    redirect_field_name=None,
+)
+
+
+def _authenticated_destination(req):
+    return redirect("admin_dashboard" if req.user.is_staff else "dashboard")
+
+
+def _page_content(slug, title, description):
+    page = PageInfo.objects.filter(slug=slug).first()
+    return {
+        "title": page.title if page else title,
+        "description": page.description if page else description,
+    }
+
+
+def _store_context():
+    store = StoreInformation.objects.order_by("pk").first()
+    return {
+        "store": {
+            "name": store.storename,
+            "phone": store.contact,
+            "address": store.address,
+            "email": store.email,
+        }
+        if store
+        else {},
+    }
+
 
 def home(req):
-    # Hero copy lives here so it can be swapped for real content later. 
+    landing = LandingPage.objects.order_by("pk").first()
+    title = landing.main_heading if landing else "Fresh, crispy chicken for every craving"
+    description = (
+        landing.subheading_description
+        if landing
+        else "Enjoy delicious fried chicken, made fresh and served with a smile."
+    )
     context = {
         "hero": {
-            "title": "wow and sarap",
-            "lines": ["dasdasdasdasfasfas", "fafafasfasfasfasf", "fasfasfasfaf"],
-            "cta_label": "Order Now",
-            "cta_url": "#menu",
-        }
+            "title": title,
+            "lines": [description],
+            "cta_label": (landing.button_text if landing else "") or "Order Now",
+            "cta_url": (landing.button_link if landing else "") or "/menu/",
+            "image_url": (landing.hero_image if landing else "") or "/static/images/hero-art.jpg",
+        },
+        **_store_context(),
     }
     return render(req, "public/home.html", context)
 
-# For Frontend Designers: Replace with actual .html template file upon developing
-
+@login_required(login_url="login")
+@customer_required
 def private_test(req):
     return render(req, "private/test.html")
 
 
 # Menu page
 def menu(req):
-    meals = [
-        {"name": "Fried Chicken", "price": 75, "image": "images/menu/chicken1.png"},
-        {"name": "Fruit Soda", "price": 75, "image": "images/menu/chicken2.png"},
-        {"name": "Bottled Water", "price": 75, "image": "images/menu/chicken3.png"},
-        {"name": "Milk Tea", "price": 75, "image": "images/menu/chicken4.png"},
+    meals = []
+    fallback_images = [
+        "/static/images/menu/chicken1.png",
+        "/static/images/menu/chicken2.png",
+        "/static/images/menu/chicken3.png",
+        "/static/images/menu/chicken4.png",
     ]
-
-    drinks = [
-        {"name": "Iced Coffee", "price": 50, "image": "images/menu/ice coffee.png"},
-        {"name": "Fruit Soda", "price": 60, "image": "images/menu/fruitsoda.png"},
-        {"name": "Milk Tea", "price": 70, "image": "images/menu/milktea.png"},
-        {"name": "Matcha Latte", "price": 80, "image": "images/menu/matcha.png"},
-        {"name": "Frappe", "price": 90, "image": "images/menu/frappe.png"},
-        {"name": "Bottled Water", "price": 20, "image": "images/menu/water.png"},
-    ]
-
-    addons = [
-        {"name": "Extra Buffalo Sauce", "price": 20, "image": "images/menu/bufalo.png"},
-        {"name": "Extra Soy Garlic Sauce", "price": 25, "image": "images/menu/soy garlic.png"},
-        {"name": "Extra Sour Cream Sauce", "price": 25, "image": "images/menu/sourcream.png"},
-        {"name": "Ketchup", "price": 5, "image": "images/menu/ketchup.png"},
-        {"name": "Extra Rice", "price": 20, "image": "images/menu/rice.png"},
-        {"name": "Soup", "price": 20, "image": "images/menu/soup.png"},
-    ]
+    items = (
+        FoodItem.objects.filter(available=True)
+        .order_by("name", "pk")
+    )
+    for index, item in enumerate(items):
+        try:
+            image_url = item.image.url if item.image else fallback_images[index % len(fallback_images)]
+        except ValueError:
+            image_url = fallback_images[index % len(fallback_images)]
+        entry = {
+            "id": item.pk,
+            "name": item.name,
+            "price": item.price,
+            "description": item.description,
+            "image_url": image_url,
+        }
+        meals.append(entry)
 
     context = {
         "meals": meals,
-        "drinks": drinks,
-        "addons": addons,
+        "menu_page": _page_content(
+            "menu",
+            "SIGNATURE FRIED CHICKEN",
+            "Golden, crunchy, and juicy chicken with our signature crispy coating.",
+        ),
+        **_store_context(),
     }
 
     return render(req, "public/menu.html", context)
-  
+
 def about(req):
-    return render(req, "public/about.html")
+    return render(req, "public/about.html", {
+        "about_page": _page_content(
+            "about",
+            "About BJFC",
+            "Learn more about BJFC and our food.",
+        ),
+        **_store_context(),
+    })
+
 
 def contact(req):
-    return render(req, "public/contact.html")
+    return render(req, "public/contact.html", {
+        "contact_page": _page_content(
+            "contact",
+            "Contact Us",
+            "We'd love to hear from you! Whether you have a question, want to place a bulk order, or just want to say hello, our team is ready to help.",
+        ),
+        **_store_context(),
+    })
 
+
+@login_required(login_url="login")
+@customer_required
 def dashboard(req):
-    return render(req, "private/dashboard.html")
+    today = timezone.localdate()
+    start_date = today - timedelta(days=6)
+    orders = req.user.orders.all()
+    daily_counts = {
+        row["day"]: row["count"]
+        for row in orders.filter(created_at__date__range=(start_date, today))
+        .values(day=TruncDate("created_at"))
+        .annotate(count=Count("pk"))
+    }
+    chart = [
+        {
+            "date": (start_date + timedelta(days=offset)).isoformat(),
+            "count": daily_counts.get(start_date + timedelta(days=offset), 0),
+        }
+        for offset in range(7)
+    ]
+    return render(
+        req,
+        "private/dashboard.html",
+        {
+            "active_orders": orders.filter(
+                status__in=("PENDING", "CONFIRMED", "PREPARING")
+            ).count(),
+            "completed_orders": orders.filter(status="COMPLETED").count(),
+            "weekly_orders": sum(row["count"] for row in chart),
+            "order_chart": chart,
+        },
+    )
 
 
+@login_required(login_url="login")
+@customer_required
 def my_orders(req):
-    # Mock data for the order-building UI; swap for real menu items later.
-    order_items = [
-        {"name": "Plain Fried Chicken with rice", "desc": "Crispy fried chicken served with savory, fluffy rice.", "price": 75, "image": "images/menu/chicken1.png"},
-        {"name": "Buffalo Fried Chicken with rice", "desc": "Crispy chicken tossed in tangy buffalo sauce, served with fluffy rice.", "price": 75, "image": "images/menu/chicken2.png"},
-        {"name": "Soy Garlic Fried Chicken with rice", "desc": "Crispy fried chicken coated in sweet-savory soy garlic goodness, served with rice.", "price": 75, "image": "images/menu/chicken3.png"},
-        {"name": "Sour Cream Fried Chicken with rice", "desc": "Crispy, creamy, and savory sour cream fried chicken served with fluffy rice.", "price": 75, "image": "images/menu/chicken4.png"},
-    ]
-    addons = [
-        {"name": "Ketchup", "price": 5, "image": "images/menu/ketchup.png"},
-        {"name": "Extra Rice", "price": 20, "image": "images/menu/rice.png"},
-        {"name": "Extra Soy Garlic", "price": 25, "image": "images/menu/soy garlic.png"},
-        {"name": "Extra Buffalo", "price": 20, "image": "images/menu/bufalo.png"},
-        {"name": "Extra Sour Cream", "price": 25, "image": "images/menu/sourcream.png"},
-        {"name": "Soup", "price": 20, "image": "images/menu/soup.png"},
-    ]
-    return render(req, "private/my_orders.html", {"order_items": order_items, "addons": addons})
+    return render(req, "private/my_orders.html", {"order_items": []})
 
 
+@login_required(login_url="login")
+@customer_required
 def customer_account(req):
     return render(req, "private/account.html")
 
-# Admin Pages
+
+@require_POST
+def logout_view(req):
+    logout(req)
+    return redirect("home")
+
+
+# Admin pages
+@staff_member_required(login_url="admin_login")
 def admin_dashboard(req):
     return render(req, "private/layout/admin/dashboard.html")
 
-
+@staff_member_required(login_url="admin_login")
 def admin_menu(req):
     return render(req, "private/layout/admin/menu.html")
 
-
+@staff_member_required(login_url="admin_login")
 def admin_orders(req):
     return render(req, "private/layout/admin/order.html")
 
-
+@staff_member_required(login_url="admin_login")
 def admin_feedback(req):
     return render(req, "private/layout/admin/feedback.html")
 
 
+@staff_member_required(login_url="admin_login")
 def admin_users(req):
-    users = [
-        {
-            "name": "Alex Morgan",
-            "username": "alexm",
-            "email": "alex.morgan@example.com",
-            "phone": "+1 555-0101",
-            "joined": "Oct 12, 2026",
-            "status": "Active",
-        },
-        {
-            "name": "Sam Rivera",
-            "username": "samrivera",
-            "email": "sam.rivera@example.com",
-            "phone": "+1 555-0102",
-            "joined": "Oct 10, 2026",
-            "status": "Active",
-        },
-        {
-            "name": "Jamie Chen",
-            "username": "jamiechen",
-            "email": "jamie.chen@example.com",
-            "phone": "+1 555-0103",
-            "joined": "Oct 08, 2026",
-            "status": "Active",
-        },
-        {
-            "name": "Taylor Brooks",
-            "username": "tbrooks",
-            "email": "taylor.brooks@example.com",
-            "phone": "+1 555-0104",
-            "joined": "Oct 03, 2026",
-            "status": "Inactive",
-        },
-        {
-            "name": "Casey Patel",
-            "username": "caseyp",
-            "email": "casey.patel@example.com",
-            "phone": "+1 555-0105",
-            "joined": "Sep 29, 2026",
-            "status": "Active",
-        },
-        {
-            "name": "Jordan Lee",
-            "username": "jordanlee",
-            "email": "jordan.lee@example.com",
-            "phone": "+1 555-0106",
-            "joined": "Sep 24, 2026",
-            "status": "Active",
-        },
-    ]
-    return render(req, "private/layout/admin/users.html", {"users": users})
+    return render(req, "private/layout/admin/users.html")
 
 
+@staff_member_required(login_url="admin_login")
 def admin_settings_home(req):
     return render(req, "private/layout/admin/settings_home.html")
 
 
+@staff_member_required(login_url="admin_login")
 def admin_settings_about(req):
     return render(req, "private/layout/admin/settings_about.html")
 
 
+@staff_member_required(login_url="admin_login")
 def admin_settings_menu(req):
     return render(req, "private/layout/admin/settings_menu.html")
 
 
+@staff_member_required(login_url="admin_login")
 def admin_settings_contact(req):
     return render(req, "private/layout/admin/settings_contact.html")
 
 
+@staff_member_required(login_url="admin_login")
 def admin_account(req):
     return render(req, "private/layout/admin/account.html")
   
 def login_page(req):
-    return render(req, "public/login.html")
+    if req.user.is_authenticated:
+        return _authenticated_destination(req)
+    next_url = req.GET.get("next", "")
+    if not url_has_allowed_host_and_scheme(next_url, allowed_hosts={req.get_host()}):
+        next_url = ""
+    return render(req, "public/login.html", {"next_url": next_url})
 
 
 def signup_page(req):
+    if req.user.is_authenticated:
+        return _authenticated_destination(req)
     return render(req, "public/signup.html")
 
 
 def admin_login_page(req):
+    if req.user.is_authenticated:
+        return _authenticated_destination(req)
     return render(req, "public/admin_login.html")

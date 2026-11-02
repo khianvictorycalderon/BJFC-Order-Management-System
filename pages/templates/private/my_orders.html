@@ -5,12 +5,12 @@
 {% block page_heading %}My orders{% endblock %}
 
 {% block content %}
-{# Menu, add-ons, order history and edit order are wired to /api/customer/... by the script at the bottom. #}
+{# Menu, cart, and order history use live API data. #}
 <div class="space-y-6">
     <div>
         <p class="text-xs font-extrabold uppercase tracking-[0.18em] text-[#a87864]">Build your order</p>
         <h2 class="mt-1 text-2xl font-black tracking-tight text-[#342724] sm:text-3xl">Your orders</h2>
-        <p class="mt-1 text-sm text-[#89776e]">Pick your meals, add extras, then place your order.</p>
+        <p class="mt-1 text-sm text-[#89776e]">Pick menu items and place your order.</p>
     </div>
 
     <div class="grid gap-6 xl:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
@@ -21,9 +21,6 @@
                 <li class="flex flex-col rounded-2xl border border-[#eadfd2] bg-[#fffdf9] p-4 transition hover:-translate-y-0.5 hover:shadow-md">
                     <div class="flex items-start justify-between gap-3">
                         <img src="{% static item.image %}" alt="{{ item.name }}" class="h-20 w-20 rounded-full object-cover ring-2 ring-[#fff1e3]">
-                        <button type="button" aria-label="Add {{ item.name }} to favorites" class="flex h-9 w-9 items-center justify-center rounded-full border border-[#eadfd2] bg-white text-[#800000] transition hover:bg-[#fff1e3]">
-                            <svg class="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.8 5.6a5.2 5.2 0 0 0-7.4 0L12 7l-1.4-1.4a5.2 5.2 0 0 0-7.4 7.4L12 21.8l8.8-8.8a5.2 5.2 0 0 0 0-7.4Z"/></svg>
-                        </button>
                     </div>
                     <h4 class="mt-4 text-base font-extrabold leading-snug text-[#2b201d]">{{ item.name }}</h4>
                     <p class="mt-2 text-xs leading-5 text-[#89776e]">{{ item.desc }}</p>
@@ -37,25 +34,7 @@
         </section>
 
         <div class="flex flex-col gap-6">
-            <section aria-labelledby="addonsTitle" class="rounded-3xl border border-[#eadfd2] bg-white p-5 shadow-sm sm:p-6">
-                <h3 id="addonsTitle" class="text-xl font-black text-[#342724]">Add-ons</h3>
-                <ul class="mt-5 grid grid-cols-2 gap-4">
-                    {% for a in addons %}
-                    <li class="flex flex-col overflow-hidden rounded-2xl border border-[#eadfd2] bg-[#fffdf9]">
-                        <div class="relative aspect-[4/3] bg-white">
-                            <img src="{% static a.image %}" alt="{{ a.name }}" class="h-full w-full object-contain p-2">
-                            <span class="absolute right-2 top-2 rounded-full bg-white px-2 py-1 text-[11px] font-black text-[#342724] shadow ring-1 ring-[#eadfd2]">₱{{ a.price }}</span>
-                        </div>
-                        <div class="flex flex-1 flex-col gap-2 bg-[#800000] px-3 py-3">
-                            <p class="truncate text-xs font-extrabold text-white">{{ a.name }}</p>
-                            <button type="button" class="h-8 rounded-lg bg-[#e62727] text-[11px] font-extrabold uppercase tracking-wide text-white transition hover:bg-[#c41d1d] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-white/40">Add</button>
-                        </div>
-                    </li>
-                    {% endfor %}
-                </ul>
-            </section>
-
-            <div class="grid grid-cols-2 gap-4">
+            <div id="orderActions" class="grid grid-cols-2 gap-4">
                 <button type="button" class="h-14 rounded-xl border-2 border-[#e62727] bg-white text-lg font-extrabold text-[#e62727] transition hover:bg-[#fff1f1] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#e62727]/25">Cancel</button>
                 <button type="button" class="h-14 rounded-xl bg-[#e62727] text-lg font-extrabold text-white shadow-lg shadow-[#e62727]/20 transition hover:bg-[#c41d1d] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#e62727]/25">Order Now</button>
             </div>
@@ -67,6 +46,12 @@
         <div class="flex flex-wrap items-center justify-between gap-3">
             <h3 id="orderHistoryTitle" class="text-xl font-black text-[#342724]">My Orders</h3>
             <div class="flex items-center gap-2 text-xs font-bold text-[#89776e]">
+                <label for="ordersFilter">Status</label>
+                <select id="ordersFilter" class="rounded-lg border border-[#eadfd2] bg-white px-2 py-1">
+                    <option value="">All orders</option>
+                    <option value="pending">Pending</option>
+                    <option value="completed">Completed</option>
+                </select>
                 <label for="ordersSort">Sort</label>
                 <select id="ordersSort" class="rounded-lg border border-[#eadfd2] bg-white px-2 py-1">
                     <option value="desc">Newest first</option>
@@ -97,8 +82,6 @@
 (() => {
     const API = "/api/customer";
     const MAX_QTY = 99;
-    const USER_ID = Number(document.getElementById("csrfForm").dataset.userId) || null;
-    let editingOrderId = null;
 
     const norm = (s) => String(s || "").replace(/\s+/g, " ").trim().toLowerCase();
     const peso = (n) => "₱" + Number(n).toFixed(2);
@@ -147,25 +130,19 @@
     }
 
     // ---------- Find the existing markup ----------
-    const menuCards = [...document.querySelectorAll("#myOrdersTitle ~ ul > li")].map((li) => {
+    let menuCards = [...document.querySelectorAll("#myOrdersTitle ~ ul > li")].map((li) => {
         const buttons = li.querySelectorAll("button");
         return {
             li,
             label: (li.querySelector("h4") || {}).textContent || "",
             name: norm((li.querySelector("h4") || {}).textContent),
-            favBtn: buttons[0],
             addBtn: buttons[buttons.length - 1],
         };
     });
-    const addonCards = [...document.querySelectorAll("#addonsTitle ~ ul > li")].map((li) => ({
-        label: ((li.querySelector("p") || {}).textContent || "").trim(),
-        name: norm((li.querySelector("p") || {}).textContent),
-        btn: li.querySelector("button"),
-    }));
-    const actions = document.querySelector("#addonsTitle").closest("section").nextElementSibling;
+    const menuList = document.querySelector("#myOrdersTitle ~ ul");
+    const actions = document.getElementById("orderActions");
     const cancelBtn = actions.querySelectorAll("button")[0];
     const orderBtn = actions.querySelectorAll("button")[1];
-    const CANCEL_LABEL = cancelBtn.textContent;
     const ORDER_LABEL = orderBtn.textContent;
 
     // ---------- Inject the order summary (above Cancel / Order Now) ----------
@@ -174,7 +151,7 @@
     summary.className = "rounded-3xl border border-[#eadfd2] bg-white p-5 shadow-sm sm:p-6";
     summary.innerHTML = `
         <h3 id="summaryTitle" class="text-xl font-black text-[#342724]">Order summary</h3>
-        <p id="cartEmpty" class="mt-5 text-sm text-[#89776e]">No items yet. Press Add on a meal, then pick its add-ons.</p>
+        <p id="cartEmpty" class="mt-5 text-sm text-[#89776e]">No items yet. Press Add on a menu item to get started.</p>
         <ul id="cartList" class="mt-5 space-y-3"></ul>
         <div class="mt-5 flex items-center justify-between border-t border-[#eadfd2] pt-4">
             <span class="text-sm font-extrabold uppercase tracking-wide text-[#89776e]">Total</span>
@@ -197,15 +174,36 @@
     // ---------- State ----------
     const byName = new Map();   // normalized name -> API menu item
     const byId = new Map();     // id -> API menu item
-    const cart = new Map();     // id -> { qty, addons: Set<addon id> }  (insertion order = recency)
-    const favs = new Set();
+    const cart = new Map();
+    function renderMenuCards(items) {
+        if (!items.length) {
+            menuList.innerHTML = '<li class="col-span-full text-sm text-[#89776e]">No menu items are currently available.</li>';
+            menuCards = [];
+            return;
+        }
+        menuList.innerHTML = items.map((item) => `
+            <li class="flex flex-col rounded-2xl border border-[#eadfd2] bg-[#fffdf9] p-4 transition hover:-translate-y-0.5 hover:shadow-md">
+                <div class="flex items-start justify-between gap-3">
+                    <img src="${esc(item.image || "/static/images/menu/chicken1.png")}" alt="${esc(item.name)}" class="h-20 w-20 rounded-full object-cover ring-2 ring-[#fff1e3]">
+                </div>
+                <h4 class="mt-4 text-base font-extrabold leading-snug text-[#2b201d]">${esc(item.name)}</h4>
+                <p class="mt-2 text-xs leading-5 text-[#89776e]">${esc(item.description || "")}</p>
+                <div class="mt-auto flex items-center justify-between pt-4">
+                    <span class="text-xl font-black text-[#342724]">₱${esc(item.price)}</span>
+                    <button type="button" class="h-9 rounded-lg bg-[#e62727] px-5 text-xs font-extrabold uppercase tracking-wide text-white transition hover:bg-[#c41d1d]">Add</button>
+                </div>
+            </li>`).join("");
+        menuCards = [...menuList.querySelectorAll("li")].map((li) => {
+            const buttons = li.querySelectorAll("button");
+            const label = li.querySelector("h4").textContent;
+            return { li, label, name: norm(label), addBtn: buttons[0] };
+        });
+    }
 
     function lineInfo(id) {
         const item = byId.get(id);
         const line = cart.get(id);
-        const chosen = item.addons.filter((a) => line.addons.has(a.id));
-        const unit = Number(item.price) + chosen.reduce((s, a) => s + Number(a.price), 0);
-        return { item, line, chosen, total: unit * line.qty };
+        return { item, line, total: Number(item.price) * line.qty };
     }
 
     function render() {
@@ -213,7 +211,7 @@
         list.innerHTML = "";
         let total = 0;
         for (const id of cart.keys()) {
-            const { item, line, chosen, total: lt } = lineInfo(id);
+            const { item, line, total: lt } = lineInfo(id);
             total += lt;
             const li = document.createElement("li");
             li.dataset.id = id;
@@ -223,11 +221,6 @@
                     <p class="min-w-0 truncate text-sm font-extrabold text-[#2b201d]">${esc(item.name)}</p>
                     <span class="text-sm font-black text-[#342724]">${peso(lt)}</span>
                 </div>
-                ${chosen.length ? `<div class="mt-2 flex flex-wrap gap-1.5">${chosen.map((a) => `
-                    <span class="inline-flex items-center gap-1 rounded-full bg-[#fff1e3] px-2 py-0.5 text-[11px] font-bold text-[#342724]">
-                        ${esc(a.name)} (+${peso(a.price)})
-                        <button type="button" data-act="rmaddon" data-addon="${a.id}" aria-label="Remove ${esc(a.name)}" class="font-black text-[#e62727]">×</button>
-                    </span>`).join("")}</div>` : ""}
                 <div class="mt-3 flex items-center justify-between">
                     <div class="flex items-center gap-2">
                         <button type="button" data-act="dec" aria-label="Decrease quantity of ${esc(item.name)}" class="h-7 w-7 rounded-full border border-[#eadfd2] bg-white font-black text-[#342724]">−</button>
@@ -253,56 +246,11 @@
         });
     }
 
-    function setHeart(card, on) {
-        const svg = card.favBtn.querySelector("svg");
-        if (svg) svg.setAttribute("fill", on ? "currentColor" : "none");
-        card.favBtn.setAttribute("aria-pressed", String(on));
-        card.favBtn.setAttribute("aria-label", (on ? "Remove " : "Add ") + card.label.trim() + (on ? " from favorites" : " to favorites"));
-    }
-
     function disable(btn, reason) {
         btn.disabled = true;
         btn.title = reason;
         btn.style.opacity = "0.5";
         btn.style.cursor = "not-allowed";
-    }
-
-    // ---------- Edit a pending order (PATCH /api/customer/{id}/my-orders) ----------
-    function exitEdit() {
-        editingOrderId = null;
-        cancelBtn.textContent = CANCEL_LABEL;
-        orderBtn.textContent = ORDER_LABEL;
-    }
-
-    function startEdit(orderId) {
-        const order = currentOrders.find((o) => o.id === orderId);
-        if (!order) return;
-        if (!byId.size) return setMsg("Menu is still loading, please try again in a moment.", true);
-        const next = new Map();
-        const skipped = [];
-        order.items.forEach((i) => {
-            const item = byId.get(i.food_item_id);
-            if (!item) { skipped.push(i.food_item_name); return; }
-            const line = next.get(item.id) || { qty: 0, addons: new Set() };
-            line.qty = Math.min(MAX_QTY, line.qty + i.quantity);
-            i.addons.forEach((a) => {
-                const match = item.addons.find((x) => norm(x.name) === norm(a.name));
-                if (match) line.addons.add(match.id);
-            });
-            next.set(item.id, line);
-        });
-        if (!next.size) return setMsg("None of the items in this order are available anymore.", true);
-        cart.clear();
-        next.forEach((line, id) => cart.set(id, line));
-        editingOrderId = orderId;
-        cancelBtn.textContent = "Cancel edit";
-        orderBtn.textContent = "Save changes";
-        render();
-        window.scrollTo({ top: 0, behavior: "smooth" });
-        setMsg(
-            "Editing " + order.order_number + "." + (skipped.length ? " Unavailable and removed: " + skipped.join(", ") + "." : ""),
-            false
-        );
     }
 
     // ---------- Wire up the existing buttons ----------
@@ -311,51 +259,18 @@
             const item = byName.get(card.name);
             if (!item) {
                 disable(card.addBtn, "This item isn't on the menu right now.");
-                disable(card.favBtn, "This item isn't on the menu right now.");
                 return;
             }
-            setHeart(card, favs.has(item.id));
 
             card.addBtn.addEventListener("click", () => {
                 clearMsg();
-                const line = cart.get(item.id) || { qty: 0, addons: new Set() };
+                const line = cart.get(item.id) || { qty: 0 };
                 line.qty = Math.min(MAX_QTY, line.qty + 1);
                 cart.delete(item.id);        // re-insert so this meal counts as "most recent"
                 cart.set(item.id, line);
                 render();
             });
 
-            card.favBtn.addEventListener("click", async () => {
-                clearMsg();
-                const on = favs.has(item.id);
-                try {
-                    await api("/favorites/" + item.id, { method: on ? "DELETE" : "PUT" });
-                    if (on) favs.delete(item.id); else favs.add(item.id);
-                    setHeart(card, !on);
-                } catch (err) {
-                    setMsg(err.message, true);
-                }
-            });
-        });
-
-        // Add-ons are per meal in the backend, so a global add-on goes to the most recently
-        // added meal that offers an add-on with that name.
-        addonCards.forEach((a) => {
-            a.btn.addEventListener("click", () => {
-                clearMsg();
-                if (!cart.size) return setMsg("Add a meal first, then pick its add-ons.", true);
-                for (const id of [...cart.keys()].reverse()) {
-                    const item = byId.get(id);
-                    const addon = item.addons.find((x) => norm(x.name) === a.name);
-                    if (!addon) continue;
-                    const line = cart.get(id);
-                    if (line.addons.has(addon.id)) return setMsg(a.label + " is already added to " + item.name + ".", true);
-                    line.addons.add(addon.id);
-                    render();
-                    return setMsg("Added " + a.label + " to " + item.name + ".", false);
-                }
-                setMsg("None of the meals in your order offer " + a.label + ".", true);
-            });
         });
 
         $("cartList").addEventListener("click", (e) => {
@@ -369,14 +284,12 @@
             if (act === "inc") line.qty = Math.min(MAX_QTY, line.qty + 1);
             else if (act === "dec") line.qty -= 1;
             else if (act === "remove") line.qty = 0;
-            else if (act === "rmaddon") line.addons.delete(Number(btn.dataset.addon));
             if (line.qty < 1) cart.delete(id);
             render();
         });
 
         cancelBtn.addEventListener("click", () => {
             cart.clear();
-            exitEdit();
             clearMsg();
             render();
         });
@@ -386,61 +299,46 @@
             const items = [...cart].map(([id, line]) => ({
                 menu_item_id: id,
                 quantity: line.qty,
-                addon_ids: [...line.addons],
             }));
-            const editing = editingOrderId;
-            if (editing && !USER_ID) return setMsg("Please log in to edit an order.", true);
             orderBtn.disabled = true;
-            orderBtn.textContent = editing ? "Saving…" : "Placing order…";
+            orderBtn.textContent = "Placing order…";
             try {
-                const res = editing
-                    ? await api("/" + USER_ID + "/my-orders", { method: "PATCH", body: { order_id: editing, items } })
-                    : await api("/orders", { method: "POST", body: { items } });
+                const res = await api("/orders", { method: "POST", body: { items } });
                 cart.clear();
-                exitEdit();
                 render();
-                if (editing) {
-                    setMsg("Order " + res.order.order_number + " updated.", false);
-                } else {
-                    const eta = res.eta
-                        ? " Estimated ready time: " + new Date(res.eta).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) + "."
-                        : "";
-                    setMsg("Order " + res.order_number + " placed!" + eta, false);
-                    ordersState.page = 1;
-                }
+                setMsg("Order " + res.order_number + " placed!", false);
+                ordersState.page = 1;
                 loadOrders();
             } catch (err) {
-                if (editing && err.status === 409) { cart.clear(); exitEdit(); render(); loadOrders(); }
                 setMsg(err.status === 401 ? "Please log in to place an order." : err.message, true);
             } finally {
-                orderBtn.textContent = editingOrderId ? "Save changes" : ORDER_LABEL;
+                orderBtn.textContent = ORDER_LABEL;
                 orderBtn.disabled = cart.size === 0;
             }
         });
     }
 
     // ---------- My orders (GET /api/customer/my-orders) ----------
-    const ordersState = { page: 1, size: 10, sort: "desc" };
-    let currentOrders = [];
-
+    const ordersState = { page: 1, size: 10, sort: "desc", filter: "" };
     function renderOrders(data) {
-        currentOrders = data.orders;
         const { page, total_pages, total_items, has_next, has_previous } = data.pagination;
-        $("ordersList").innerHTML = data.orders.map((o) => `
+        $("ordersList").innerHTML = data.orders.map((o) => {
+            const created = new Date(o.created_at);
+            return `
             <li class="rounded-2xl border border-[#eadfd2] bg-[#fffdf9] p-4">
                 <div class="flex flex-wrap items-center justify-between gap-2">
                     <p class="text-sm font-extrabold text-[#2b201d]">${esc(o.order_number)}</p>
                     <div class="flex items-center gap-2">
                         <span class="rounded-full bg-[#fff1e3] px-2 py-0.5 text-[11px] font-bold text-[#342724]">${esc(o.status_display)}</span>
-                        ${o.status === "PENDING" ? `<button type="button" data-edit="${o.id}" class="h-7 rounded-lg border border-[#e62727] px-3 text-[11px] font-extrabold text-[#e62727]">Edit</button>` : ""}
                     </div>
                 </div>
-                <p class="mt-1 text-xs text-[#89776e]">${esc(new Date(o.created_at).toLocaleString([], { dateStyle: "medium", timeStyle: "short" }))}</p>
+                <p class="mt-1 text-xs text-[#89776e]">Order date: ${esc(created.toLocaleDateString())} · Order time: ${esc(created.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }))}</p>
                 <ul class="mt-2 text-xs text-[#342724]">
-                    ${o.items.map((i) => `<li>${i.quantity} × ${esc(i.food_item_name)}${i.addons.length ? " (" + i.addons.map((a) => esc(a.name)).join(", ") + ")" : ""}</li>`).join("")}
+                    ${o.items.map((i) => `<li>${i.quantity} × ${esc(i.food_item_name)}</li>`).join("")}
                 </ul>
                 <p class="mt-2 text-right text-base font-black text-[#342724]">${peso(o.total_amount)}</p>
-            </li>`).join("");
+            </li>`;
+        }).join("");
         const empty = $("ordersEmpty");
         empty.style.display = data.orders.length ? "none" : "block";
         empty.textContent = total_items ? "No orders on this page." : "You haven't placed any orders yet.";
@@ -470,31 +368,36 @@
         }
     }
 
+    $("ordersFilter").addEventListener("change", (e) => { ordersState.filter = e.target.value; ordersState.page = 1; loadOrders(); });
     $("ordersSort").addEventListener("change", (e) => { ordersState.sort = e.target.value; ordersState.page = 1; loadOrders(); });
     $("ordersSize").addEventListener("change", (e) => { ordersState.size = Number(e.target.value); ordersState.page = 1; loadOrders(); });
     $("ordersPrev").addEventListener("click", () => { if (ordersState.page > 1) { ordersState.page -= 1; loadOrders(); } });
     $("ordersNext").addEventListener("click", () => { ordersState.page += 1; loadOrders(); });
-    $("ordersList").addEventListener("click", (e) => {
-        const btn = e.target.closest("[data-edit]");
-        if (btn) startEdit(Number(btn.dataset.edit));
-    });
-
     // ---------- Load real menu data, then bind ----------
     render();
     setPager(false, false);
     loadOrders();
     (async () => {
         try {
-            const [items, favItems] = await Promise.all([
-                loadAll("/menu/items"),
-                loadAll("/favorites").catch(() => []),
-            ]);
+            const items = await loadAll("/menu/items");
+            renderMenuCards(items);
             items.forEach((i) => {
                 byId.set(i.id, i);
                 if (!byName.has(norm(i.name))) byName.set(norm(i.name), i);
             });
-            favItems.forEach((i) => favs.add(i.id));
             bind();
+            const requestedName = new URLSearchParams(window.location.search).get("add");
+            if (requestedName) {
+                const item = byName.get(norm(requestedName));
+                const quantity = Number(new URLSearchParams(window.location.search).get("quantity")) || 1;
+                if (item) {
+                    cart.set(item.id, { qty: Math.min(MAX_QTY, Math.max(1, quantity)) });
+                    render();
+                    setMsg("Added " + item.name + " to your order.", false);
+                } else {
+                    setMsg(requestedName + " is not currently available on the menu.", true);
+                }
+            }
         } catch (err) {
             setMsg(err.status === 401 ? "Please log in to place an order." : err.message, true);
         }

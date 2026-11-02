@@ -6,6 +6,7 @@ urlpatterns = [
     path("", views.test_api_response, name="test_api_response"),
     re_path(r"^login/?$", views.login_api, name="login_api"),
     re_path(r"^register/?$", views.register, name="register"),
+    re_path(r"^admin/dashboard/?$", views.admin_dashboard, name="admin_dashboard"),
     re_path(r"^admin/orders/?$", views.admin_orders, name="admin_orders"),
     re_path(r"^admin/orders/info/?$", views.orders_info, name="admin_orders_info"),
     re_path(r"^admin/orders/(?P<pk>\d+)/?$", views.admin_order_status, name="admin_order_status"),
@@ -36,11 +37,6 @@ urlpatterns = [
     re_path(r"^customer/menu/items/?$", views.customer_menu_items, name="customer_menu_items"),
     re_path(r"^customer/orders/?$", views.customer_create_order, name="customer_create_order"),
     re_path(r"^customer/my-orders/?$", views.customer_orders, name="customer_orders"),
-    re_path(
-        r"^customer/(?P<user_id>\d+)/my-orders/?$",
-        views.customer_update_order,
-        name="customer_update_order",
-    ),
     re_path(r"^customer/favorites/?$", views.customer_favorites, name="customer_favorites"),
     re_path(
         r"^customer/favorites/(?P<menu_item_id>\d+)/?$",

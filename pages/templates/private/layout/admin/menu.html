@@ -23,10 +23,10 @@
         </div>
 
         <!-- ADD NEW MENU ITEM -->
-        <div class="inline-flex items-center justify-center gap-2
+        <button id="add-menu-item" type="button" class="inline-flex items-center justify-center gap-2
                     bg-[#8B1E2D] hover:bg-[#701725] text-white
                     px-5 py-3 rounded-xl font-semibold text-sm
-                    shadow-sm cursor-pointer transition-colors">
+                    shadow-sm transition-colors">
 
             <svg xmlns="http://www.w3.org/2000/svg"
                  width="20" height="20"
@@ -40,7 +40,7 @@
             </svg>
 
             Add New Menu Item
-        </div>
+        </button>
 
     </div>
 
@@ -522,6 +522,44 @@
 </div>
 
 
+<dialog id="menuItemDialog" class="w-[min(94vw,36rem)] rounded-2xl p-0 shadow-2xl backdrop:bg-black/50">
+    <form id="menuItemForm" class="space-y-5 p-6 sm:p-8" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div class="flex items-start justify-between gap-4">
+            <div>
+                <h2 id="menuItemDialogTitle" class="text-xl font-black text-gray-800">Add menu item</h2>
+                <p class="mt-1 text-sm text-gray-500">Enter the item details below.</p>
+            </div>
+            <button id="close-menu-dialog" type="button" aria-label="Close dialog" class="rounded-lg px-3 py-1 text-2xl leading-none text-gray-500 hover:bg-gray-100">&times;</button>
+        </div>
+        <p id="menuItemFormMessage" role="status" aria-live="polite" class="hidden rounded-lg px-3 py-2 text-sm font-semibold"></p>
+        <div>
+            <label for="menuItemName" class="mb-1 block text-sm font-bold text-gray-700">Name</label>
+            <input id="menuItemName" name="name" required maxlength="255" class="w-full rounded-lg border border-gray-300 px-3 py-2">
+        </div>
+        <div>
+            <label for="menuItemDescription" class="mb-1 block text-sm font-bold text-gray-700">Description</label>
+            <textarea id="menuItemDescription" name="description" required maxlength="255" rows="3" class="w-full rounded-lg border border-gray-300 px-3 py-2"></textarea>
+        </div>
+        <div>
+            <div>
+                <label for="menuItemPrice" class="mb-1 block text-sm font-bold text-gray-700">Price</label>
+                <input id="menuItemPrice" name="price" type="number" min="0" step="0.01" required class="w-full rounded-lg border border-gray-300 px-3 py-2">
+            </div>
+        </div>
+        <div>
+            <div>
+                <label for="menuItemImage" class="mb-1 block text-sm font-bold text-gray-700">Image (optional)</label>
+                <input id="menuItemImage" name="image" type="file" accept="image/jpeg,image/png,image/webp,image/gif" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
+            </div>
+        </div>
+        <div class="flex justify-end gap-3 border-t border-gray-100 pt-4">
+            <button id="cancel-menu-dialog" type="button" class="rounded-lg border border-gray-300 px-4 py-2 text-sm font-bold text-gray-700 hover:bg-gray-50">Cancel</button>
+            <button id="save-menu-item" type="submit" class="rounded-lg bg-[#8B1E2D] px-5 py-2 text-sm font-bold text-white hover:bg-[#701725]">Save item</button>
+        </div>
+    </form>
+</dialog>
+
 <script>
     document.querySelectorAll(".availability-toggle").forEach((toggle) => {
 
@@ -547,25 +585,37 @@
 </script>
 
 <script>
-        const csrfToken = "{{ csrf_token }}";
+    let menuItems = [];
+    const menuDialog = document.getElementById("menuItemDialog");
+    const menuItemForm = document.getElementById("menuItemForm");
+
+    function getCsrfToken() {
+        return document.querySelector("#menuItemForm [name=csrfmiddlewaretoken]")?.value || "";
+    }
+
+    function escapeHtml(value) {
+        return String(value ?? "").replace(/[&<>"']/g, (char) => ({
+            "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+        }[char]));
+    }
+
     //  GET ALL MENU ITEMS
     async function fetchMenuItems() {
+        document.getElementById("menu-items-body").innerHTML =
+            `<tr><td colspan="4" class="px-6 py-8 text-center text-gray-500">Loading menu items…</td></tr>`;
         try {
-            const response = await fetch("/api/admin/menu/items/", {
-                method: "GET"
-            });
-
-            if (!response.ok) {
-                throw new Error(`HTTP error! Status: ${response.status}`);
+            const items = [];
+            for (let page = 1; ; page += 1) {
+                const response = await fetch(`/api/admin/menu/items/?page=${page}&size=100`);
+                if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+                const data = await response.json();
+                const pageItems = Array.isArray(data) ? data : (data.items ?? data.results ?? []);
+                items.push(...pageItems);
+                if (Array.isArray(data) || !data.pagination?.has_next) break;
             }
-
-            const data = await response.json();
-            console.log("Menu Items:", data);
-
-            const items = Array.isArray(data) ? data : (data.items ?? data.results ?? []);
-            renderMenuItems(data.items);
-            }
-
+            menuItems = items;
+            renderMenuItems(items);
+        }
         catch (error) {
             console.error("Error fetching menu items:", error);
             document.getElementById("menu-items-body").innerHTML =
@@ -580,14 +630,13 @@
                 method: "PATCH",
                 headers: {
                     "Content-Type": "application/json",
-                    "X-CSRFToken": csrfToken
+                    "X-CSRFToken": getCsrfToken()
                 },
                 body: JSON.stringify(itemData)
             });
             const data = await response.json();
 
             if (!response.ok) {
-                console.error("Update failed:", data);
                 alert(
                     data.errors
                         ? JSON.stringify(data.errors, null, 2)
@@ -595,8 +644,6 @@
                 );
                 return false;
             }
-
-            console.log("Updated menu item:", data);
             return true;
         } catch (error) {
             console.error("Error updating menu item:", error);
@@ -610,21 +657,22 @@
         try {
             const response = await fetch(`/api/admin/menu/items/${id}/`, {
                 method: "DELETE",
-                headers: { "X-CSRFToken": csrfToken }
+                headers: { "X-CSRFToken": getCsrfToken() }
             });
 
             if (!response.ok) {
-                throw new Error(`HTTP error! Status: ${response.status}`);
+                const data = await response.json().catch(() => ({}));
+                throw new Error(data.error || `HTTP error! Status: ${response.status}`);
             }
 
-            console.log("Menu item deleted successfully.");
             return true;
         } catch (error) {
-            console.error("Error deleting menu item:", error);
+            alert("Could not delete menu item: " + error.message);
             return false;
         }
     }
-        function renderMenuItems(items) {
+
+    function renderMenuItems(items) {
         const body = document.getElementById("menu-items-body");
 
         if (!items.length) {
@@ -636,16 +684,15 @@
             <tr class="hover:bg-gray-50 transition-colors">
                 <td class="px-6 py-5">
                     <div class="flex items-center gap-4">
-                        <img src="${item.image || '{% static "images/menu/chicken1.png" %}'}" alt="${item.name}"
+                        <img src="${escapeHtml(item.image || '{% static "images/menu/chicken1.png" %}')}" alt="${escapeHtml(item.name)}"
                             class="w-14 h-14 rounded-xl object-cover bg-gray-100">
                         <div>
-                            <p class="font-bold text-gray-800">${item.name}</p>
-                            <p class="text-sm text-gray-500 mt-1">${item.category ? item.category.name : "Uncategorized"}</p>
+                            <p class="font-bold text-gray-800">${escapeHtml(item.name)}</p>
                         </div>
                     </div>
                 </td>
                 <td class="px-6 py-5">
-                    <span class="font-bold text-gray-800">₱${Number(item.price).toFixed(2)}</span>
+                    <span class="font-bold text-gray-800">₱${escapeHtml(Number(item.price).toFixed(2))}</span>
                 </td>
                 <td class="px-6 py-5">
                     <label class="relative inline-flex items-center cursor-pointer">
@@ -660,14 +707,14 @@
                 </td>
                 <td class="px-6 py-5">
                     <div class="flex items-center justify-center gap-3">
-                        <button title="Edit Item" data-edit="${item.id}"
+                        <button type="button" title="Edit Item" aria-label="Edit ${escapeHtml(item.name)}" data-menu-edit="${item.id}"
                             class="inline-flex items-center justify-center w-9 h-9 rounded-lg text-blue-600 bg-blue-50 hover:bg-blue-100 transition-colors">
                         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="pointer-events:none">
                             <path d="M12 20h9"/>
                             <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L8 18l-4 1 1-4Z"/>
                         </svg>
                     </button>
-                    <button title="Delete Item" data-delete="${item.id}"
+                    <button type="button" title="Delete Item" aria-label="Delete ${escapeHtml(item.name)}" data-delete="${item.id}"
                             class="inline-flex items-center justify-center w-9 h-9 rounded-lg text-red-600 bg-red-50 hover:bg-red-100 transition-colors">
                         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="pointer-events:none">
                             <path d="M3 6h18"/>
@@ -695,69 +742,78 @@
         if (!ok) toggle.checked = !toggle.checked;   // undo if it failed
     });
 
-   
-// EDIT and DELETE menu items
-menuBody.addEventListener("click", async (e) => {
+    menuBody.addEventListener("click", async (event) => {
+        const deleteBtn = event.target.closest("[data-delete]");
+        if (!deleteBtn || !confirm("Delete this menu item?")) return;
+        if (await deleteMenuItem(deleteBtn.dataset.delete)) await fetchMenuItems();
+    });
 
-    // EDIT ITEM
-    const editBtn = e.target.closest("[data-edit]");
-
-    if (editBtn) {
-        const id = editBtn.dataset.edit;
-        const row = editBtn.closest("tr");
-
-        const currentName = row.querySelector("td:nth-child(1) p.font-bold").textContent.trim();
-
-        const currentPriceText = row.querySelector("td:nth-child(2) span").textContent;
-        const currentPrice = currentPriceText.replace(/[₱,]/g, "").trim();
-
-        const newName = prompt("Enter item name:", currentName);
-
-        if (newName === null) return;
-        if (!newName.trim()) {
-            alert("Item name cannot be empty.");
-            return;
-        }
-
-        const newPrice = prompt("Enter item price:", currentPrice);
-
-        if (newPrice === null) return;
-
-        if (newPrice.trim() === "" || isNaN(Number(newPrice)) || Number(newPrice) < 0) {
-            alert("Please enter a valid price.");
-            return;
-        }
-
-        const ok = await updateMenuItem(id, {
-            name: newName.trim(),
-            price: Number(newPrice)
-        });
-
-        if (ok) {
-            alert("Menu item updated successfully!");
-            fetchMenuItems();
-        } else {
-            alert("Failed to update menu item.");
-        }
-
-        return;
+    function showMenuFormMessage(text, isError = false) {
+        const message = document.getElementById("menuItemFormMessage");
+        message.textContent = text;
+        message.className = `rounded-lg px-3 py-2 text-sm font-semibold ${isError ? "bg-red-50 text-red-700" : "bg-green-50 text-green-700"}`;
     }
 
-    // DELETE ITEM
-    const deleteBtn = e.target.closest("[data-delete]");
+    function openMenuDialog(item = null) {
+        menuItemForm.reset();
+        menuItemForm.dataset.itemId = item ? item.id : "";
+        document.getElementById("menuItemDialogTitle").textContent = item ? "Edit menu item" : "Add menu item";
+        document.getElementById("save-menu-item").textContent = item ? "Save changes" : "Add item";
+        document.getElementById("menuItemName").value = item?.name || "";
+        document.getElementById("menuItemDescription").value = item?.description || "";
+        document.getElementById("menuItemPrice").value = item?.price || "";
+        const message = document.getElementById("menuItemFormMessage");
+        message.textContent = "";
+        message.className = "hidden";
+        menuDialog.showModal();
+    }
 
-        if (deleteBtn) {
-            if (!confirm("Delete this menu item?")) return;
+    document.getElementById("add-menu-item").addEventListener("click", () => openMenuDialog());
+    document.getElementById("close-menu-dialog").addEventListener("click", () => menuDialog.close());
+    document.getElementById("cancel-menu-dialog").addEventListener("click", () => menuDialog.close());
+    menuDialog.addEventListener("click", (event) => {
+        if (event.target === menuDialog) menuDialog.close();
+    });
 
-            if (await deleteMenuItem(deleteBtn.dataset.delete)) {
-                fetchMenuItems();
-            } else {
-                alert("Failed to delete menu item.");
+    menuBody.addEventListener("click", (event) => {
+        const editBtn = event.target.closest("[data-menu-edit]");
+        if (!editBtn) return;
+        const item = menuItems.find((menuItem) => String(menuItem.id) === editBtn.dataset.menuEdit);
+        if (item) openMenuDialog(item);
+    });
+
+    menuItemForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const saveButton = document.getElementById("save-menu-item");
+        const itemId = menuItemForm.dataset.itemId;
+        const formData = new FormData(menuItemForm);
+        formData.delete("csrfmiddlewaretoken");
+        if (!document.getElementById("menuItemImage").files.length) formData.delete("image");
+        saveButton.disabled = true;
+        try {
+            const response = await fetch(
+                itemId ? `/api/admin/menu/items/${itemId}/` : "/api/admin/menu/items/",
+                {
+                    method: itemId ? "PATCH" : "POST",
+                    headers: { "X-CSRFToken": getCsrfToken() },
+                    body: formData,
+                }
+            );
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok) {
+                const detail = data.errors ? JSON.stringify(data.errors) : data.error;
+                throw new Error(detail || `Request failed (${response.status}).`);
             }
+            menuDialog.close();
+            await fetchMenuItems();
+        } catch (error) {
+            showMenuFormMessage(error.message, true);
+        } finally {
+            saveButton.disabled = false;
         }
     });
 
-    document.addEventListener("DOMContentLoaded", fetchMenuItems);
+    fetchMenuItems();
 </script>
 
 {% endblock %}

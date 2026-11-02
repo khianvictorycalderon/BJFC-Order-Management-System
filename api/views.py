@@ -9,9 +9,11 @@ from django.core.exceptions import ValidationError
 from django.core.paginator import EmptyPage, Paginator
 from django.core.validators import validate_email
 from django.db import IntegrityError, transaction
-from django.db.models import Avg, Count, Q
+from django.db.models import Avg, Count, Q, Sum
+from django.db.models.functions import TruncDate
 from django.http import JsonResponse
 from django.utils import timezone
+from django.utils.dateparse import parse_date
 from django.views.decorators.csrf import csrf_exempt, csrf_protect
 from django.views.decorators.http import require_http_methods
 
@@ -20,6 +22,7 @@ from core.models import (
     ContactMessage,
     Favorite,
     FoodAddon,
+    FoodCategory,
     FoodItem,
     LandingPage,
     Order,
@@ -294,6 +297,11 @@ def _serialize_contact(message):
     return {
         "id": message.pk,
         "name": message.name,
+        "sender_name": (
+            (message.sender.get_full_name() or message.sender.username)
+            if message.sender_id
+            else "Guest"
+        ),
         "email": message.email,
         "phone": message.phone,
         "message": message.message,
@@ -326,7 +334,11 @@ def _serialize_page(page):
 
 
 def _serialize_store(store):
-    return {"storename": store.storename, "contact": store.contact, "address": store.address}
+    return {
+        "email": store.email,
+        "contact": store.contact,
+        "address": store.address,
+    }
 
 
 # --------------------------------------------------------------------------- #
@@ -348,11 +360,16 @@ def login_api(request):
     password = data.get("password")
     if not isinstance(username, str) or not isinstance(password, str) or not username or not password:
         return JsonResponse({"error": "Username and password are required."}, status=400)
+    admin_only = data.get("admin_only", False)
+    if not isinstance(admin_only, bool):
+        return JsonResponse({"error": "'admin_only' must be a boolean."}, status=400)
     user = authenticate(request=request, username=username, password=password)
     if user is None:
         return JsonResponse({"error": "Invalid username or password."}, status=401)
     if not user.is_active:
         return JsonResponse({"error": "Account is inactive."}, status=403)
+    if admin_only and not user.is_staff:
+        return JsonResponse({"error": "Admin access required."}, status=403)
     login(request, user)
     return JsonResponse({"message": "Login successful.", "user": _serialize_user(user)}, status=200)
 
@@ -409,6 +426,69 @@ def register(request):
 # --------------------------------------------------------------------------- #
 # Admin: orders
 # --------------------------------------------------------------------------- #
+
+@_admin_api("GET")
+def admin_dashboard(request):
+    today = timezone.localdate()
+    period = request.GET.get("period", "week")
+    selected_date = request.GET.get("date")
+    if selected_date:
+        selected_date = parse_date(selected_date)
+        if selected_date is None:
+            return JsonResponse({"error": "'date' must use YYYY-MM-DD format."}, status=400)
+        start_date = end_date = selected_date
+    elif period == "week":
+        start_date, end_date = today - timedelta(days=6), today
+    elif period == "month":
+        start_date, end_date = today - timedelta(days=29), today
+    elif period == "all":
+        start_date = end_date = None
+    else:
+        return JsonResponse({"error": "'period' must be 'week', 'month' or 'all'."}, status=400)
+
+    orders = Order.objects.all()
+    if start_date is not None:
+        orders = orders.filter(created_at__date__range=(start_date, end_date))
+    completed_orders = orders.filter(status=Order.Status.COMPLETED)
+    chart_start = start_date or (today - timedelta(days=6))
+    chart_end = end_date or today
+    daily_sales = {
+        row["day"]: row["sales"] or Decimal("0.00")
+        for row in completed_orders.filter(created_at__date__range=(chart_start, chart_end))
+        .values(day=TruncDate("created_at"))
+        .annotate(sales=Sum("total_amount"))
+    }
+    weekly_sales = [
+        {
+            "date": (chart_start + timedelta(days=offset)).isoformat(),
+            "sales": str(daily_sales.get(chart_start + timedelta(days=offset), Decimal("0.00"))),
+        }
+        for offset in range((chart_end - chart_start).days + 1)
+    ]
+    top_items = list(
+        OrderItem.objects.filter(order__in=completed_orders)
+        .values("food_item__name")
+        .annotate(quantity=Sum("quantity"))
+        .order_by("-quantity", "food_item__name")[:4]
+    )
+    recent_orders = _orders_with_relations().filter(
+        created_at__date__range=(today - timedelta(days=1), today)
+    ).order_by("-created_at", "-pk")[:10]
+    return JsonResponse(
+        {
+            "total_sales": str(completed_orders.aggregate(total=Sum("total_amount"))["total"] or Decimal("0.00")),
+            "total_orders": orders.count(),
+            "total_customers": User.objects.filter(is_staff=False).count(),
+            "completed_orders": completed_orders.count(),
+            "weekly_sales": weekly_sales,
+            "top_items": top_items,
+            "recent_orders": [_serialize_order(order) for order in recent_orders],
+            "period": period,
+            "start_date": start_date.isoformat() if start_date else None,
+            "end_date": end_date.isoformat() if end_date else None,
+        }
+    )
+
 
 def _filter_orders_by_status(queryset, raw_filter):
     status_filter = (raw_filter or "").lower()
@@ -526,9 +606,7 @@ def feedbacks_info(request):
 def _menu_queryset(request, customer=False):
     queryset = FoodItem.objects.select_related("category").prefetch_related("addons")
     if customer:
-        queryset = queryset.filter(available=True).filter(
-            Q(category__isnull=True) | Q(category__available=True)
-        )
+        queryset = queryset.filter(available=True)
     search = (request.GET.get("search") or "").strip()
     if search:
         queryset = queryset.filter(
@@ -797,34 +875,6 @@ def customer_create_order(request):
     )
 
 
-@csrf_protect
-@require_http_methods(["PATCH"])
-def customer_update_order(request, user_id):
-    error = _require_customer(request, user_id)
-    if error:
-        return error
-    data, error = _json_body(request)
-    if error:
-        return error
-    order_id = data.get("order_id")
-    try:
-        order = Order.objects.get(pk=int(order_id), customer=request.user)
-    except (TypeError, ValueError, Order.DoesNotExist):
-        return JsonResponse({"error": "Order not found."}, status=404)
-    if order.status != Order.Status.PENDING:
-        return JsonResponse({"error": "Only pending orders can be changed."}, status=409)
-    result, error = _order_lines(data.get("items"))
-    if error:
-        return error
-    lines, total = result
-    with transaction.atomic():
-        order.total_amount = total
-        order.save(update_fields=["total_amount"])
-        _write_order_items(order, lines)
-    order = _orders_with_relations().get(pk=order.pk)
-    return JsonResponse({"order": _serialize_order(order)})
-
-
 # --------------------------------------------------------------------------- #
 # Admin: users
 # --------------------------------------------------------------------------- #
@@ -838,6 +888,7 @@ def _user_row(user):
         "email": user.email,
         "first_name": getattr(user, "first_name", ""),
         "last_name": getattr(user, "last_name", ""),
+        "phone_number": user.phone_number,
         "is_staff": user.is_staff,
         "date_joined": joined.isoformat() if joined else None,
     }
@@ -971,50 +1022,6 @@ def _change_password(request, admin=False):
 def admin_password(request):
     return _change_password(request, admin=True)
 
-@_admin_api("PATCH")
-@csrf_exempt
-def admin_password(request):
-    data, error = _json_body(request)
-    if error:
-        return error
-
-    unknown = set(data) - {"old_password", "new_password"}
-    if unknown:
-        return JsonResponse(
-            {"error": "Unknown fields.", "fields": sorted(unknown)}, status=400
-        )
-
-    old_password = data.get("old_password")
-    new_password = data.get("new_password")
-    if (
-        not isinstance(old_password, str)
-        or not isinstance(new_password, str)
-        or not old_password
-        or not new_password
-    ):
-        return JsonResponse(
-            {"error": "old_password and new_password are required."}, status=400
-        )
-
-    user = request.user
-    if not user.check_password(old_password):
-        return JsonResponse({"error": "Old password is incorrect."}, status=400)
-    if old_password == new_password:
-        return JsonResponse(
-            {"error": "New password must be different from the old one."}, status=400
-        )
-
-    try:
-        validate_password(new_password, user)
-    except ValidationError as exc:
-        return JsonResponse({"errors": list(exc.messages)}, status=400)
-
-    user.set_password(new_password)
-    user.save(update_fields=["password"])
-    update_session_auth_hash(request, user)  # keeps the admin logged in
-    return JsonResponse({"message": "Password updated."})
-
-
 @csrf_protect
 @require_http_methods(["PATCH"])
 def customer_password(request, user_id):
@@ -1146,7 +1153,6 @@ def page_content(request, slug):
 
 
 @_admin_api("GET", "PATCH")
-@csrf_exempt
 def admin_landing_page(request):
     if request.method not in ["GET", "PATCH"]:
         return JsonResponse(
@@ -1194,16 +1200,21 @@ def store_information(request):
     data, error = _json_body(request)
     if error:
         return error
-    if set(data) - {"storename", "contact", "address"} or not data:
+    if set(data) - {"contact", "address", "email"} or not data:
         return JsonResponse({"error": "Provide one or more valid store fields."}, status=400)
     if store is None:
-        store = StoreInformation(storename="", contact="", address="")
+        store = StoreInformation(storename="BJFC", contact="", address="")
     for field, value in data.items():
-        if not isinstance(value, str) or not value.strip():
+        if not isinstance(value, str) or (field != "email" and not value.strip()):
             return JsonResponse({"error": f"'{field}' must be a non-empty string."}, status=400)
         setattr(store, field, value.strip())
-    if not store.storename or not store.contact or not store.address:
-        return JsonResponse({"error": "Store name, contact and address are required."}, status=400)
+    if "email" in data and store.email:
+        try:
+            validate_email(store.email)
+        except ValidationError:
+            return JsonResponse({"error": "Invalid store email address."}, status=400)
+    if not store.contact or not store.address:
+        return JsonResponse({"error": "Store contact and address are required."}, status=400)
     store.save()
     return JsonResponse(_serialize_store(store))
 
@@ -1214,7 +1225,7 @@ def store_information(request):
 
 @_admin_api("GET")
 def admin_contact_messages(request):
-    queryset = ContactMessage.objects.all()
+    queryset = ContactMessage.objects.select_related("sender")
     status_filter = request.GET.get("status")
     if status_filter:
         valid_statuses = [value for value, _ in ContactMessage.Status.choices]
@@ -1259,7 +1270,9 @@ def contact_messages(request):
             {"error": "Please correct the highlighted fields.", "errors": form_errors(form)},
             status=400,
         )
-    message = form.save()
+    message = form.save(commit=False)
+    message.sender = request.user if request.user.is_authenticated else None
+    message.save()
     return JsonResponse(
         {"message": "Thank you! Your message has been received.", "id": message.pk},
         status=201,
@@ -1283,7 +1296,7 @@ def customer_favorites(request):
         Favorite.objects.filter(customer=request.user)
         .select_related("food_item__category")
         .prefetch_related("food_item__addons")
-        .order_by(*_ordering(direction, "created_at", "pk"))
+        .order_by("-created_at", "-pk")
     )
     return JsonResponse(
         _page_response(

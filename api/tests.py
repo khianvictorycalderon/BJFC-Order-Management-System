@@ -42,12 +42,80 @@ class BackendApiTests(TestCase):
         self.addon = FoodAddon.objects.create(name="Extra sauce", price=Decimal("2.50"))
         self.item.addons.add(self.addon)
 
+    def test_admin_only_login_rejects_customers(self):
+        self.customer.set_password("customer-test-password")
+        self.customer.save(update_fields=["password"])
+        response = self.client.post(
+            "/api/login",
+            data=json.dumps({
+                "username": self.customer.username,
+                "password": "customer-test-password",
+                "admin_only": True,
+            }),
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 403)
+        self.assertFalse(response.wsgi_request.user.is_authenticated)
+
+    def test_admin_dashboard_uses_database_data(self):
+        order = Order.objects.create(
+            customer=self.customer,
+            total_amount=Decimal("25.00"),
+            status=Order.Status.COMPLETED,
+        )
+        OrderItem.objects.create(
+            order=order,
+            food_item=self.item,
+            quantity=2,
+            price=self.item.price,
+        )
+        self.client.force_login(self.admin)
+        response = self.client.get("/api/admin/dashboard/")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["total_sales"], "25.00")
+        self.assertEqual(response.json()["total_orders"], 1)
+        self.assertEqual(response.json()["total_customers"], 1)
+        self.assertEqual(response.json()["top_items"][0]["food_item__name"], self.item.name)
+        self.assertEqual(response.json()["recent_orders"][0]["id"], order.pk)
+
+    def test_admin_orders_status_filter_and_pagination(self):
+        for status in (Order.Status.PENDING, Order.Status.PREPARING, Order.Status.COMPLETED):
+            Order.objects.create(
+                customer=self.customer,
+                total_amount=Decimal("10.00"),
+                status=status,
+            )
+        self.client.force_login(self.admin)
+        response = self.client.get("/api/admin/orders/?filter=pending&size=1&page=1")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["pagination"]["total_items"], 2)
+        self.assertTrue(response.json()["pagination"]["has_next"])
+        self.assertNotEqual(response.json()["orders"][0]["status"], Order.Status.COMPLETED)
+
+    def test_admin_can_mark_completed_order_pending(self):
+        order = Order.objects.create(
+            customer=self.customer,
+            total_amount=Decimal("10.00"),
+            status=Order.Status.COMPLETED,
+        )
+        self.client.force_login(self.admin)
+        response = self.client.patch(
+            f"/api/admin/orders/{order.pk}/",
+            data=json.dumps({"status": Order.Status.PENDING}),
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 200)
+        order.refresh_from_db()
+        self.assertEqual(order.status, Order.Status.PENDING)
+
     def test_admin_menu_crud_and_customer_visibility(self):
         self.client.force_login(self.admin)
         response = self.client.get("/api/admin/menu/items/?size=5&page=1&sort=desc")
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["items"][0]["name"], "Crispy Chicken")
         self.assertEqual(response.json()["items"][0]["addons"][0]["name"], "Extra sauce")
+        self.assertNotIn("categories", response.json())
+        self.assertNotIn("addons", response.json())
 
         response = self.client.post(
             "/api/admin/menu/items",
@@ -80,9 +148,15 @@ class BackendApiTests(TestCase):
         response = self.client.delete(f"/api/admin/menu/items/{created_item_id}")
         self.assertEqual(response.status_code, 200)
         self.client.force_login(self.customer)
+        hidden_category = FoodCategory.objects.create(name="Legacy category", available=False)
+        drink = FoodItem.objects.create(
+            category=hidden_category,
+            name="Orange drink",
+            price=Decimal("3.00"),
+        )
         response = self.client.get("/api/customer/menu/items")
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json()["items"], [])
+        self.assertEqual([item["id"] for item in response.json()["items"]], [drink.pk])
 
     def test_order_prices_calculated_from_menu_and_addons(self):
         self.client.force_login(self.customer)
@@ -149,6 +223,51 @@ class BackendApiTests(TestCase):
         self.assertEqual(response.status_code, 200)
         message.refresh_from_db()
         self.assertEqual(message.status, ContactMessage.Status.RESOLVED)
+
+    def test_contact_sender_is_customer_or_guest(self):
+        guest_response = self.client.post(
+            "/api/contact/messages",
+            data=json.dumps({
+                "name": "Visitor",
+                "email": "visitor@example.com",
+                "phone": "",
+                "message": "Guest message.",
+            }),
+            content_type="application/json",
+        )
+        self.assertEqual(guest_response.status_code, 201)
+        self.client.force_login(self.customer)
+        customer_response = self.client.post(
+            "/api/contact/messages",
+            data=json.dumps({
+                "name": "Jane",
+                "email": "customer@example.com",
+                "phone": "",
+                "message": "Customer message.",
+            }),
+            content_type="application/json",
+        )
+        self.assertEqual(customer_response.status_code, 201)
+        self.client.force_login(self.admin)
+        response = self.client.get("/api/admin/contact/messages?sort=asc")
+        self.assertEqual(response.status_code, 200)
+        messages = response.json()["messages"]
+        self.assertEqual(messages[0]["sender_name"], "Guest")
+        self.assertEqual(messages[1]["sender_name"], "Jane Customer")
+
+    def test_customer_cannot_update_an_order(self):
+        order = Order.objects.create(
+            customer=self.customer,
+            total_amount=Decimal("10.00"),
+            status=Order.Status.PENDING,
+        )
+        self.client.force_login(self.customer)
+        response = self.client.patch(
+            f"/api/customer/{self.customer.pk}/my-orders",
+            data=json.dumps({"order_id": order.pk, "items": []}),
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 404)
 
     def test_feedback_summary_and_admin_profile(self):
         Rating.objects.create(customer=self.customer, score=5, review="Great!")

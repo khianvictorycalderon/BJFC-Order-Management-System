@@ -31,8 +31,8 @@
                     <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3h2l2.2 11.2a2 2 0 0 0 2 1.6h8.9a2 2 0 0 0 2-1.6L22 7H6"/><circle cx="10" cy="20" r="1"/><circle cx="18" cy="20" r="1"/></svg>
                 </span>
             </div>
-            <p class="mt-4 text-3xl font-black text-[#342724]">1</p>
-            <p class="mt-1 text-xs font-bold text-[#a43b2f]">Being prepared</p>
+            <p class="mt-4 text-3xl font-black text-[#342724]">{{ active_orders }}</p>
+            <p class="mt-1 text-xs font-bold text-[#a43b2f]">Pending or being prepared</p>
             <a href="{% url 'my_orders' %}" class="mt-4 inline-flex text-sm font-extrabold text-[#800000] hover:text-[#aa3535]">Track your orders <span class="ml-1" aria-hidden="true">→</span></a>
         </article>
         <article class="rounded-2xl border border-[#eadfd2] bg-white p-5 shadow-sm">
@@ -42,7 +42,7 @@
                     <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 4 4L19 6"/><circle cx="12" cy="12" r="10"/></svg>
                 </span>
             </div>
-            <p class="mt-4 text-3xl font-black text-[#342724]">28</p>
+            <p class="mt-4 text-3xl font-black text-[#342724]">{{ completed_orders }}</p>
             <p class="mt-1 text-xs font-semibold text-[#977f76]">Thanks for choosing BJFC</p>
             <a href="{% url 'customer_account' %}" class="mt-4 inline-flex text-sm font-extrabold text-[#800000] hover:text-[#aa3535]">View your account <span class="ml-1" aria-hidden="true">→</span></a>
         </article>
@@ -57,18 +57,21 @@
     </section>
 </div>
 
-{# Placeholder data: swap for real order counts once the backend is wired up. #}
+{{ order_chart|json_script:"order-chart-data" }}
 <script>
 document.addEventListener("DOMContentLoaded", function () {
     var canvas = document.getElementById("myOrderChart");
     if (!canvas || typeof Chart === "undefined") { return; }
+    var chartData = JSON.parse(document.getElementById("order-chart-data").textContent);
     new Chart(canvas, {
         type: "bar",
         data: {
-            labels: ["Week 1", "Week 2", "Week 3", "Week 4", "Week 5"],
+            labels: chartData.map(function (row) {
+                return new Date(row.date + "T12:00:00").toLocaleDateString([], { weekday: "short", day: "numeric" });
+            }),
             datasets: [{
                 label: "Orders",
-                data: [15, 8, 2, 12, 1],
+                data: chartData.map(function (row) { return row.count; }),
                 backgroundColor: "#e60000",
                 hoverBackgroundColor: "#800000",
                 borderRadius: 6,

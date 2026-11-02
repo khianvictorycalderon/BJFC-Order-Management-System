@@ -21,16 +21,14 @@
             </p>
 
             <h1 class="text-4xl font-extrabold leading-tight sm:text-5xl lg:text-6xl">
-                SIGNATURE<br>
-                FRIED CHICKEN
+                {{ menu_page.title }}
             </h1>
 
             <p class="mt-5 max-w-md text-base leading-7">
-                Crispy on the outside, juicy on the inside.
-                Discover your favorite meals, drinks, and add-ons!
+                {{ menu_page.description }}
             </p>
 
-            <a href="#chicken-meals"
+            <a href="#menu-items"
             class="mt-7 inline-flex rounded-full bg-white px-7 py-3 font-extrabold text-[#ee2023] transition hover:-translate-y-1 hover:bg-gray-100">
                 EXPLORE MENU
             </a>
@@ -38,7 +36,7 @@
 
         <div class="absolute inset-y-0 right-0 w-1/2">
             <img
-                src="{% static 'images/menu/chicken0.png' %}"
+                src="{% static 'images/transparent-chicken.png' %}"
                 alt="Bespren Johny's Signature Fried Chicken"
                 class="h-full w-full object-cover object-center"
             >
@@ -249,11 +247,11 @@
     </style>
 
     <!-- FRIED CHICKEN MEALS -->
-    <section id="chicken-meals" class="mb-14 scroll-mt-28">
+    <section id="menu-items" class="mb-14 scroll-mt-28">
         <div class="mb-6 flex items-center justify-between">
             <div class="pt-8">
                 <h2 class="mt-1 text-2xl font-extrabold sm:text-3xl">
-                    Fried Chicken Meal
+                    Menu items
                 </h2>
             </div>
         </div>
@@ -262,7 +260,7 @@
             {% for item in meals %}
             <article class="product-card">
                 <div class="product-image-wrap">
-                    <img src="{% static item.image %}"
+                    <img src="{{ item.image_url }}"
                          alt="{{ item.name }}"
                          class="product-image"
                          onerror="this.style.display='none'">
@@ -271,7 +269,6 @@
                 <div class="product-title-bar">
                     <div>
                         <h3 class="product-title">{{ item.name }}</h3>
-                        <p class="product-subtitle">with rice</p>
                     </div>
                     <span class="product-price">₱{{ item.price }}</span>
                 </div>
@@ -280,7 +277,7 @@
                     {% if item.description %}
                         {{ item.description }}
                     {% else %}
-                        Crispy, juicy and freshly prepared chicken served with rice.
+                        Freshly prepared and ready to enjoy.
                     {% endif %}
                 </p>
 
@@ -317,153 +314,7 @@
                      data-price="{{ item.price }}"></div>
             </article>
             {% empty %}
-            <p class="col-span-full text-gray-500">No meals available yet.</p>
-            {% endfor %}
-        </div>
-    </section>
-
-    <!-- DRINKS -->
-    <section id="drinks" class="mb-14 scroll-mt-28">
-        <div class="mb-6">
-            <p class="text-sm font-bold uppercase tracking-widest text-[#ee2023]">
-                REFRESH YOUR DAY
-            </p>
-            <h2 class="mt-1 text-2xl font-extrabold sm:text-3xl">Drinks</h2>
-        </div>
-
-        <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
-            {% for item in drinks %}
-            <article class="product-card">
-                <div class="product-image-wrap">
-                    <img src="{% static item.image %}"
-                         alt="{{ item.name }}"
-                         class="product-image"
-                         onerror="this.style.display='none'">
-                </div>
-
-                <div class="product-title-bar">
-                    <div>
-                        <h3 class="product-title">{{ item.name }}</h3>
-                        <p class="product-subtitle">refreshing drink</p>
-                    </div>
-                    <span class="product-price">₱{{ item.price }}</span>
-                </div>
-
-                <p class="product-description">
-                    {% if item.description %}
-                        {{ item.description }}
-                    {% else %}
-                        A refreshing drink to enjoy with your favorite meal.
-                    {% endif %}
-                </p>
-
-                <div class="product-controls">
-                    <button type="button"
-                            class="quantity-button"
-                            aria-label="Decrease quantity"
-                            onclick="changeQuantity('drink-{{ forloop.counter }}', -1)">−</button>
-
-                    <span id="qty-drink-{{ forloop.counter }}" class="quantity-number">1</span>
-
-                    <button type="button"
-                            class="quantity-button"
-                            aria-label="Increase quantity"
-                            onclick="changeQuantity('drink-{{ forloop.counter }}', 1)">+</button>
-                </div>
-
-                <div class="product-actions">
-                    <button type="button"
-                            class="product-action add-cart-button"
-                            onclick="addProductToCart('drink-{{ forloop.counter }}')">
-                        ADD TO CART
-                    </button>
-
-                    <button type="button"
-                            class="product-action"
-                            onclick="buyNow('drink-{{ forloop.counter }}')">
-                        BUY NOW
-                    </button>
-                </div>
-
-                <div id="data-drink-{{ forloop.counter }}"
-                     data-name="{{ item.name }}"
-                     data-price="{{ item.price }}"></div>
-            </article>
-            {% empty %}
-            <p class="col-span-full text-gray-500">No drinks available yet.</p>
-            {% endfor %}
-        </div>
-    </section>
-
-    <!-- ADD-ONS -->
-    <section id="addons" class="scroll-mt-28">
-        <div class="mb-6">
-            <p class="text-sm font-bold uppercase tracking-widest text-[#ee2023]">
-                MAKE IT EXTRA SPECIAL
-            </p>
-            <h2 class="mt-1 text-2xl font-extrabold sm:text-3xl">Add-ons</h2>
-        </div>
-
-        <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
-            {% for item in addons %}
-            <article class="product-card">
-                <div class="product-image-wrap">
-                    <img src="{% static item.image %}"
-                         alt="{{ item.name }}"
-                         class="product-image"
-                         onerror="this.style.display='none'">
-                </div>
-
-                <div class="product-title-bar">
-                    <div>
-                        <h3 class="product-title">{{ item.name }}</h3>
-                        <p class="product-subtitle">extra add-on</p>
-                    </div>
-                    <span class="product-price">₱{{ item.price }}</span>
-                </div>
-
-                <p class="product-description">
-                    {% if item.description %}
-                        {{ item.description }}
-                    {% else %}
-                        Add an extra serving to complete your meal.
-                    {% endif %}
-                </p>
-
-                <div class="product-controls">
-                    <button type="button"
-                            class="quantity-button"
-                            aria-label="Decrease quantity"
-                            onclick="changeQuantity('addon-{{ forloop.counter }}', -1)">−</button>
-
-                    <span id="qty-addon-{{ forloop.counter }}" class="quantity-number">1</span>
-
-                    <button type="button"
-                            class="quantity-button"
-                            aria-label="Increase quantity"
-                            onclick="changeQuantity('addon-{{ forloop.counter }}', 1)">+</button>
-                </div>
-
-                <div class="product-actions">
-                    <button type="button"
-                            class="product-action add-cart-button"
-                            onclick="addProductToCart('addon-{{ forloop.counter }}')">
-                        ADD TO CART
-                    </button>
-
-                    <button type="button"
-                            class="product-action"
-                            onclick="buyNow('addon-{{ forloop.counter }}')">
-                        BUY NOW
-                    </button>
-                </div>
-
-                <div id="data-addon-{{ forloop.counter }}"
-                     data-name="{{ item.name }}"
-                     data-price="{{ item.price }}"></div>
-            </article>
-            {% empty %}
-            <p class="col-span-full text-gray-500">No add-ons available yet.</p>
+            <p class="col-span-full text-gray-500">No menu items are available yet.</p>
             {% endfor %}
         </div>
     </section>
@@ -473,8 +324,6 @@
 {% include 'components/footer.html' %}
 
 <script>
-    let cart = [];
-
     function changeQuantity(id, change) {
         const quantityElement = document.getElementById("qty-" + id);
 
@@ -501,147 +350,17 @@
 
     function addProductToCart(id) {
         const product = getProduct(id);
-
         if (!product || !Number.isFinite(product.price)) return;
-
-        const existing = cart.find(item => item.name === product.name);
-
-        if (existing) {
-            existing.quantity += product.quantity;
-        } else {
-            cart.push({
-                name: product.name,
-                price: product.price,
-                quantity: product.quantity
-            });
-        }
-
-        console.log("Cart:", cart);
+        const query = new URLSearchParams({
+            add: product.name,
+            quantity: String(product.quantity),
+        });
+        window.location.href = `/my-orders/?${query}`;
     }
 
     function buyNow(id) {
         addProductToCart(id);
-        console.log("Buy now:", cart);
     }
-
-    // GET CUSTOMER MENU ITEMS
-    async function fetchCustomerMenuItems(params = {}) {
-        try {
-            const query = new URLSearchParams(params).toString();
-
-            const response = await fetch(`/api/customer/menu/items/?${query}`, {
-                method: "GET"
-            });
-
-            if (!response.ok) {
-                throw new Error(`HTTP error! Status: ${response.status}`);
-            }
-
-            const data = await response.json();
-            console.log("Customer Menu Items:", data);
-
-            if (Array.isArray(data.items)) {
-                renderCustomerMenuItems(data.items);
-            }
-
-        } catch (error) {
-            console.error("Error fetching customer menu items:", error);
-        }
-    }
-
-    // PLACE CUSTOMER ORDER
-    async function createOrder(items) {
-        try {
-            const response = await fetch("/api/customer/orders/", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "X-CSRFToken": document.cookie.match(/csrftoken=([^;]+)/)?.[1]
-                },
-                body: JSON.stringify({ items })
-            });
-
-            if (!response.ok) {
-                throw new Error(`HTTP error! Status: ${response.status}`);
-            }
-
-            const data = await response.json();
-            console.log("Order Placed:", data.order_number, data.status, data.eta);
-
-        } catch (error) {
-            console.error("Error placing order:", error);
-        }
-    }
-
-    // GET CUSTOMER FAVORITES
-    async function fetchFavorites(params = {}) {
-        try {
-            const query = new URLSearchParams(params).toString();
-
-            const response = await fetch(`/api/customer/favorites/?${query}`, {
-                method: "GET"
-            });
-
-            if (!response.ok) {
-                throw new Error(`HTTP error! Status: ${response.status}`);
-            }
-
-            const data = await response.json();
-            console.log("Favorites:", data);
-
-            if (Array.isArray(data.items)) {
-                renderMenuItems(data.items);
-            }
-
-        } catch (error) {
-            console.error("Error fetching favorites:", error);
-        }
-    }
-
-    // ADD TO FAVORITES
-    async function addFavorite(menuItemId) {
-        try {
-            const response = await fetch(`/api/customer/favorites/${menuItemId}/`, {
-                method: "PUT",
-                headers: {
-                    "X-CSRFToken": document.cookie.match(/csrftoken=([^;]+)/)?.[1]
-                }
-            });
-
-            if (!response.ok) {
-                throw new Error(`HTTP error! Status: ${response.status}`);
-            }
-
-            const data = await response.json();
-            console.log("Favorite Added:", data.message, data.item);
-
-        } catch (error) {
-            console.error("Error adding favorite:", error);
-        }
-    }
-
-    // REMOVE FROM FAVORITES
-    async function removeFavorite(menuItemId) {
-        try {
-            const response = await fetch(`/api/customer/favorites/${menuItemId}/`, {
-                method: "DELETE",
-                headers: {
-                    "X-CSRFToken": document.cookie.match(/csrftoken=([^;]+)/)?.[1]
-                }
-            });
-
-            if (!response.ok) {
-                throw new Error(`HTTP error! Status: ${response.status}`);
-            }
-
-            const data = await response.json();
-            console.log("Favorite Removed:", data.message);
-
-        } catch (error) {
-            console.error("Error removing favorite:", error);
-        }
-    }
-
 </script>
 
 {% endblock %}

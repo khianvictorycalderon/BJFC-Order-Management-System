@@ -12,7 +12,6 @@
     <style>body { font-family: 'Nunito', sans-serif; }</style>
 </head>
 <body class="min-h-screen bg-[#fff8ed] text-[#28211e] antialiased">
-{# Mock UI only: the form is inert until the backend is wired up. #}
 <main class="grid min-h-screen lg:grid-cols-2">
     <section class="flex flex-col px-6 py-8 sm:px-12 lg:px-16">
         <a href="{% url 'home' %}" class="flex w-fit items-center gap-3" aria-label="Bespren Johny's Fried Chicken - Home">
@@ -30,24 +29,25 @@
             <h1 class="mt-4 text-4xl font-black tracking-tight text-[#2b201d]">Welcome back, admin</h1>
             <p class="mt-2 text-sm text-[#89776e]">Sign in to manage orders, the menu and customer feedback.</p>
 
-            <form onsubmit="return false" class="mt-8 space-y-5" novalidate>
+            <form id="adminLoginForm" method="post" action="{% url 'admin_login' %}" data-endpoint="{% url 'login_api' %}" class="mt-8 space-y-5">
+                {% csrf_token %}
                 <div>
-                    <label for="adminLoginEmail" class="mb-2 block text-[11px] font-extrabold uppercase tracking-[0.14em] text-[#89776e]">Email</label>
-                    <input id="adminLoginEmail" type="email" placeholder="admin@bjfc.com" autocomplete="email" class="h-12 w-full rounded-xl border border-[#eadfd2] bg-white px-4 text-sm font-semibold text-[#342724] outline-none transition placeholder:font-medium placeholder:text-[#b9a79d] focus:border-[#800000] focus:ring-4 focus:ring-[#800000]/10">
+                    <label for="adminLoginUsername" class="mb-2 block text-[11px] font-extrabold uppercase tracking-[0.14em] text-[#89776e]">Username</label>
+                    <input id="adminLoginUsername" name="username" type="text" placeholder="Admin username" autocomplete="username" required class="h-12 w-full rounded-xl border border-[#eadfd2] bg-white px-4 text-sm font-semibold text-[#342724] outline-none transition placeholder:font-medium placeholder:text-[#b9a79d] focus:border-[#800000] focus:ring-4 focus:ring-[#800000]/10">
                 </div>
                 <div>
-                    <div class="mb-2 flex items-center justify-between">
+                    <div class="mb-2">
                         <label for="adminLoginPassword" class="text-[11px] font-extrabold uppercase tracking-[0.14em] text-[#89776e]">Password</label>
-                        <a href="#" class="text-xs font-extrabold text-[#800000] hover:underline">Forgot password?</a>
                     </div>
                     <div class="relative">
-                        <input id="adminLoginPassword" type="password" placeholder="Enter your password" autocomplete="current-password" class="h-12 w-full rounded-xl border border-[#eadfd2] bg-white pl-4 pr-12 text-sm font-semibold text-[#342724] outline-none transition placeholder:font-medium placeholder:text-[#b9a79d] focus:border-[#800000] focus:ring-4 focus:ring-[#800000]/10">
-                        <button type="button" aria-label="Show password" class="absolute right-1.5 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-lg text-[#977f76] transition hover:bg-[#fff4e7] hover:text-[#800000]">
+                        <input id="adminLoginPassword" name="password" type="password" placeholder="Enter your password" autocomplete="current-password" required class="h-12 w-full rounded-xl border border-[#eadfd2] bg-white pl-4 pr-12 text-sm font-semibold text-[#342724] outline-none transition placeholder:font-medium placeholder:text-[#b9a79d] focus:border-[#800000] focus:ring-4 focus:ring-[#800000]/10">
+                        <button id="toggleAdminPassword" type="button" aria-label="Show password" class="absolute right-1.5 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-lg text-[#977f76] transition hover:bg-[#fff4e7] hover:text-[#800000]">
                             <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg>
                         </button>
                     </div>
                 </div>
-                <button type="button" class="group flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#800000] text-sm font-extrabold text-white shadow-lg shadow-[#800000]/20 transition hover:bg-[#650000] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#800000]/25">
+                <p id="adminLoginMessage" role="alert" aria-live="polite" class="text-sm text-red-700"></p>
+                <button type="submit" class="group flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#800000] text-sm font-extrabold text-white shadow-lg shadow-[#800000]/20 transition hover:bg-[#650000] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#800000]/25">
                     Sign in to dashboard
                     <svg class="h-4 w-4 transition group-hover:translate-x-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
                 </button>
@@ -61,5 +61,44 @@
         <img src="{% static 'icons/logo.png' %}" alt="" class="relative w-[78%] max-w-[520px] object-contain drop-shadow-2xl">
     </aside>
 </main>
+<script>
+    const adminLoginForm = document.getElementById("adminLoginForm");
+    const adminPassword = document.getElementById("adminLoginPassword");
+    document.getElementById("toggleAdminPassword").addEventListener("click", (event) => {
+        const button = event.currentTarget;
+        const visible = adminPassword.type === "password";
+        adminPassword.type = visible ? "text" : "password";
+        button.setAttribute("aria-label", visible ? "Hide password" : "Show password");
+    });
+    adminLoginForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const button = adminLoginForm.querySelector('button[type="submit"]');
+        const message = document.getElementById("adminLoginMessage");
+        button.disabled = true;
+        message.textContent = "";
+        try {
+            const response = await fetch(adminLoginForm.dataset.endpoint, {
+                method: "POST",
+                credentials: "same-origin",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": adminLoginForm.querySelector("[name=csrfmiddlewaretoken]").value,
+                },
+                body: JSON.stringify({
+                    username: document.getElementById("adminLoginUsername").value.trim(),
+                    password: adminPassword.value,
+                    admin_only: true,
+                }),
+            });
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok) throw new Error(data.error || `Login failed (${response.status}).`);
+            window.location.href = "/admin-panel/dashboard/";
+        } catch (error) {
+            message.textContent = error.message;
+        } finally {
+            button.disabled = false;
+        }
+    });
+</script>
 </body>
 </html>
