@@ -35,7 +35,7 @@ Thumbs.db
 *.log
 
 # Environment variables
-.env
+.env*
 
 # Misc
 *.vbs
