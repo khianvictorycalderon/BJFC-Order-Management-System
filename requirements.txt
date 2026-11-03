@@ -17,7 +17,6 @@ markdown-it-py==4.2.0
 MarkupSafe==3.0.3
 mdurl==0.1.2
 pillow==12.3.0
-psycopg[binary]>=3.1.8,<4
 Pygments==2.21.0
 pytailwindcss==0.3.1
 python-dateutil==2.9.0.post0
