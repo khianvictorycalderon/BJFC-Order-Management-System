@@ -14,6 +14,7 @@ If you don't have the following, install it.
 - Git *(CLI is recommended instead of GitHub Desktop)*
 - Python *(Recommended version: 3.14 and above)*
 - `pip` - *Usually comes installed along with Python if you checked the `install pip` box.*
+- PostgreSQL server.
 
 ---
 
@@ -57,29 +58,35 @@ Below are the steps you will do for first time setting up this project.
 2. Create a virtual environment via `python -m venv venv`.
 3. Activate the virtual environment via `venv\Scripts\activate`.
 4. Before running any CLI command again, check your CLI, it should have a `(venv)` at the left side. For example: `(venv) D:\myproject\>`. If it has the `(venv)`, the virtual environment is already activated, if not, repeat step 3.
-5. Using the CLI with virtual environment, install the necessary dependencies via `pip install -r requirements.txt`
-6. Create an `.env` file in the root directory *(root directory means if you can see the `dj` folder, then it's the root directory, if not, click back to previous folder)*. The `.env` file should contain the following content:
+5. Using the CLI with virtual environment, install the necessary dependencies via `pip install -r requirements.txt`.
+6. Install and start PostgreSQL, then create a database and user for this project. The database and user must match the values you configure below.
+7. Create an `.env` file in the root directory *(the directory containing the `dj` folder)*. Add the following settings:
     ```env
-    DJANGO_ENV=...
-    DJANGO_SECRET_KEY=...
-    DEBUG=...
-    ALLOWED_HOSTS=...
+    DJANGO_ENV=development
+    DJANGO_SECRET_KEY=replace_with_a_generated_secret_key
+    DEBUG=True
+    ALLOWED_HOSTS=127.0.0.1, localhost
+
+    POSTGRES_DB=bjfc_order_management
+    POSTGRES_USER=postgres
+    POSTGRES_PASSWORD=your_postgres_password
+    POSTGRES_HOST=localhost
+    POSTGRES_PORT=5432
+
+    ADMIN_DEFAULT_USERNAME=admin@example.com
+    ADMIN_DEFAULT_PASSWORD=replace_with_a_strong_password
     ```
-7. Replace all the ones with `...` with actual values. To get the values of the following:
-    - `DJANGO_ENV` -> either `production` or `development` only. Since we are developing this project, the value should be `development`
-    - `DJANGO_SECRET_KEY` -> Go to [`https://khianvictorycalderon.github.io/secured-dynamic-key-generator`](https://khianvictorycalderon.github.io/secured-dynamic-key-generator) to generate a 64 character long key.
-    - `DEBUG` -> either `True` or `False` only, used to display useful information in development. Set this to `True` since we are in development, but it must be set to `False` on production.
-    - `ALLOWED_HOSTS` -> this is the url where you want your django project to be hosted, for now just set this to `127.0.0.1, localhost`
-8. Run `python manage.py migrate` to sync the Django models with the database schema.
-9. Run the server via `python manage.py runserver`. *NOTE: If it showed an error related to something like `port used`, just used another port like `7000`, so the command would become something like `python manage.py runserver 7000`*.
-10. You can code now!
-
-### Admin Access
-1. Set non-empty `ADMIN_DEFAULT_USERNAME` and `ADMIN_DEFAULT_PASSWORD` values in the root `.env` file.
-2. Run `python manage.py migrate`. Django creates the configured staff account if it does not already exist. Its password is hashed and is not reset on later migrations.
-3. Sign in at `/admin-login/` with those credentials to open the custom admin panel.
-
-The configured account must not already belong to a non-staff user. These credentials are for initial account creation; changing the `.env` password later does not change an existing account's password.
+8. Replace the example values with your own:
+    - `DJANGO_ENV` should be `development` while developing this project.
+    - `DJANGO_SECRET_KEY` should be a unique secret. Generate a 64-character key at [`https://khianvictorycalderon.github.io/secured-dynamic-key-generator`](https://khianvictorycalderon.github.io/secured-dynamic-key-generator).
+    - `DEBUG` should be `True` for local development and `False` in production.
+    - `ALLOWED_HOSTS` is a comma-separated list of hosts. For local development, use `127.0.0.1, localhost`.
+    - `POSTGRES_DB`, `POSTGRES_USER`, and `POSTGRES_PASSWORD` must match the PostgreSQL database and user you created. `POSTGRES_HOST` and `POSTGRES_PORT` identify the PostgreSQL server; the defaults shown are for a local server.
+    - `ADMIN_DEFAULT_USERNAME` and `ADMIN_DEFAULT_PASSWORD` must both be non-empty. They are used to create the initial staff account.
+9. Run `python manage.py migrate` to apply migrations to the configured PostgreSQL database. The first migration also creates the configured staff account if it does not already exist.
+10. Sign in at `/admin-login/` with `ADMIN_DEFAULT_USERNAME` and `ADMIN_DEFAULT_PASSWORD` to open the custom admin panel. The password is hashed and is not reset by later migrations; changing the `.env` value does not change an existing account's password. The configured username must not already belong to a non-staff user.
+11. Run the server via `python manage.py runserver`. *If the port is already in use, specify another one, for example `python manage.py runserver 7000`.*
+12. You can code now!
 
 ### Pull Guide:
 
