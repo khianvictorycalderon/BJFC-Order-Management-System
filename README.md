@@ -52,7 +52,7 @@ If you don't have the following, install it.
 
 ---
 
-### First Setup
+### Setup
 Below are the steps you will do for first time setting up this project.
 1. Clone this repository via `git clone https://github.com/khianvictorycalderon/BJFC-Order-Management-System.git`.
 2. Create a virtual environment via `python -m venv venv`.
