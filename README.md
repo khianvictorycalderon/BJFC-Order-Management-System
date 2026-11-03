@@ -14,7 +14,6 @@ If you don't have the following, install it.
 - Git *(CLI is recommended instead of GitHub Desktop)*
 - Python *(Recommended version: 3.14 and above)*
 - `pip` - *Usually comes installed along with Python if you checked the `install pip` box.*
-- PostgreSQL server.
 
 ---
 
@@ -59,7 +58,7 @@ Below are the steps you will do for first time setting up this project.
 3. Activate the virtual environment via `venv\Scripts\activate`.
 4. Before running any CLI command again, check your CLI, it should have a `(venv)` at the left side. For example: `(venv) D:\myproject\>`. If it has the `(venv)`, the virtual environment is already activated, if not, repeat step 3.
 5. Using the CLI with virtual environment, install the necessary dependencies via `pip install -r requirements.txt`.
-6. Install and start PostgreSQL, then create a database and user for this project. The database and user must match the values you configure below.
+6. SQLite is included with Python, so no separate database server is needed.
 7. Create an `.env` file in the root directory *(the directory containing the `dj` folder)*. Add the following settings:
     ```env
     DJANGO_ENV=development
@@ -67,11 +66,7 @@ Below are the steps you will do for first time setting up this project.
     DEBUG=True
     ALLOWED_HOSTS=127.0.0.1, localhost
 
-    POSTGRES_DB=bjfc_order_management
-    POSTGRES_USER=postgres
-    POSTGRES_PASSWORD=your_postgres_password
-    POSTGRES_HOST=localhost
-    POSTGRES_PORT=5432
+    SQLITE_NAME=db.sqlite3
 
     ADMIN_DEFAULT_USERNAME=admin@example.com
     ADMIN_DEFAULT_PASSWORD=replace_with_a_strong_password
@@ -81,9 +76,9 @@ Below are the steps you will do for first time setting up this project.
     - `DJANGO_SECRET_KEY` should be a unique secret. Generate a 64-character key at [`https://khianvictorycalderon.github.io/secured-dynamic-key-generator`](https://khianvictorycalderon.github.io/secured-dynamic-key-generator).
     - `DEBUG` should be `True` for local development and `False` in production.
     - `ALLOWED_HOSTS` is a comma-separated list of hosts. For local development, use `127.0.0.1, localhost`.
-    - `POSTGRES_DB`, `POSTGRES_USER`, and `POSTGRES_PASSWORD` must match the PostgreSQL database and user you created. `POSTGRES_HOST` and `POSTGRES_PORT` identify the PostgreSQL server; the defaults shown are for a local server.
+    - `SQLITE_NAME` sets the SQLite database file path. It defaults to `db.sqlite3` in the project root.
     - `ADMIN_DEFAULT_USERNAME` and `ADMIN_DEFAULT_PASSWORD` must both be non-empty. They are used to create the initial staff account.
-9. Run `python manage.py migrate` to apply migrations to the configured PostgreSQL database. The first migration also creates the configured staff account if it does not already exist.
+9. Run `python manage.py migrate` to apply migrations to the SQLite database. The first migration also creates the configured staff account if it does not already exist.
 10. Sign in at `/admin-login/` with `ADMIN_DEFAULT_USERNAME` and `ADMIN_DEFAULT_PASSWORD` to open the custom admin panel. The password is hashed and is not reset by later migrations; changing the `.env` value does not change an existing account's password. The configured username must not already belong to a non-staff user.
 11. Run the server via `python manage.py runserver`. *If the port is already in use, specify another one, for example `python manage.py runserver 7000`.*
 12. You can code now!
