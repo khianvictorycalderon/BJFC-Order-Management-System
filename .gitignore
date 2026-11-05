@@ -20,6 +20,7 @@ staticfiles/
 
 # Media files (user uploads)
 media/
+private_media/
 
 # PyCharm / VS Code / IDE files
 .idea/
