@@ -36,6 +36,16 @@ urlpatterns = [
     re_path(r"^contact/messages/?$", views.contact_messages, name="contact_messages"),
     re_path(r"^customer/menu/items/?$", views.customer_menu_items, name="customer_menu_items"),
     re_path(r"^customer/orders/?$", views.customer_create_order, name="customer_create_order"),
+    re_path(
+        r"^customer/orders/(?P<pk>\d+)/?$",
+        views.customer_order,
+        name="customer_order",
+    ),
+    re_path(
+        r"^customer/orders/(?P<pk>\d+)/cancel/?$",
+        views.customer_cancel_order,
+        name="customer_cancel_order",
+    ),
     re_path(r"^customer/my-orders/?$", views.customer_orders, name="customer_orders"),
     re_path(r"^customer/favorites/?$", views.customer_favorites, name="customer_favorites"),
     re_path(

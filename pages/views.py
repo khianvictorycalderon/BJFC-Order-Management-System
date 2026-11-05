@@ -157,7 +157,7 @@ def dashboard(req):
         "private/dashboard.html",
         {
             "active_orders": orders.filter(
-                status__in=("PENDING", "CONFIRMED", "PREPARING")
+                status__in=("PENDING", "CONFIRMED", "PREPARING", "OUT_FOR_DELIVERY")
             ).count(),
             "completed_orders": orders.filter(status="COMPLETED").count(),
             "weekly_orders": sum(row["count"] for row in chart),

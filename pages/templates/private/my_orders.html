@@ -35,7 +35,7 @@
 
         <div class="flex flex-col gap-6">
             <div id="orderActions" class="grid grid-cols-2 gap-4">
-                <button type="button" class="h-14 rounded-xl border-2 border-[#e62727] bg-white text-lg font-extrabold text-[#e62727] transition hover:bg-[#fff1f1] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#e62727]/25">Cancel</button>
+                <button type="button" class="h-14 rounded-xl border-2 border-[#e62727] bg-white text-lg font-extrabold text-[#e62727] transition hover:bg-[#fff1f1] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#e62727]/25">Clear Cart</button>
                 <button type="button" class="h-14 rounded-xl bg-[#e62727] text-lg font-extrabold text-white shadow-lg shadow-[#e62727]/20 transition hover:bg-[#c41d1d] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#e62727]/25">Order Now</button>
             </div>
         </div>
@@ -50,7 +50,9 @@
                 <select id="ordersFilter" class="rounded-lg border border-[#eadfd2] bg-white px-2 py-1">
                     <option value="">All orders</option>
                     <option value="pending">Pending</option>
+                    <option value="out_for_delivery">Out for Delivery</option>
                     <option value="completed">Completed</option>
+                    <option value="cancelled">Cancelled</option>
                 </select>
                 <label for="ordersSort">Sort</label>
                 <select id="ordersSort" class="rounded-lg border border-[#eadfd2] bg-white px-2 py-1">
@@ -65,6 +67,7 @@
                 </select>
             </div>
         </div>
+        <p id="ordersActionMsg" role="status" aria-live="polite" style="display:none;margin-top:1rem;padding:.75rem 1rem;border-radius:.75rem;font-size:.875rem;font-weight:700"></p>
         <p id="ordersEmpty" class="mt-5 text-sm text-[#89776e]" style="display:none"></p>
         <ul id="ordersList" class="mt-5 space-y-3"></ul>
         <div class="mt-5 flex items-center justify-between">
@@ -76,7 +79,7 @@
 </div>
 
 {# ===== ADDED FUNCTIONALITY ===== #}
-<form id="csrfForm" hidden data-user-id="{{ request.user.id|default:'' }}">{% csrf_token %}</form>
+<form id="csrfForm" hidden data-user-id="{{ request.user.id|default:'' }}" data-phone="{{ request.user.phone_number|default:'' }}">{% csrf_token %}</form>
 
 <script>
 (() => {
@@ -153,9 +156,21 @@
         <h3 id="summaryTitle" class="text-xl font-black text-[#342724]">Order summary</h3>
         <p id="cartEmpty" class="mt-5 text-sm text-[#89776e]">No items yet. Press Add on a menu item to get started.</p>
         <ul id="cartList" class="mt-5 space-y-3"></ul>
-        <div class="mt-5">
+        <fieldset class="mt-5">
+            <legend class="mb-2 block text-[11px] font-extrabold uppercase tracking-[0.14em] text-[#89776e]">Order type</legend>
+            <div class="grid grid-cols-3 gap-2">
+                <label class="cursor-pointer"><input type="radio" name="orderType" value="DINE_IN" class="peer sr-only" checked><span class="flex h-11 items-center justify-center rounded-xl border border-[#eadfd2] bg-white text-xs font-extrabold text-[#594941] transition peer-checked:border-[#e62727] peer-checked:bg-[#fff1f1] peer-checked:text-[#e62727] peer-focus-visible:ring-4 peer-focus-visible:ring-[#e62727]/25">Dine-In</span></label>
+                <label class="cursor-pointer"><input type="radio" name="orderType" value="PICKUP" class="peer sr-only"><span class="flex h-11 items-center justify-center rounded-xl border border-[#eadfd2] bg-white text-xs font-extrabold text-[#594941] transition peer-checked:border-[#e62727] peer-checked:bg-[#fff1f1] peer-checked:text-[#e62727] peer-focus-visible:ring-4 peer-focus-visible:ring-[#e62727]/25">Pickup</span></label>
+                <label class="cursor-pointer"><input type="radio" name="orderType" value="DELIVERY" class="peer sr-only"><span class="flex h-11 items-center justify-center rounded-xl border border-[#eadfd2] bg-white text-xs font-extrabold text-[#594941] transition peer-checked:border-[#e62727] peer-checked:bg-[#fff1f1] peer-checked:text-[#e62727] peer-focus-visible:ring-4 peer-focus-visible:ring-[#e62727]/25">Delivery</span></label>
+            </div>
+        </fieldset>
+        <div id="orderPhoneWrap" class="mt-4" style="display:none">
+            <label for="orderPhone" class="mb-2 block text-[11px] font-extrabold uppercase tracking-[0.14em] text-[#89776e]">Contact phone number</label>
+            <input id="orderPhone" type="tel" maxlength="20" autocomplete="tel" placeholder="09XX XXX XXXX" class="h-12 w-full rounded-xl border border-[#eadfd2] bg-[#fffaf4] px-4 text-sm font-semibold text-[#342724] outline-none transition focus:border-[#e62727] focus:bg-white focus:ring-4 focus:ring-[#e62727]/10">
+        </div>
+        <div id="orderAddressWrap" class="mt-4" style="display:none">
             <label for="orderAddress" class="mb-2 block text-[11px] font-extrabold uppercase tracking-[0.14em] text-[#89776e]">Delivery address</label>
-            <textarea id="orderAddress" rows="2" maxlength="255" required placeholder="House/Unit no., Street, Barangay, City" class="w-full resize-none rounded-xl border border-[#eadfd2] bg-[#fffaf4] px-4 py-3 text-sm font-semibold text-[#342724] outline-none transition focus:border-[#e62727] focus:bg-white focus:ring-4 focus:ring-[#e62727]/10"></textarea>
+            <textarea id="orderAddress" rows="2" maxlength="255" placeholder="House/Unit no., Street, Barangay, City" class="w-full resize-none rounded-xl border border-[#eadfd2] bg-[#fffaf4] px-4 py-3 text-sm font-semibold text-[#342724] outline-none transition focus:border-[#e62727] focus:bg-white focus:ring-4 focus:ring-[#e62727]/10"></textarea>
         </div>
         <div class="mt-5 flex items-center justify-between border-t border-[#eadfd2] pt-4">
             <span class="text-sm font-extrabold uppercase tracking-wide text-[#89776e]">Total</span>
@@ -165,6 +180,20 @@
     actions.parentNode.insertBefore(summary, actions);
 
     const $ = (id) => document.getElementById(id);
+
+    // ---------- Order type: Dine-In / Pickup / Delivery ----------
+    const selectedType = () =>
+        (document.querySelector('input[name="orderType"]:checked') || {}).value || "DINE_IN";
+    function syncOrderType() {
+        const type = selectedType();
+        $("orderPhoneWrap").style.display = type === "DINE_IN" ? "none" : "block";   // phone: Pickup + Delivery
+        $("orderAddressWrap").style.display = type === "DELIVERY" ? "block" : "none"; // address: Delivery only
+    }
+    $("orderPhone").value = ($("csrfForm").dataset.phone || "").trim();
+    summary.addEventListener("change", (e) => {
+        if (e.target.name === "orderType") { clearMsg(); syncOrderType(); }
+    });
+    syncOrderType();
 
     function setMsg(text, isError) {
         const el = $("orderMessage");
@@ -228,7 +257,7 @@
                 <div class="mt-3 flex items-center justify-between">
                     <div class="flex items-center gap-2">
                         <button type="button" data-act="dec" aria-label="Decrease quantity of ${esc(item.name)}" class="h-7 w-7 rounded-full border border-[#eadfd2] bg-white font-black text-[#342724]">−</button>
-                        <span class="w-6 text-center text-sm font-extrabold">${line.qty}</span>
+                        <input type="number" inputmode="numeric" min="1" max="${MAX_QTY}" value="${line.qty}" data-act="qty" aria-label="Quantity of ${esc(item.name)}" class="h-7 w-14 rounded-lg border border-[#eadfd2] bg-white text-center text-sm font-extrabold text-[#342724] outline-none focus:border-[#e62727]">
                         <button type="button" data-act="inc" aria-label="Increase quantity of ${esc(item.name)}" class="h-7 w-7 rounded-full border border-[#eadfd2] bg-white font-black text-[#342724]">+</button>
                     </div>
                     <button type="button" data-act="remove" class="text-xs font-bold text-[#e62727] underline">Remove</button>
@@ -283,12 +312,25 @@
             const id = Number(btn.closest("li").dataset.id);
             const line = cart.get(id);
             if (!line) return;
-            clearMsg();
             const act = btn.dataset.act;
+            if (act === "qty") return;   // typing a quantity is handled on "change"
+            clearMsg();
             if (act === "inc") line.qty = Math.min(MAX_QTY, line.qty + 1);
             else if (act === "dec") line.qty -= 1;
             else if (act === "remove") line.qty = 0;
             if (line.qty < 1) cart.delete(id);
+            render();
+        });
+
+        // Type a quantity directly (e.g. 25) instead of pressing + repeatedly.
+        $("cartList").addEventListener("change", (e) => {
+            const input = e.target.closest('input[data-act="qty"]');
+            if (!input) return;
+            const line = cart.get(Number(input.closest("li").dataset.id));
+            if (!line) return;
+            clearMsg();
+            const qty = Math.floor(Number(input.value));
+            line.qty = Number.isFinite(qty) && qty >= 1 ? Math.min(MAX_QTY, qty) : 1;
             render();
         });
 
@@ -300,20 +342,31 @@
 
         orderBtn.addEventListener("click", async () => {
             if (!cart.size) return;
-            const address = $("orderAddress").value.trim();
-            if (!address) {
-                setMsg("Please enter your delivery address.", true);
-                $("orderAddress").focus();
-                return;
+            const type = selectedType();
+            const body = {
+                order_type: type,
+                items: [...cart].map(([id, line]) => ({ menu_item_id: id, quantity: line.qty })),
+            };
+            if (type !== "DINE_IN") {
+                body.contact_phone = $("orderPhone").value.trim();
+                if (!body.contact_phone) {
+                    setMsg("Please enter a contact phone number.", true);
+                    $("orderPhone").focus();
+                    return;
+                }
             }
-            const items = [...cart].map(([id, line]) => ({
-                menu_item_id: id,
-                quantity: line.qty,
-            }));
+            if (type === "DELIVERY") {
+                body.address = $("orderAddress").value.trim();
+                if (!body.address) {
+                    setMsg("Please enter your delivery address.", true);
+                    $("orderAddress").focus();
+                    return;
+                }
+            }
             orderBtn.disabled = true;
             orderBtn.textContent = "Placing order…";
             try {
-                const res = await api("/orders", { method: "POST", body: { items, address } });
+                const res = await api("/orders", { method: "POST", body });
                 cart.clear();
                 $("orderAddress").value = "";
                 render();
@@ -335,20 +388,56 @@
         const { page, total_pages, total_items, has_next, has_previous } = data.pagination;
         $("ordersList").innerHTML = data.orders.map((o) => {
             const created = new Date(o.created_at);
+            const isDelivery = o.order_type === "DELIVERY";
+            const statusCls = {
+                COMPLETED: "bg-[#edf7ef] text-[#32744a]",
+                OUT_FOR_DELIVERY: "bg-[#e8f1fb] text-[#1d5a96]",
+                CANCELLED: "bg-[#f3f0ee] text-[#7a6a62]",
+            }[o.status] || "bg-[#fff1e3] text-[#342724]";
+            const pill = (text, cls) => `<span class="rounded-full px-2 py-0.5 text-[11px] font-bold ${cls}">${esc(text)}</span>`;
+            const lockedNote = (text) => `<span class="text-[11px] font-semibold text-[#a18e82]">${text}</span>`;
+
+            let addressRow = "";
+            if (isDelivery) {
+                const editControl = o.can_edit_address
+                    ? `<button type="button" data-order-act="edit" class="ml-2 text-xs font-bold text-[#e62727] underline">Edit</button>`
+                    : (o.status === "OUT_FOR_DELIVERY" ? `<span class="ml-2">${lockedNote("Can't be changed once out for delivery")}</span>` : "");
+                addressRow = `
+                <p class="mt-1 text-xs text-[#89776e]">Deliver to: <span data-address-text>${esc(o.address)}</span>${editControl}</p>
+                <div data-edit-box style="display:none" class="mt-2">
+                    <label for="addr-${esc(o.id)}" class="sr-only">Delivery address</label>
+                    <textarea id="addr-${esc(o.id)}" rows="2" maxlength="255" class="w-full resize-none rounded-xl border border-[#eadfd2] bg-[#fffaf4] px-3 py-2 text-xs font-semibold text-[#342724] outline-none focus:border-[#e62727] focus:ring-4 focus:ring-[#e62727]/10">${esc(o.address)}</textarea>
+                    <div class="mt-2 flex gap-2">
+                        <button type="button" data-order-act="save" class="h-8 rounded-lg bg-[#e62727] px-3 text-xs font-extrabold text-white hover:bg-[#c41d1d] disabled:opacity-50">Save address</button>
+                        <button type="button" data-order-act="edit-discard" class="h-8 rounded-lg border border-[#eadfd2] px-3 text-xs font-extrabold text-[#594941]">Discard</button>
+                    </div>
+                </div>`;
+            }
+
+            const cancelControl = o.can_cancel
+                ? `<button type="button" data-order-act="cancel" class="h-8 rounded-lg border border-[#e62727] px-3 text-xs font-extrabold text-[#e62727] transition hover:bg-[#fff1f1] disabled:opacity-50">Cancel order</button>`
+                : (o.status === "OUT_FOR_DELIVERY" ? lockedNote("Can't be cancelled once out for delivery") : "");
+
             return `
-            <li class="rounded-2xl border border-[#eadfd2] bg-[#fffdf9] p-4">
+            <li data-order-id="${esc(o.id)}" class="rounded-2xl border border-[#eadfd2] bg-[#fffdf9] p-4">
                 <div class="flex flex-wrap items-center justify-between gap-2">
                     <p class="text-sm font-extrabold text-[#2b201d]">${esc(o.order_number)}</p>
-                    <div class="flex items-center gap-2">
-                        <span class="rounded-full bg-[#fff1e3] px-2 py-0.5 text-[11px] font-bold text-[#342724]">${esc(o.status_display)}</span>
+                    <div class="flex flex-wrap items-center gap-2">
+                        ${pill(o.status_display, statusCls)}
+                        ${pill(o.order_type_display, "bg-[#f4efff] text-[#5b3f9a]")}
+                        ${pill(o.payment_display, o.is_paid ? "bg-[#edf7ef] text-[#32744a]" : "bg-[#fff0ed] text-[#b42318]")}
                     </div>
                 </div>
                 <p class="mt-1 text-xs text-[#89776e]">Order date: ${esc(created.toLocaleDateString())} · Order time: ${esc(created.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }))}</p>
-                ${o.address ? `<p class="mt-1 text-xs text-[#89776e]">Deliver to: ${esc(o.address)}</p>` : ""}
+                ${o.contact_phone ? `<p class="mt-1 text-xs text-[#89776e]">Contact: ${esc(o.contact_phone)}</p>` : ""}
+                ${addressRow}
                 <ul class="mt-2 text-xs text-[#342724]">
                     ${o.items.map((i) => `<li>${i.quantity} × ${esc(i.food_item_name)}</li>`).join("")}
                 </ul>
-                <p class="mt-2 text-right text-base font-black text-[#342724]">${peso(o.total_amount)}</p>
+                <div class="mt-3 flex flex-wrap items-center justify-between gap-2">
+                    <div>${cancelControl}</div>
+                    <p class="text-base font-black text-[#342724]">${peso(o.total_amount)}</p>
+                </div>
             </li>`;
         }).join("");
         const empty = $("ordersEmpty");
@@ -385,6 +474,55 @@
     $("ordersSize").addEventListener("change", (e) => { ordersState.size = Number(e.target.value); ordersState.page = 1; loadOrders(); });
     $("ordersPrev").addEventListener("click", () => { if (ordersState.page > 1) { ordersState.page -= 1; loadOrders(); } });
     $("ordersNext").addEventListener("click", () => { ordersState.page += 1; loadOrders(); });
+
+    // ---------- Cancel an order / edit a delivery address ----------
+    function setHistMsg(text, isError) {
+        const el = $("ordersActionMsg");
+        el.textContent = text;
+        el.style.display = "block";
+        el.style.background = isError ? "#fff1f1" : "#eef8ee";
+        el.style.color = isError ? "#c41d1d" : "#2f6b2f";
+    }
+
+    $("ordersList").addEventListener("click", async (e) => {
+        const btn = e.target.closest("[data-order-act]");
+        if (!btn) return;
+        const li = btn.closest("li[data-order-id]");
+        const id = li.dataset.orderId;
+        const act = btn.dataset.orderAct;
+        const box = li.querySelector("[data-edit-box]");
+
+        if (act === "edit") {
+            box.style.display = "block";
+            box.querySelector("textarea").focus();
+            return;
+        }
+        if (act === "edit-discard") {
+            box.style.display = "none";
+            return;
+        }
+        if (act === "cancel" && !window.confirm("Cancel this order? This can't be undone.")) return;
+
+        btn.disabled = true;
+        try {
+            if (act === "save") {
+                const address = box.querySelector("textarea").value.trim();
+                if (!address) throw new Error("Please enter a delivery address.");
+                await api("/orders/" + id, { method: "PATCH", body: { address } });
+                setHistMsg("Delivery address updated.", false);
+            } else {
+                await api("/orders/" + id + "/cancel", { method: "POST" });
+                setHistMsg("Order cancelled.", false);
+            }
+            await loadOrders();
+        } catch (err) {
+            setHistMsg(err.message, true);
+            // 409/404 mean the order changed under us (e.g. it just went out for delivery): refresh it.
+            if (err.status === 409 || err.status === 404) await loadOrders();
+        } finally {
+            btn.disabled = false;
+        }
+    });
     // ---------- Load real menu data, then bind ----------
     render();
     setPager(false, false);

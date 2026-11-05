@@ -106,8 +106,23 @@ class Order(models.Model):
         PENDING = "PENDING", "Pending"
         CONFIRMED = "CONFIRMED", "Confirmed"
         PREPARING = "PREPARING", "Preparing"
+        OUT_FOR_DELIVERY = "OUT_FOR_DELIVERY", "Out for Delivery"
         COMPLETED = "COMPLETED", "Completed"
         CANCELLED = "CANCELLED", "Cancelled"
+
+    class OrderType(models.TextChoices):
+        DINE_IN = "DINE_IN", "Dine-In"
+        PICKUP = "PICKUP", "Pickup"
+        DELIVERY = "DELIVERY", "Delivery"
+
+    # While an order is in one of these statuses the customer may still cancel it
+    # or (for deliveries) change its address. Once it is Out for Delivery,
+    # Completed or Cancelled it is locked.
+    CUSTOMER_EDITABLE_STATUSES = (
+        Status.PENDING,
+        Status.CONFIRMED,
+        Status.PREPARING,
+    )
 
     customer = models.ForeignKey(
         User,
@@ -120,7 +135,19 @@ class Order(models.Model):
         decimal_places=2
     )
 
+    order_type = models.CharField(
+        max_length=20,
+        choices=OrderType.choices,
+        default=OrderType.DINE_IN,
+    )
+    # Required for Pickup and Delivery orders; left blank for Dine-In.
+    contact_phone = models.CharField(max_length=20, blank=True, default="")
+    # Only used by Delivery orders.
     delivery_address = models.CharField(max_length=255, blank=True, default="")
+
+    # Payment is tracked separately from the order status.
+    is_paid = models.BooleanField(default=False)
+    paid_at = models.DateTimeField(blank=True, null=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
     estimated_time =  models.DateTimeField(blank=True, null=True) 
@@ -130,8 +157,45 @@ class Order(models.Model):
         default=Status.PENDING
     )
 
+    @property
+    def can_customer_cancel(self):
+        return self.status in self.CUSTOMER_EDITABLE_STATUSES
+
+    @property
+    def can_customer_edit_address(self):
+        return (
+            self.order_type == self.OrderType.DELIVERY
+            and self.status in self.CUSTOMER_EDITABLE_STATUSES
+        )
+
     def __str__(self):
         return f"Order #{self.id}"
+
+
+class OrderAddressChange(models.Model):
+    """One row per time a customer edited a delivery order's address."""
+
+    order = models.ForeignKey(
+        Order,
+        on_delete=models.CASCADE,
+        related_name="address_changes",
+    )
+    old_address = models.CharField(max_length=255, blank=True)
+    new_address = models.CharField(max_length=255)
+    changed_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="+",
+    )
+    changed_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["changed_at", "pk"]
+
+    def __str__(self):
+        return f"Order #{self.order_id} address change"
 
 
 class OrderItem(models.Model):

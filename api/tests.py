@@ -164,6 +164,8 @@ class BackendApiTests(TestCase):
             "/api/customer/orders",
             data=json.dumps(
                 {
+                    "order_type": "DELIVERY",
+                    "contact_phone": "0917 123 4567",
                     "address": "12 Rizal St, Brgy. Ilayang Dupay, Lucena City",
                     "items": [
                         {
@@ -179,6 +181,9 @@ class BackendApiTests(TestCase):
         self.assertEqual(response.status_code, 201)
         order = Order.objects.get()
         self.assertEqual(order.delivery_address, "12 Rizal St, Brgy. Ilayang Dupay, Lucena City")
+        self.assertEqual(order.order_type, Order.OrderType.DELIVERY)
+        self.assertEqual(order.contact_phone, "0917 123 4567")
+        self.assertFalse(order.is_paid)
         self.assertEqual(response.json()["order"]["address"], order.delivery_address)
         self.assertEqual(order.total_amount, Decimal("25.00"))
         self.assertEqual(OrderItem.objects.get(order=order).quantity, 2)
@@ -192,7 +197,7 @@ class BackendApiTests(TestCase):
         self.client.force_login(self.customer)
         items = [{"menu_item_id": self.item.pk, "quantity": 1}]
         for bad in (None, "", "   ", 123, "x" * 256):
-            payload = {"items": items}
+            payload = {"items": items, "order_type": "DELIVERY", "contact_phone": "09171234567"}
             if bad is not None:
                 payload["address"] = bad
             response = self.client.post(
@@ -315,3 +320,367 @@ class BackendApiTests(TestCase):
         )
         self.assertEqual(response.status_code, 200, response.content)
         self.assertEqual(response.json()["display_name"], "BJFC Owner")
+
+
+class OrderWorkflowTests(TestCase):
+    """Order types, bulk ordering, cancel, address edits and payment/status handling."""
+
+    ADDRESS = "12 Rizal St, Lucena City"
+
+    def setUp(self):
+        self.admin = User.objects.create_user(
+            username="wf-admin", password="Test-password-123", is_staff=True
+        )
+        self.customer = User.objects.create_user(
+            username="wf-customer", password="Test-password-123",
+            first_name="Jane", last_name="Customer",
+        )
+        self.other = User.objects.create_user(username="wf-other", password="Test-password-123")
+        category = FoodCategory.objects.create(name="Chicken")
+        self.item = FoodItem.objects.create(
+            category=category, name="Crispy Chicken", description="x", price=Decimal("10.00")
+        )
+        self.item2 = FoodItem.objects.create(
+            category=category, name="Spicy Wings", description="x", price=Decimal("7.50")
+        )
+
+    # ----- helpers -----
+    def place(self, **overrides):
+        payload = {
+            "order_type": "DELIVERY",
+            "contact_phone": "09171234567",
+            "address": self.ADDRESS,
+            "items": [{"menu_item_id": self.item.pk, "quantity": 1}],
+        }
+        payload.update(overrides)
+        return self.client.post(
+            "/api/customer/orders", data=json.dumps(payload), content_type="application/json"
+        )
+
+    def make_order(self, **fields):
+        defaults = dict(
+            customer=self.customer,
+            total_amount=Decimal("10.00"),
+            order_type=Order.OrderType.DELIVERY,
+            contact_phone="09171234567",
+            delivery_address=self.ADDRESS,
+        )
+        defaults.update(fields)
+        return Order.objects.create(**defaults)
+
+    def send(self, method, url, payload=None):
+        return getattr(self.client, method)(
+            url, data=json.dumps(payload or {}), content_type="application/json"
+        )
+
+    # ----- order types -----
+    def test_dine_in_needs_no_phone_or_address(self):
+        self.client.force_login(self.customer)
+        response = self.place(order_type="DINE_IN", contact_phone="", address="")
+        self.assertEqual(response.status_code, 201)
+        order = Order.objects.get()
+        self.assertEqual(order.order_type, Order.OrderType.DINE_IN)
+        self.assertEqual((order.contact_phone, order.delivery_address), ("", ""))
+
+    def test_dine_in_ignores_any_phone_or_address_sent(self):
+        self.client.force_login(self.customer)
+        self.assertEqual(self.place(order_type="dine-in").status_code, 201)
+        order = Order.objects.get()
+        self.assertEqual((order.contact_phone, order.delivery_address), ("", ""))
+
+    def test_pickup_requires_phone_but_not_address(self):
+        self.client.force_login(self.customer)
+        self.assertEqual(self.place(order_type="PICKUP", contact_phone="").status_code, 400)
+        self.assertEqual(self.place(order_type="PICKUP", contact_phone="abc").status_code, 400)
+        response = self.place(order_type="PICKUP", address="")
+        self.assertEqual(response.status_code, 201)
+        order = Order.objects.get()
+        self.assertEqual(order.contact_phone, "09171234567")
+        self.assertEqual(order.delivery_address, "")
+
+    def test_delivery_requires_phone_and_address(self):
+        self.client.force_login(self.customer)
+        self.assertEqual(self.place(contact_phone="").status_code, 400)
+        self.assertEqual(self.place(address="  ").status_code, 400)
+        self.assertEqual(self.place(order_type=None).status_code, 400)
+        self.assertEqual(self.place(order_type="TELEPORT").status_code, 400)
+        self.assertEqual(Order.objects.count(), 0)
+
+    def test_bulk_order_with_many_items(self):
+        self.client.force_login(self.customer)
+        response = self.place(
+            items=[
+                {"menu_item_id": self.item.pk, "quantity": 12},
+                {"menu_item_id": self.item2.pk, "quantity": 4},
+            ]
+        )
+        self.assertEqual(response.status_code, 201)
+        order = Order.objects.get()
+        self.assertEqual(order.total_amount, Decimal("150.00"))  # 12*10 + 4*7.50
+        self.assertEqual(order.items.count(), 2)
+
+    # ----- customer cancel -----
+    def test_customer_can_cancel_until_out_for_delivery(self):
+        self.client.force_login(self.customer)
+        for status in (Order.Status.PENDING, Order.Status.CONFIRMED, Order.Status.PREPARING):
+            order = self.make_order(status=status)
+            response = self.send("post", f"/api/customer/orders/{order.pk}/cancel")
+            self.assertEqual(response.status_code, 200, status)
+            order.refresh_from_db()
+            self.assertEqual(order.status, Order.Status.CANCELLED)
+
+    def test_customer_cannot_cancel_once_locked(self):
+        self.client.force_login(self.customer)
+        for status in (
+            Order.Status.OUT_FOR_DELIVERY,
+            Order.Status.COMPLETED,
+            Order.Status.CANCELLED,
+        ):
+            order = self.make_order(status=status)
+            response = self.send("post", f"/api/customer/orders/{order.pk}/cancel")
+            self.assertEqual(response.status_code, 409, status)
+            order.refresh_from_db()
+            self.assertEqual(order.status, status)
+
+    def test_customer_cannot_cancel_someone_elses_order_or_when_logged_out(self):
+        order = self.make_order()
+        self.assertEqual(self.send("post", f"/api/customer/orders/{order.pk}/cancel").status_code, 401)
+        self.client.force_login(self.other)
+        self.assertEqual(self.send("post", f"/api/customer/orders/{order.pk}/cancel").status_code, 404)
+        order.refresh_from_db()
+        self.assertEqual(order.status, Order.Status.PENDING)
+
+    # ----- address edits + history -----
+    def test_address_edit_records_history_visible_to_admin(self):
+        order = self.make_order()
+        self.client.force_login(self.customer)
+        response = self.send(
+            "patch", f"/api/customer/orders/{order.pk}", {"address": "99 New Rd,  Tayabas"}
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["order"]["address"], "99 New Rd, Tayabas")
+        self.send("patch", f"/api/customer/orders/{order.pk}", {"address": "7 Third St"})
+
+        # Customers do not get the history in their own payload...
+        mine = self.client.get("/api/customer/my-orders").json()["orders"][0]
+        self.assertNotIn("address_history", mine)
+
+        self.client.force_login(self.admin)
+        shown = self.client.get("/api/admin/orders/").json()["orders"][0]
+        self.assertEqual(shown["address"], "7 Third St")
+        self.assertEqual(
+            [(h["old_address"], h["new_address"]) for h in shown["address_history"]],
+            [(self.ADDRESS, "99 New Rd, Tayabas"), ("99 New Rd, Tayabas", "7 Third St")],
+        )
+        self.assertEqual(shown["address_history"][0]["changed_by"], "Jane Customer")
+
+    def test_unchanged_address_adds_no_history(self):
+        order = self.make_order()
+        self.client.force_login(self.customer)
+        response = self.send("patch", f"/api/customer/orders/{order.pk}", {"address": self.ADDRESS})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(order.address_changes.count(), 0)
+
+    def test_address_locked_once_out_for_delivery_or_finished(self):
+        self.client.force_login(self.customer)
+        for status in (
+            Order.Status.OUT_FOR_DELIVERY,
+            Order.Status.COMPLETED,
+            Order.Status.CANCELLED,
+        ):
+            order = self.make_order(status=status)
+            response = self.send("patch", f"/api/customer/orders/{order.pk}", {"address": "Elsewhere"})
+            self.assertEqual(response.status_code, 409, status)
+            order.refresh_from_db()
+            self.assertEqual(order.delivery_address, self.ADDRESS)
+            self.assertEqual(order.address_changes.count(), 0)
+
+    def test_only_delivery_orders_have_editable_address(self):
+        order = self.make_order(order_type=Order.OrderType.PICKUP, delivery_address="")
+        self.client.force_login(self.customer)
+        response = self.send("patch", f"/api/customer/orders/{order.pk}", {"address": "Somewhere"})
+        self.assertEqual(response.status_code, 409)
+
+    def test_address_edit_validation_and_ownership(self):
+        order = self.make_order()
+        self.client.force_login(self.customer)
+        url = f"/api/customer/orders/{order.pk}"
+        self.assertEqual(self.send("patch", url, {"address": "  "}).status_code, 400)
+        self.assertEqual(self.send("patch", url, {"address": "x" * 256}).status_code, 400)
+        self.assertEqual(self.send("patch", url, {"status": "COMPLETED"}).status_code, 400)
+        self.client.force_login(self.other)
+        self.assertEqual(self.send("patch", url, {"address": "Mine now"}).status_code, 404)
+
+    def test_can_flags_in_order_payload(self):
+        self.make_order()
+        self.make_order(status=Order.Status.OUT_FOR_DELIVERY)
+        self.client.force_login(self.customer)
+        orders = {o["status"]: o for o in self.client.get("/api/customer/my-orders").json()["orders"]}
+        self.assertTrue(orders["PENDING"]["can_cancel"])
+        self.assertTrue(orders["PENDING"]["can_edit_address"])
+        self.assertFalse(orders["OUT_FOR_DELIVERY"]["can_cancel"])
+        self.assertFalse(orders["OUT_FOR_DELIVERY"]["can_edit_address"])
+
+    # ----- admin status + payment -----
+    def test_admin_status_flow_for_delivery(self):
+        order = self.make_order()
+        self.client.force_login(self.admin)
+        url = f"/api/admin/orders/{order.pk}/"
+        for status in ("OUT_FOR_DELIVERY", "COMPLETED", "PENDING"):
+            response = self.send("patch", url, {"status": status})
+            self.assertEqual(response.status_code, 200, status)
+            order.refresh_from_db()
+            self.assertEqual(order.status, status)
+
+    def test_out_for_delivery_only_for_delivery_orders(self):
+        self.client.force_login(self.admin)
+        for order_type in (Order.OrderType.DINE_IN, Order.OrderType.PICKUP):
+            order = self.make_order(order_type=order_type)
+            response = self.send("patch", f"/api/admin/orders/{order.pk}/", {"status": "OUT_FOR_DELIVERY"})
+            self.assertEqual(response.status_code, 400, order_type)
+            order.refresh_from_db()
+            self.assertEqual(order.status, Order.Status.PENDING)
+            self.assertEqual(
+                self.send("patch", f"/api/admin/orders/{order.pk}/", {"status": "COMPLETED"}).status_code, 200
+            )
+
+    def test_admin_cannot_set_unlisted_statuses_or_touch_cancelled_orders(self):
+        order = self.make_order()
+        self.client.force_login(self.admin)
+        url = f"/api/admin/orders/{order.pk}/"
+        for status in ("CANCELLED", "PREPARING", "NOPE"):
+            self.assertEqual(self.send("patch", url, {"status": status}).status_code, 400, status)
+        cancelled = self.make_order(status=Order.Status.CANCELLED)
+        url = f"/api/admin/orders/{cancelled.pk}/"
+        self.assertEqual(self.send("patch", url, {"status": "COMPLETED"}).status_code, 409)
+        self.assertEqual(self.send("patch", url, {"is_paid": True}).status_code, 409)
+
+    def test_payment_is_tracked_separately_from_status(self):
+        order = self.make_order()
+        self.client.force_login(self.admin)
+        url = f"/api/admin/orders/{order.pk}/"
+        response = self.send("patch", url, {"is_paid": True})
+        self.assertEqual(response.status_code, 200)
+        order.refresh_from_db()
+        self.assertTrue(order.is_paid)
+        self.assertIsNotNone(order.paid_at)
+        self.assertEqual(order.status, Order.Status.PENDING)  # status untouched
+        self.assertEqual(response.json()["order"]["payment_status"], "PAID")
+
+        self.assertEqual(self.send("patch", url, {"status": "COMPLETED"}).status_code, 200)
+        order.refresh_from_db()
+        self.assertTrue(order.is_paid)  # paying/completing are independent
+
+        self.assertEqual(self.send("patch", url, {"is_paid": False}).status_code, 200)
+        order.refresh_from_db()
+        self.assertFalse(order.is_paid)
+        self.assertIsNone(order.paid_at)
+        self.assertEqual(self.send("patch", url, {"is_paid": "yes"}).status_code, 400)
+        self.assertEqual(self.send("patch", url, {}).status_code, 400)
+
+    def test_admin_filters_by_payment_type_and_status(self):
+        self.make_order(is_paid=True)
+        self.make_order(order_type=Order.OrderType.PICKUP)
+        self.make_order(status=Order.Status.OUT_FOR_DELIVERY)
+        self.make_order(status=Order.Status.CANCELLED)
+        self.client.force_login(self.admin)
+
+        def count(query):
+            response = self.client.get(f"/api/admin/orders/?{query}")
+            self.assertEqual(response.status_code, 200, query)
+            return len(response.json()["orders"])
+
+        self.assertEqual(count("payment=paid"), 1)
+        self.assertEqual(count("payment=unpaid"), 3)
+        self.assertEqual(count("type=pickup"), 1)
+        self.assertEqual(count("filter=out_for_delivery"), 1)
+        self.assertEqual(count("filter=cancelled"), 1)
+        self.assertEqual(self.client.get("/api/admin/orders/?payment=maybe").status_code, 400)
+        self.assertEqual(self.client.get("/api/admin/orders/?type=maybe").status_code, 400)
+
+    # ----- price changes must not rewrite history -----
+    def test_changing_menu_price_does_not_change_past_orders_or_sales(self):
+        self.client.force_login(self.customer)
+        self.assertEqual(self.place(items=[{"menu_item_id": self.item.pk, "quantity": 3}]).status_code, 201)
+        order = Order.objects.get()
+        order.status = Order.Status.COMPLETED
+        order.save(update_fields=["status"])  # sales only count completed orders
+
+        # Admin raises the price from 10.00 to 99.00.
+        FoodItem.objects.filter(pk=self.item.pk).update(price=Decimal("99.00"))
+
+        self.client.force_login(self.admin)
+        dashboard = self.client.get("/api/admin/dashboard/").json()
+        self.assertEqual(Decimal(dashboard["total_sales"]), Decimal("30.00"))
+        shown = self.client.get("/api/admin/orders/").json()["orders"][0]
+        self.assertEqual(shown["total_amount"], "30.00")
+        self.assertEqual(shown["items"][0]["price"], "10.00")
+
+        # A new order uses the new price.
+        self.client.force_login(self.customer)
+        self.place(items=[{"menu_item_id": self.item.pk, "quantity": 1}])
+        self.assertEqual(Order.objects.latest("pk").total_amount, Decimal("99.00"))
+
+
+class LoginIdentifierTests(TestCase):
+    """/api/login accepts a username or an email address."""
+
+    PASSWORD = "Test-password-123"
+
+    def setUp(self):
+        self.customer = User.objects.create_user(
+            username="jane", email="jane@example.com", password=self.PASSWORD
+        )
+        self.admin = User.objects.create_user(
+            username="boss", email="Boss@Example.com", password=self.PASSWORD, is_staff=True
+        )
+
+    def login(self, identifier, password=None, **extra):
+        return self.client.post(
+            "/api/login",
+            data=json.dumps(
+                {"username": identifier, "password": self.PASSWORD if password is None else password, **extra}
+            ),
+            content_type="application/json",
+        )
+
+    def test_login_with_username(self):
+        response = self.login("jane")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["user"]["username"], "jane")
+
+    def test_login_with_email_is_case_insensitive(self):
+        for identifier in ("jane@example.com", "JANE@Example.COM", "  jane@example.com "):
+            self.client.logout()
+            response = self.login(identifier)
+            self.assertEqual(response.status_code, 200, identifier)
+            self.assertEqual(response.json()["user"]["username"], "jane")
+
+    def test_wrong_password_or_unknown_email_is_rejected(self):
+        self.assertEqual(self.login("jane@example.com", "wrong-password").status_code, 401)
+        self.assertEqual(self.login("nobody@example.com").status_code, 401)
+        self.assertEqual(self.login("jane@example.com", "").status_code, 400)
+
+    def test_username_shaped_like_an_email_still_works(self):
+        User.objects.create_user(username="kitchen@example.com", password=self.PASSWORD)
+        response = self.login("kitchen@example.com")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["user"]["username"], "kitchen@example.com")
+
+    def test_someone_cannot_log_in_to_another_account_via_a_lookalike_username(self):
+        # An attacker registers a username equal to the victim's email. The victim's
+        # own email login must still reach the victim's account, not the attacker's.
+        User.objects.create_user(username="jane@example.com", password="Attacker-pass-9")
+        response = self.login("jane@example.com")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["user"]["username"], "jane")
+
+    def test_shared_email_is_ambiguous_and_refused(self):
+        User.objects.create_user(username="jane2", email="jane@example.com", password=self.PASSWORD)
+        self.assertEqual(self.login("jane@example.com").status_code, 401)
+        self.assertEqual(self.login("jane").status_code, 200)  # username still fine
+
+    def test_admin_only_login_works_with_email(self):
+        self.assertEqual(self.login("boss@example.com", admin_only=True).status_code, 200)
+        self.client.logout()
+        self.assertEqual(self.login("jane@example.com", admin_only=True).status_code, 403)
