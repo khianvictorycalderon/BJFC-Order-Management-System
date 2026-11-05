@@ -9,6 +9,11 @@ urlpatterns = [
     re_path(r"^admin/dashboard/?$", views.admin_dashboard, name="admin_dashboard"),
     re_path(r"^admin/orders/?$", views.admin_orders, name="admin_orders"),
     re_path(r"^admin/orders/info/?$", views.orders_info, name="admin_orders_info"),
+    re_path(
+        r"^admin/transactions/?$",
+        views.admin_transaction_history,
+        name="admin_transaction_history",
+    ),
     re_path(r"^admin/orders/(?P<pk>\d+)/?$", views.admin_order_status, name="admin_order_status"),
     re_path(
         r"^admin/orders/(?P<pk>\d+)/status/?$",
@@ -36,6 +41,11 @@ urlpatterns = [
     re_path(r"^contact/messages/?$", views.contact_messages, name="contact_messages"),
     re_path(r"^customer/menu/items/?$", views.customer_menu_items, name="customer_menu_items"),
     re_path(r"^customer/orders/?$", views.customer_create_order, name="customer_create_order"),
+    re_path(
+        r"^orders/(?P<pk>\d+)/gcash-receipt/?$",
+        views.customer_upload_gcash_receipt,
+        name="customer_upload_gcash_receipt",
+    ),
     re_path(
         r"^customer/orders/(?P<pk>\d+)/?$",
         views.customer_order,

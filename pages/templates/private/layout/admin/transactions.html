@@ -1,0 +1,70 @@
+{% extends "private/layout/admin/base.html" %}
+
+{% block title %}Transaction History | BJFC{% endblock %}
+{% block page_heading %}Transaction History{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <div>
+        <p class="text-xs font-extrabold uppercase tracking-[0.18em] text-[#a87864]">Audit log</p>
+        <h2 class="mt-1 text-3xl font-black tracking-tight text-[#342724]">Transaction history</h2>
+        <p class="mt-1 text-sm font-semibold text-[#89776e]">Read-only record of order, receipt, payment, and status events.</p>
+    </div>
+    <section class="overflow-hidden rounded-2xl border border-[#eadfd2] bg-white shadow-sm">
+        <div class="flex flex-wrap items-center justify-between gap-3 border-b border-[#f0e8df] px-5 py-4">
+            <p id="transactionCount" class="text-sm font-bold text-[#89776e]">Loading audit events…</p>
+            <button type="button" id="refreshTransactions" class="rounded-xl bg-[#800000] px-4 py-2 text-sm font-extrabold text-white hover:bg-[#660000]">Refresh</button>
+        </div>
+        <div id="transactionList" class="divide-y divide-[#f0e8df]"></div>
+        <div class="flex items-center justify-between border-t border-[#f0e8df] px-5 py-4">
+            <button type="button" id="transactionsPrev" class="rounded-lg border border-[#eadfd2] px-4 py-2 text-xs font-extrabold text-[#594941] disabled:opacity-40">Previous</button>
+            <span id="transactionsPageInfo" class="text-xs font-bold text-[#89776e]"></span>
+            <button type="button" id="transactionsNext" class="rounded-lg border border-[#eadfd2] px-4 py-2 text-xs font-extrabold text-[#594941] disabled:opacity-40">Next</button>
+        </div>
+    </section>
+</div>
+<script>
+(() => {
+    const esc = (value) => String(value ?? "").replace(/[&<>"']/g, (c) => ({
+        "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+    }[c]));
+    let page = 1;
+    async function load() {
+        const response = await fetch(`/api/admin/transactions/?page=${page}&size=20&sort=desc`);
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || "Could not load transaction history.");
+        const events = data.events || [];
+        document.getElementById("transactionList").innerHTML = events.length
+            ? events.map((event) => `
+                <article class="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-start sm:justify-between">
+                    <div class="min-w-0">
+                        <div class="flex flex-wrap items-center gap-2">
+                            <span class="rounded-full bg-[#fff0ed] px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wider text-[#b42318]">${esc(event.event_type.replaceAll("_", " "))}</span>
+                            <a class="text-sm font-black text-[#800000] hover:underline" href="{% url 'admin_orders' %}">Order ${esc(event.order_number)}</a>
+                        </div>
+                        <p class="mt-2 text-sm font-semibold text-[#594941]">${esc(event.details)}</p>
+                        <p class="mt-1 text-xs font-semibold text-[#89776e]">Customer: ${esc(event.customer)} · By: ${esc(event.actor)}</p>
+                    </div>
+                    <time class="shrink-0 text-xs font-bold text-[#89776e]">${esc(new Date(event.created_at).toLocaleString())}</time>
+                </article>`).join("")
+            : '<p class="px-5 py-8 text-center text-sm font-semibold text-[#89776e]">No audit events have been recorded.</p>';
+        document.getElementById("transactionCount").textContent = `${data.total_items} audit event${data.total_items === 1 ? "" : "s"}`;
+        document.getElementById("transactionsPageInfo").textContent = data.total_items ? `Page ${data.page} of ${data.total_pages}` : "";
+        document.getElementById("transactionsPrev").disabled = !data.has_previous;
+        document.getElementById("transactionsNext").disabled = !data.has_next;
+    }
+    async function refresh() {
+        const list = document.getElementById("transactionList");
+        try {
+            await load();
+        } catch (error) {
+            list.innerHTML = `<p class="px-5 py-8 text-center text-sm font-semibold text-red-600">${esc(error.message)}</p>`;
+        }
+    }
+    document.getElementById("refreshTransactions").addEventListener("click", refresh);
+    document.getElementById("transactionsPrev").addEventListener("click", () => { if (page > 1) { page--; refresh(); } });
+    document.getElementById("transactionsNext").addEventListener("click", () => { page++; refresh(); });
+    refresh();
+})();
+</script>
+{% endblock %}

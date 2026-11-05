@@ -174,6 +174,13 @@ def my_orders(req):
 
 @login_required(login_url="login")
 @customer_required
+def customer_payment_history(req):
+    orders = req.user.orders.select_related("customer").order_by("-created_at", "-pk")
+    return render(req, "private/payment_history.html", {"orders": orders})
+
+
+@login_required(login_url="login")
+@customer_required
 def customer_account(req):
     return render(req, "private/account.html")
 
@@ -196,6 +203,12 @@ def admin_menu(req):
 @staff_member_required(login_url="admin_login")
 def admin_orders(req):
     return render(req, "private/layout/admin/order.html")
+
+
+@staff_member_required(login_url="admin_login")
+def admin_transactions(req):
+    return render(req, "private/layout/admin/transactions.html")
+
 
 @staff_member_required(login_url="admin_login")
 def admin_feedback(req):

@@ -1,6 +1,7 @@
 import json
 from decimal import Decimal
 
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
 from django.urls import reverse
 
@@ -368,6 +369,13 @@ class OrderWorkflowTests(TestCase):
         defaults.update(fields)
         return Order.objects.create(**defaults)
 
+    def make_order_with_receipt(self, **fields):
+        fields.setdefault("payment_method", Order.PaymentMethod.GCASH)
+        fields["gcash_receipt"] = SimpleUploadedFile(
+            "receipt.jpg", b"receipt image data", content_type="image/jpeg"
+        )
+        return self.make_order(**fields)
+
     def send(self, method, url, payload=None):
         return getattr(self.client, method)(
             url, data=json.dumps(payload or {}), content_type="application/json"
@@ -522,6 +530,54 @@ class OrderWorkflowTests(TestCase):
         self.assertFalse(orders["OUT_FOR_DELIVERY"]["can_edit_address"])
 
     # ----- admin status + payment -----
+    def test_admin_can_delete_receipt_after_completion(self):
+        order = self.make_order_with_receipt(
+            status=Order.Status.COMPLETED,
+            payment_review_status=Order.PaymentReviewStatus.VERIFIED,
+        )
+        receipt_name = order.gcash_receipt.name
+        storage = order.gcash_receipt.storage
+        self.client.force_login(self.admin)
+
+        response = self.client.delete(f"/api/orders/{order.pk}/gcash-receipt")
+
+        self.assertEqual(response.status_code, 200, response.content)
+        order.refresh_from_db()
+        self.assertFalse(order.gcash_receipt)
+        self.assertFalse(storage.exists(receipt_name))
+        self.assertEqual(order.payment_review_status, Order.PaymentReviewStatus.VERIFIED)
+        self.assertEqual(order.audit_events.latest().event_type, "RECEIPT_DELETED")
+
+    def test_customer_cannot_delete_receipt_after_completion(self):
+        order = self.make_order_with_receipt(status=Order.Status.COMPLETED)
+        receipt_name = order.gcash_receipt.name
+        storage = order.gcash_receipt.storage
+        self.client.force_login(self.customer)
+
+        response = self.client.delete(f"/api/orders/{order.pk}/gcash-receipt")
+
+        self.assertEqual(response.status_code, 403, response.content)
+        order.refresh_from_db()
+        self.assertTrue(order.gcash_receipt)
+        self.assertTrue(storage.exists(receipt_name))
+        order.gcash_receipt.delete(save=False)
+
+    def test_receipt_delete_requires_completed_order_and_admin_access(self):
+        order = self.make_order_with_receipt(status=Order.Status.PENDING)
+        receipt_name = order.gcash_receipt.name
+        storage = order.gcash_receipt.storage
+        self.client.force_login(self.admin)
+        response = self.client.delete(f"/api/orders/{order.pk}/gcash-receipt")
+        self.assertEqual(response.status_code, 409)
+        self.assertTrue(storage.exists(receipt_name))
+        order.gcash_receipt.delete(save=False)
+
+        completed = self.make_order_with_receipt(status=Order.Status.COMPLETED)
+        self.client.force_login(self.other)
+        response = self.client.delete(f"/api/orders/{completed.pk}/gcash-receipt")
+        self.assertEqual(response.status_code, 403)
+        completed.gcash_receipt.delete(save=False)
+
     def test_admin_status_flow_for_delivery(self):
         order = self.make_order()
         self.client.force_login(self.admin)

@@ -2,7 +2,7 @@
 
 <aside
     id="appSidebar"
-    class="fixed inset-y-0 left-0 z-50 flex w-[280px] -translate-x-full flex-col overflow-y-auto border-r border-white/10 bg-[#211513] text-white shadow-2xl transition-transform duration-300 ease-in-out lg:sticky lg:top-0 lg:h-screen lg:shrink-0 lg:translate-x-0 lg:shadow-none"
+    class="fixed inset-y-0 left-0 z-50 flex w-70 -translate-x-full flex-col overflow-y-auto border-r border-white/10 bg-[#211513] text-white shadow-2xl transition-transform duration-300 ease-in-out lg:sticky lg:top-0 lg:h-screen lg:shrink-0 lg:translate-x-0 lg:shadow-none"
 >
     <a href="{% url 'admin_dashboard' %}" class="flex items-center gap-3 border-b border-white/10 px-6 py-6">
         <span class="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-white">
@@ -27,6 +27,10 @@
         <a href="{% url 'admin_orders' %}" {% if request.resolver_match.url_name == 'admin_orders' %}aria-current="page"{% endif %} class="group flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-bold transition {% if request.resolver_match.url_name == 'admin_orders' %}bg-[#800000] text-white shadow-lg shadow-black/15{% else %}text-white/70 hover:bg-white/10 hover:text-white{% endif %}">
             <svg class="h-5 w-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3h2l2.2 11.2a2 2 0 0 0 2 1.6h8.9a2 2 0 0 0 2-1.6L22 7H6"/><circle cx="10" cy="20" r="1"/><circle cx="18" cy="20" r="1"/></svg>
             Orders
+        </a>
+        <a href="{% url 'admin_transactions' %}" {% if request.resolver_match.url_name == 'admin_transactions' %}aria-current="page"{% endif %} class="group flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-bold transition {% if request.resolver_match.url_name == 'admin_transactions' %}bg-[#800000] text-white shadow-lg shadow-black/15{% else %}text-white/70 hover:bg-white/10 hover:text-white{% endif %}">
+            <svg class="h-5 w-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16M4 12h16M4 19h16"/><circle cx="7" cy="5" r="1"/><circle cx="7" cy="12" r="1"/><circle cx="7" cy="19" r="1"/></svg>
+            Transaction History
         </a>
         <a href="{% url 'admin_users' %}" {% if request.resolver_match.url_name == 'admin_users' %}aria-current="page"{% endif %} class="group flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-bold transition {% if request.resolver_match.url_name == 'admin_users' %}bg-[#800000] text-white shadow-lg shadow-black/15{% else %}text-white/70 hover:bg-white/10 hover:text-white{% endif %}">
             <svg class="h-5 w-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="10" cy="7" r="4"/><path d="M20 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
