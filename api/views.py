@@ -9,7 +9,7 @@ from django.core.exceptions import ValidationError
 from django.core.paginator import EmptyPage, Paginator
 from django.core.validators import validate_email
 from django.db import IntegrityError, transaction
-from django.db.models import Avg, Count, Q, Sum
+from django.db.models import Avg, Count, Prefetch, Q, Sum
 from django.db.models.functions import TruncDate
 from django.http import JsonResponse
 from django.utils import timezone
@@ -27,13 +27,14 @@ from core.models import (
     LandingPage,
     Order,
     OrderItem,
+    OrderAddressChange,
     OrderItemAddon,
     PageInfo,
     Rating,
     StoreInformation,
     User,
 )
-from .forms import ContactMessageForm, FoodItemForm, form_errors, parse_payload
+from .forms import PHONE_RE, ContactMessageForm, FoodItemForm, form_errors, parse_payload
 
 # --------------------------------------------------------------------------- #
 # Constants
@@ -46,6 +47,13 @@ PENDING_STATUSES = (
     Order.Status.PENDING,
     Order.Status.CONFIRMED,
     Order.Status.PREPARING,
+)
+
+# Statuses an admin can set from the Orders page. (Cancelling is done by the customer.)
+ADMIN_SETTABLE_STATUSES = (
+    Order.Status.PENDING,
+    Order.Status.OUT_FOR_DELIVERY,
+    Order.Status.COMPLETED,
 )
 
 PAGE_DEFAULTS = {
@@ -229,11 +237,16 @@ def _orders_with_relations(queryset=None):
     if queryset is None:
         queryset = Order.objects.all()
     return queryset.select_related("customer").prefetch_related(
-        "items__food_item", "items__selected_addons"
+        "items__food_item",
+        "items__selected_addons",
+        Prefetch(
+            "address_changes",
+            queryset=OrderAddressChange.objects.select_related("changed_by"),
+        ),
     )
 
 
-def _serialize_order(order):
+def _serialize_order(order, include_history=False):
     customer_name = order.customer.get_full_name() or order.customer.username
     estimated = order.estimated_time.isoformat() if order.estimated_time else None
     return {
@@ -253,8 +266,17 @@ def _serialize_order(order):
         "estimated_time": estimated,
         "eta": estimated,
         "total_amount": str(order.total_amount),
+        "order_type": order.order_type,
+        "order_type_display": order.get_order_type_display(),
+        "contact_phone": order.contact_phone,
         "address": order.delivery_address,
         "delivery_address": order.delivery_address,
+        "is_paid": order.is_paid,
+        "payment_status": "PAID" if order.is_paid else "UNPAID",
+        "payment_display": "Paid" if order.is_paid else "Not yet paid",
+        "paid_at": order.paid_at.isoformat() if order.paid_at else None,
+        "can_cancel": order.can_customer_cancel,
+        "can_edit_address": order.can_customer_edit_address,
         # Uses the prefetched data; do not add select_related/prefetch_related here.
         "items": [
             {
@@ -269,7 +291,27 @@ def _serialize_order(order):
             }
             for item in order.items.all()
         ],
+        **(
+            {"address_history": _serialize_address_history(order)}
+            if include_history
+            else {}
+        ),
     }
+
+
+def _serialize_address_history(order):
+    history = []
+    for change in order.address_changes.all():  # prefetched, oldest first
+        who = change.changed_by
+        history.append(
+            {
+                "old_address": change.old_address,
+                "new_address": change.new_address,
+                "changed_by": (who.get_full_name() or who.username) if who else "Unknown",
+                "changed_at": change.changed_at.isoformat(),
+            }
+        )
+    return history
 
 
 def _serialize_feedback(rating):
@@ -516,8 +558,26 @@ def admin_orders(request):
     if error:
         return error
     page_number, size, direction = params
+    payment = (request.GET.get("payment") or "").lower()
+    if payment == "paid":
+        queryset = queryset.filter(is_paid=True)
+    elif payment == "unpaid":
+        queryset = queryset.filter(is_paid=False)
+    elif payment:
+        return JsonResponse({"error": "Invalid payment filter."}, status=400)
+    order_type = (request.GET.get("type") or "").upper()
+    if order_type in Order.OrderType.values:
+        queryset = queryset.filter(order_type=order_type)
+    elif order_type:
+        return JsonResponse({"error": "Invalid order type filter."}, status=400)
     queryset = queryset.order_by(*_ordering(direction, "created_at", "pk"))
-    result = _page_response(queryset, page_number, size, "orders", _serialize_order)
+    result = _page_response(
+        queryset,
+        page_number,
+        size,
+        "orders",
+        lambda order: _serialize_order(order, include_history=True),
+    )
     result.update(result["pagination"])
     return JsonResponse(result)
 
@@ -529,18 +589,48 @@ def _set_order_status(request, order_id):
     status = data.get("status")
     if status is None and isinstance(data.get("is_complete"), bool):
         status = Order.Status.COMPLETED if data["is_complete"] else Order.Status.PENDING
-    if not isinstance(status, str):
-        return JsonResponse({"error": "A valid order status is required."}, status=400)
-    status = status.upper()
-    if status not in Order.Status.values:
-        return JsonResponse({"error": "Invalid order status."}, status=400)
-    try:
-        order = _orders_with_relations().get(pk=order_id)
-    except Order.DoesNotExist:
-        return JsonResponse({"error": "Order not found."}, status=404)
-    order.status = status
-    order.save(update_fields=["status"])
-    return JsonResponse({"message": "Order status updated.", "order": _serialize_order(order)})
+    is_paid = data.get("is_paid")
+    if status is None and is_paid is None:
+        return JsonResponse({"error": "A valid order status or payment state is required."}, status=400)
+    if status is not None:
+        if not isinstance(status, str) or status.upper() not in Order.Status.values:
+            return JsonResponse({"error": "A valid order status is required."}, status=400)
+        status = status.upper()
+        if status not in ADMIN_SETTABLE_STATUSES:
+            return JsonResponse(
+                {"error": "Status must be PENDING, OUT_FOR_DELIVERY or COMPLETED."}, status=400
+            )
+    if is_paid is not None and not isinstance(is_paid, bool):
+        return JsonResponse({"error": "'is_paid' must be true or false."}, status=400)
+
+    with transaction.atomic():
+        try:
+            order = Order.objects.select_for_update().get(pk=order_id)
+        except Order.DoesNotExist:
+            return JsonResponse({"error": "Order not found."}, status=404)
+        if order.status == Order.Status.CANCELLED:
+            return JsonResponse({"error": "Cancelled orders can't be updated."}, status=409)
+        if (
+            status == Order.Status.OUT_FOR_DELIVERY
+            and order.order_type != Order.OrderType.DELIVERY
+        ):
+            return JsonResponse(
+                {"error": "Only delivery orders can be marked Out for Delivery."}, status=400
+            )
+        update_fields = []
+        if status is not None and status != order.status:
+            order.status = status
+            update_fields.append("status")
+        if is_paid is not None and is_paid != order.is_paid:
+            order.is_paid = is_paid
+            order.paid_at = timezone.now() if is_paid else None
+            update_fields += ["is_paid", "paid_at"]
+        if update_fields:
+            order.save(update_fields=update_fields)
+    order = _orders_with_relations().get(pk=order.pk)
+    return JsonResponse(
+        {"message": "Order updated.", "order": _serialize_order(order, include_history=True)}
+    )
 
 
 @_admin_api("PATCH")
@@ -774,6 +864,39 @@ def customer_menu_items(request):
 MAX_ADDRESS_LENGTH = Order._meta.get_field("delivery_address").max_length
 
 
+def _clean_order_type(value):
+    if isinstance(value, str):
+        normalized = value.strip().upper().replace("-", "_").replace(" ", "_")
+        if normalized in Order.OrderType.values:
+            return normalized, None
+    return None, JsonResponse(
+        {"error": "'order_type' must be DINE_IN, PICKUP or DELIVERY."}, status=400
+    )
+
+
+def _clean_address(value):
+    if not isinstance(value, str) or not value.strip():
+        return None, JsonResponse({"error": "A delivery address is required."}, status=400)
+    value = " ".join(value.split())
+    if len(value) > MAX_ADDRESS_LENGTH:
+        return None, JsonResponse(
+            {"error": f"Address must be {MAX_ADDRESS_LENGTH} characters or fewer."}, status=400
+        )
+    return value, None
+
+
+def _clean_phone(value):
+    if not isinstance(value, str) or not value.strip():
+        return None, JsonResponse(
+            {"error": "A contact phone number is required for pickup and delivery orders."},
+            status=400,
+        )
+    value = value.strip()
+    if not PHONE_RE.match(value):
+        return None, JsonResponse({"error": "Enter a valid phone number."}, status=400)
+    return value, None
+
+
 def _order_lines(requested_items):
     if not isinstance(requested_items, list) or not requested_items:
         return None, JsonResponse({"error": "'items' must be a non-empty list."}, status=400)
@@ -856,14 +979,20 @@ def customer_create_order(request):
     data, error = _json_body(request)
     if error:
         return error
-    address = data.get("address", data.get("delivery_address"))
-    if not isinstance(address, str) or not address.strip():
-        return JsonResponse({"error": "A delivery address is required."}, status=400)
-    address = " ".join(address.split())
-    if len(address) > MAX_ADDRESS_LENGTH:
-        return JsonResponse(
-            {"error": f"Address must be {MAX_ADDRESS_LENGTH} characters or fewer."}, status=400
-        )
+    order_type, error = _clean_order_type(data.get("order_type"))
+    if error:
+        return error
+    # Dine-In needs neither a phone number nor an address; Pickup needs a phone
+    # number; Delivery needs both.
+    phone = address = ""
+    if order_type != Order.OrderType.DINE_IN:
+        phone, error = _clean_phone(data.get("contact_phone"))
+        if error:
+            return error
+    if order_type == Order.OrderType.DELIVERY:
+        address, error = _clean_address(data.get("address", data.get("delivery_address")))
+        if error:
+            return error
     result, error = _order_lines(data.get("items"))
     if error:
         return error
@@ -871,6 +1000,8 @@ def customer_create_order(request):
     with transaction.atomic():
         order = Order.objects.create(
             customer=request.user,
+            order_type=order_type,
+            contact_phone=phone,
             delivery_address=address,
             total_amount=total,
             status=Order.Status.PENDING,
@@ -887,6 +1018,81 @@ def customer_create_order(request):
         },
         status=201,
     )
+
+
+def _locked_customer_order(request, pk):
+    """The customer's own order, row-locked. Call inside transaction.atomic()."""
+    try:
+        return request.user.orders.select_for_update().get(pk=pk), None
+    except Order.DoesNotExist:
+        return None, JsonResponse({"error": "Order not found."}, status=404)
+
+
+@csrf_protect
+@require_http_methods(["PATCH"])
+def customer_order(request, pk):
+    """Edit the delivery address of one of the customer's own orders."""
+    error = _require_customer(request)
+    if error:
+        return error
+    data, error = _json_body(request)
+    if error:
+        return error
+    if not data or set(data) - {"address", "delivery_address"}:
+        return JsonResponse({"error": "Only the delivery address can be changed."}, status=400)
+    address, error = _clean_address(data.get("address", data.get("delivery_address")))
+    if error:
+        return error
+    with transaction.atomic():
+        order, error = _locked_customer_order(request, pk)
+        if error:
+            return error
+        if order.order_type != Order.OrderType.DELIVERY:
+            return JsonResponse({"error": "Only delivery orders have an address."}, status=409)
+        if not order.can_customer_edit_address:
+            return JsonResponse(
+                {
+                    "error": "The address can no longer be changed because the order is "
+                    f"{order.get_status_display()}."
+                },
+                status=409,
+            )
+        if address != order.delivery_address:
+            OrderAddressChange.objects.create(
+                order=order,
+                old_address=order.delivery_address,
+                new_address=address,
+                changed_by=request.user,
+            )
+            order.delivery_address = address
+            order.save(update_fields=["delivery_address"])
+    order = _orders_with_relations().get(pk=order.pk)
+    return JsonResponse({"message": "Delivery address updated.", "order": _serialize_order(order)})
+
+
+@csrf_protect
+@require_http_methods(["POST"])
+def customer_cancel_order(request, pk):
+    """Cancel one of the customer's own orders (not once it is Out for Delivery)."""
+    error = _require_customer(request)
+    if error:
+        return error
+    with transaction.atomic():
+        order, error = _locked_customer_order(request, pk)
+        if error:
+            return error
+        if not order.can_customer_cancel:
+            reason = (
+                "This order is already cancelled."
+                if order.status == Order.Status.CANCELLED
+                else "This order can no longer be cancelled because it is "
+                f"{order.get_status_display()}."
+            )
+            return JsonResponse({"error": reason}, status=409)
+        order.status = Order.Status.CANCELLED
+        order.save(update_fields=["status"])
+    order = _orders_with_relations().get(pk=order.pk)
+    return JsonResponse({"message": "Order cancelled.", "order": _serialize_order(order)})
 
 
 # --------------------------------------------------------------------------- #

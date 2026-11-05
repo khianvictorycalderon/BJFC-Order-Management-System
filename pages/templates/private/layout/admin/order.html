@@ -13,12 +13,27 @@
             <p class="mt-1 text-sm font-semibold text-[#89776e]">Review incoming orders and keep today's service moving.</p>
         </div>
 
-        <div class="flex items-center gap-2">
+        <div class="flex flex-wrap items-center gap-2">
             <label for="ordersFilter" class="text-sm font-bold text-[#594941]">Status</label>
             <select id="ordersFilter" class="rounded-xl border border-[#eadfd2] bg-white px-3 py-2 text-sm font-bold text-[#594941]">
                 <option value="">All orders</option>
                 <option value="pending">Pending</option>
+                <option value="out_for_delivery">Out for Delivery</option>
                 <option value="completed">Completed</option>
+                <option value="cancelled">Cancelled</option>
+            </select>
+            <label for="ordersType" class="sr-only">Order type</label>
+            <select id="ordersType" class="rounded-xl border border-[#eadfd2] bg-white px-3 py-2 text-sm font-bold text-[#594941]">
+                <option value="">All types</option>
+                <option value="dine_in">Dine-In</option>
+                <option value="pickup">Pickup</option>
+                <option value="delivery">Delivery</option>
+            </select>
+            <label for="ordersPayment" class="sr-only">Payment</label>
+            <select id="ordersPayment" class="rounded-xl border border-[#eadfd2] bg-white px-3 py-2 text-sm font-bold text-[#594941]">
+                <option value="">Any payment</option>
+                <option value="paid">Paid</option>
+                <option value="unpaid">Not yet paid</option>
             </select>
             <label for="ordersSize" class="sr-only">Orders per page</label>
             <select id="ordersSize" class="rounded-xl border border-[#eadfd2] bg-white px-3 py-2 text-sm font-bold text-[#594941]">
@@ -159,9 +174,11 @@
 
 
     //  GET ALL ORDERS
-    async function fetchOrders(filter = "", size = 10, page = 1, sort = "desc") {
+    async function fetchOrders(filter = "", size = 10, page = 1, sort = "desc", type = "", payment = "") {
         const params = new URLSearchParams({ size, page, sort });
         if (filter) params.set("filter", filter);
+        if (type) params.set("type", type);
+        if (payment) params.set("payment", payment);
 
         const response = await fetch(`/api/admin/orders/?${params}`, { method: "GET" });
         const data = await response.json();
@@ -193,28 +210,72 @@
     }
 
 
-    function orderCard(o) {
-    const isPending = o.status !== "COMPLETED";
-    const badge = isPending
-        ? `<span class="rounded-full bg-[#fbf5e7] px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wider text-[#8a6414]">${esc(o.status_display)}</span>`
-        : `<span class="rounded-full bg-[#edf7ef] px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wider text-[#32744a]">${esc(o.status_display)}</span>`;
-    const button = isPending
-        ? `<button type="button" data-action="status" data-status="COMPLETED" data-id="${esc(o.id)}" class="rounded-lg border border-[#800000] px-3.5 py-2 text-xs font-extrabold text-[#800000] transition hover:bg-[#800000] hover:text-white disabled:opacity-50">Mark as Complete</button>`
-        : `<button type="button" data-action="status" data-status="PENDING" data-id="${esc(o.id)}" class="rounded-lg border border-[#eadfd2] px-3.5 py-2 text-xs font-extrabold text-[#594941] transition hover:border-[#800000] hover:text-[#800000] disabled:opacity-50">Mark as Pending</button>`;
-    const created = new Date(o.created_at);
+    const STATUS_BADGE = {
+        COMPLETED: "bg-[#edf7ef] text-[#32744a]",
+        OUT_FOR_DELIVERY: "bg-[#e8f1fb] text-[#1d5a96]",
+        CANCELLED: "bg-[#f3f0ee] text-[#7a6a62]",
+    };
+    const STATUS_BADGE_DEFAULT = "bg-[#fbf5e7] text-[#8a6414]";
+    const badge = (text, cls) =>
+        `<span class="rounded-full px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wider ${cls}">${esc(text)}</span>`;
 
-    return `
+    function statusButton(o, status, label) {
+        const current = o.status === status || (status === "PENDING" && ["CONFIRMED", "PREPARING"].includes(o.status));
+        const base = "rounded-lg border px-3 py-2 text-xs font-extrabold transition disabled:opacity-60";
+        const look = current
+            ? "border-[#800000] bg-[#800000] text-white cursor-default"
+            : "border-[#eadfd2] text-[#594941] hover:border-[#800000] hover:text-[#800000]";
+        return `<button type="button" data-action="status" data-status="${status}" data-id="${esc(o.id)}" ${current ? "disabled" : ""} class="${base} ${look}">${label}</button>`;
+    }
+
+    function addressHistory(o) {
+        const history = o.address_history || [];
+        if (!history.length) return "";
+        const rows = history.map((h) => `
+            <li class="rounded-lg bg-white px-3 py-2">
+                <p class="text-[11px] font-bold text-[#a18e82]">${esc(new Date(h.changed_at).toLocaleString())} · ${esc(h.changed_by)}</p>
+                <p class="text-xs font-semibold text-[#89776e] line-through">${esc(h.old_address || "—")}</p>
+                <p class="text-xs font-bold text-[#342724]">${esc(h.new_address)}</p>
+            </li>`).join("");
+        return `
+        <details class="mt-3 rounded-lg border border-[#eee4db] bg-[#fbf6f1] px-3 py-2">
+            <summary class="cursor-pointer text-xs font-extrabold text-[#594941]">Address edit history (${history.length})</summary>
+            <ul class="mt-2 space-y-2">${rows}</ul>
+        </details>`;
+    }
+
+    function orderCard(o) {
+        const cancelled = o.status === "CANCELLED";
+        const isDelivery = o.order_type === "DELIVERY";
+        const created = new Date(o.created_at);
+
+        const statusButtons = cancelled
+            ? `<p class="text-xs font-bold text-[#7a6a62]">Cancelled by the customer — no further changes.</p>`
+            : [
+                statusButton(o, "PENDING", "Pending"),
+                isDelivery ? statusButton(o, "OUT_FOR_DELIVERY", "Out for Delivery") : "",
+                statusButton(o, "COMPLETED", "Completed"),
+            ].join("");
+        const payButton = cancelled ? "" : o.is_paid
+            ? `<button type="button" data-action="payment" data-paid="false" data-id="${esc(o.id)}" class="rounded-lg border border-[#eadfd2] px-3 py-2 text-xs font-extrabold text-[#594941] transition hover:border-[#800000] hover:text-[#800000] disabled:opacity-50">Mark as Not Paid</button>`
+            : `<button type="button" data-action="payment" data-paid="true" data-id="${esc(o.id)}" class="rounded-lg border border-[#32744a] px-3 py-2 text-xs font-extrabold text-[#32744a] transition hover:bg-[#32744a] hover:text-white disabled:opacity-50">Mark as Paid</button>`;
+
+        const contact = [
+            o.contact_phone ? `<p class="mt-0.5 text-sm font-semibold text-[#89776e]">Phone: ${esc(o.contact_phone)}</p>` : "",
+            isDelivery && o.address ? `<p class="mt-0.5 text-sm font-semibold text-[#89776e]">Address: ${esc(o.address)}</p>` : "",
+        ].join("");
+
+        return `
     <article class="rounded-xl border border-[#eee4db] bg-[#fffdfa] p-4 transition hover:border-[#dfc9b8] hover:shadow-sm sm:p-5">
-        <div class="flex flex-wrap items-start justify-between gap-3">
-            <div>
-                <div class="flex flex-wrap items-center gap-2">
-                    <h4 class="font-black text-[#342724]">Order #${esc(o.order_number ?? o.id)}</h4>
-                    ${badge}
-                </div>
-                <p class="mt-1 text-sm font-semibold text-[#89776e]">Customer: ${esc(o.customer_name ?? "Guest")}</p>
-                ${o.address ? `<p class="mt-0.5 text-sm font-semibold text-[#89776e]">Address: ${esc(o.address)}</p>` : ""}
+        <div>
+            <div class="flex flex-wrap items-center gap-2">
+                <h4 class="font-black text-[#342724]">Order #${esc(o.order_number ?? o.id)}</h4>
+                ${badge(o.status_display, STATUS_BADGE[o.status] || STATUS_BADGE_DEFAULT)}
+                ${badge(o.order_type_display, "bg-[#f4efff] text-[#5b3f9a]")}
+                ${badge(o.payment_display, o.is_paid ? "bg-[#edf7ef] text-[#32744a]" : "bg-[#fff0ed] text-[#b42318]")}
             </div>
-            ${button}
+            <p class="mt-1 text-sm font-semibold text-[#89776e]">Customer: ${esc(o.customer_name ?? "Guest")}</p>
+            ${contact}
         </div>
         <p class="mt-4 text-sm font-bold text-[#594941]">${esc(formatItems(o.items)) || "—"}</p>
         <div class="mt-4 grid grid-cols-3 gap-3 border-t border-[#eee4db] pt-4">
@@ -231,14 +292,21 @@
                 <p class="mt-1 text-sm font-extrabold text-[#342724]">${esc(created.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }))}</p>
             </div>
         </div>
+        <div class="mt-4 flex flex-wrap items-center gap-2 border-t border-[#eee4db] pt-4">
+            ${statusButtons}
+            ${payButton ? `<span class="mx-1 hidden h-5 w-px bg-[#eadfd2] sm:inline-block"></span>${payButton}` : ""}
+        </div>
+        ${addressHistory(o)}
     </article>`;
-}
+    }
 
     async function loadOrders() {
         try {
             const filter = document.getElementById("ordersFilter").value;
             const size = Number(document.getElementById("ordersSize").value);
-            const data = await fetchOrders(filter, size, ordersPage, "desc");
+            const type = document.getElementById("ordersType").value;
+            const payment = document.getElementById("ordersPayment").value;
+            const data = await fetchOrders(filter, size, ordersPage, "desc", type, payment);
             const orders = data.orders || [];
             document.getElementById("pending-list").innerHTML = orders.length
                 ? orders.map(orderCard).join("")
@@ -260,12 +328,14 @@
         const btn = e.target.closest("button[data-action]");
         if (!btn) return;
 
-        const status = btn.dataset.status;
+        const body = btn.dataset.action === "payment"
+            ? { is_paid: btn.dataset.paid === "true" }
+            : { status: btn.dataset.status };
         btn.disabled = true;
         btn.textContent = "Updating…";
 
         try {
-            await updateOrderStatus(btn.dataset.id, { status });
+            await updateOrderStatus(btn.dataset.id, body);
             ordersPage = 1;
             await Promise.all([fetchOrderInfo(), loadOrders()]);
         } catch (error) {
@@ -277,9 +347,11 @@
 
     document.addEventListener("DOMContentLoaded", () => {
         document.getElementById("pending-list").addEventListener("click", onActionClick);
-        document.getElementById("ordersFilter").addEventListener("change", () => {
-            ordersPage = 1;
-            loadOrders();
+        ["ordersFilter", "ordersType", "ordersPayment"].forEach((id) => {
+            document.getElementById(id).addEventListener("change", () => {
+                ordersPage = 1;
+                loadOrders();
+            });
         });
         document.getElementById("ordersSize").addEventListener("change", () => {
             ordersPage = 1;
