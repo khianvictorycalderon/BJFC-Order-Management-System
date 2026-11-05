@@ -120,6 +120,8 @@ class Order(models.Model):
         decimal_places=2
     )
 
+    delivery_address = models.CharField(max_length=255, blank=True, default="")
+
     created_at = models.DateTimeField(auto_now_add=True)
     estimated_time =  models.DateTimeField(blank=True, null=True) 
     status = models.CharField(

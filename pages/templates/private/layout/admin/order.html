@@ -212,6 +212,7 @@
                     ${badge}
                 </div>
                 <p class="mt-1 text-sm font-semibold text-[#89776e]">Customer: ${esc(o.customer_name ?? "Guest")}</p>
+                ${o.address ? `<p class="mt-0.5 text-sm font-semibold text-[#89776e]">Address: ${esc(o.address)}</p>` : ""}
             </div>
             ${button}
         </div>

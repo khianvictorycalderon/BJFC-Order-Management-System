@@ -164,6 +164,7 @@ class BackendApiTests(TestCase):
             "/api/customer/orders",
             data=json.dumps(
                 {
+                    "address": "12 Rizal St, Brgy. Ilayang Dupay, Lucena City",
                     "items": [
                         {
                             "menu_item_id": self.item.pk,
@@ -177,6 +178,8 @@ class BackendApiTests(TestCase):
         )
         self.assertEqual(response.status_code, 201)
         order = Order.objects.get()
+        self.assertEqual(order.delivery_address, "12 Rizal St, Brgy. Ilayang Dupay, Lucena City")
+        self.assertEqual(response.json()["order"]["address"], order.delivery_address)
         self.assertEqual(order.total_amount, Decimal("25.00"))
         self.assertEqual(OrderItem.objects.get(order=order).quantity, 2)
         self.assertEqual(response.json()["status"], Order.Status.PENDING)
@@ -184,6 +187,32 @@ class BackendApiTests(TestCase):
         response = self.client.get("/api/customer/my-orders")
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["orders"][0]["total_amount"], "25.00")
+
+    def test_order_requires_valid_address(self):
+        self.client.force_login(self.customer)
+        items = [{"menu_item_id": self.item.pk, "quantity": 1}]
+        for bad in (None, "", "   ", 123, "x" * 256):
+            payload = {"items": items}
+            if bad is not None:
+                payload["address"] = bad
+            response = self.client.post(
+                "/api/customer/orders",
+                data=json.dumps(payload),
+                content_type="application/json",
+            )
+            self.assertEqual(response.status_code, 400, bad)
+        self.assertEqual(Order.objects.count(), 0)
+
+    def test_admin_sees_order_address(self):
+        Order.objects.create(
+            customer=self.customer,
+            total_amount=Decimal("10.00"),
+            delivery_address="5 Quezon Ave",
+        )
+        self.client.force_login(self.admin)
+        response = self.client.get("/api/admin/orders/")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["orders"][0]["address"], "5 Quezon Ave")
 
     def test_favorites_are_private_and_idempotent(self):
         self.client.force_login(self.customer)

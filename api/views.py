@@ -253,6 +253,8 @@ def _serialize_order(order):
         "estimated_time": estimated,
         "eta": estimated,
         "total_amount": str(order.total_amount),
+        "address": order.delivery_address,
+        "delivery_address": order.delivery_address,
         # Uses the prefetched data; do not add select_related/prefetch_related here.
         "items": [
             {
@@ -769,6 +771,9 @@ def customer_menu_items(request):
 # Customer: orders
 # --------------------------------------------------------------------------- #
 
+MAX_ADDRESS_LENGTH = Order._meta.get_field("delivery_address").max_length
+
+
 def _order_lines(requested_items):
     if not isinstance(requested_items, list) or not requested_items:
         return None, JsonResponse({"error": "'items' must be a non-empty list."}, status=400)
@@ -851,6 +856,14 @@ def customer_create_order(request):
     data, error = _json_body(request)
     if error:
         return error
+    address = data.get("address", data.get("delivery_address"))
+    if not isinstance(address, str) or not address.strip():
+        return JsonResponse({"error": "A delivery address is required."}, status=400)
+    address = " ".join(address.split())
+    if len(address) > MAX_ADDRESS_LENGTH:
+        return JsonResponse(
+            {"error": f"Address must be {MAX_ADDRESS_LENGTH} characters or fewer."}, status=400
+        )
     result, error = _order_lines(data.get("items"))
     if error:
         return error
@@ -858,6 +871,7 @@ def customer_create_order(request):
     with transaction.atomic():
         order = Order.objects.create(
             customer=request.user,
+            delivery_address=address,
             total_amount=total,
             status=Order.Status.PENDING,
             estimated_time=timezone.now() + timedelta(minutes=30),

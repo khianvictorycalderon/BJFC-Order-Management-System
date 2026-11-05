@@ -153,6 +153,10 @@
         <h3 id="summaryTitle" class="text-xl font-black text-[#342724]">Order summary</h3>
         <p id="cartEmpty" class="mt-5 text-sm text-[#89776e]">No items yet. Press Add on a menu item to get started.</p>
         <ul id="cartList" class="mt-5 space-y-3"></ul>
+        <div class="mt-5">
+            <label for="orderAddress" class="mb-2 block text-[11px] font-extrabold uppercase tracking-[0.14em] text-[#89776e]">Delivery address</label>
+            <textarea id="orderAddress" rows="2" maxlength="255" required placeholder="House/Unit no., Street, Barangay, City" class="w-full resize-none rounded-xl border border-[#eadfd2] bg-[#fffaf4] px-4 py-3 text-sm font-semibold text-[#342724] outline-none transition focus:border-[#e62727] focus:bg-white focus:ring-4 focus:ring-[#e62727]/10"></textarea>
+        </div>
         <div class="mt-5 flex items-center justify-between border-t border-[#eadfd2] pt-4">
             <span class="text-sm font-extrabold uppercase tracking-wide text-[#89776e]">Total</span>
             <span id="cartTotal" class="text-2xl font-black text-[#342724]">₱0.00</span>
@@ -296,6 +300,12 @@
 
         orderBtn.addEventListener("click", async () => {
             if (!cart.size) return;
+            const address = $("orderAddress").value.trim();
+            if (!address) {
+                setMsg("Please enter your delivery address.", true);
+                $("orderAddress").focus();
+                return;
+            }
             const items = [...cart].map(([id, line]) => ({
                 menu_item_id: id,
                 quantity: line.qty,
@@ -303,8 +313,9 @@
             orderBtn.disabled = true;
             orderBtn.textContent = "Placing order…";
             try {
-                const res = await api("/orders", { method: "POST", body: { items } });
+                const res = await api("/orders", { method: "POST", body: { items, address } });
                 cart.clear();
+                $("orderAddress").value = "";
                 render();
                 setMsg("Order " + res.order_number + " placed!", false);
                 ordersState.page = 1;
@@ -333,6 +344,7 @@
                     </div>
                 </div>
                 <p class="mt-1 text-xs text-[#89776e]">Order date: ${esc(created.toLocaleDateString())} · Order time: ${esc(created.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }))}</p>
+                ${o.address ? `<p class="mt-1 text-xs text-[#89776e]">Deliver to: ${esc(o.address)}</p>` : ""}
                 <ul class="mt-2 text-xs text-[#342724]">
                     ${o.items.map((i) => `<li>${i.quantity} × ${esc(i.food_item_name)}</li>`).join("")}
                 </ul>
