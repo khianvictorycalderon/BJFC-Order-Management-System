@@ -20,6 +20,7 @@
                 <option value="pending">Pending</option>
                 <option value="out_for_delivery">Out for Delivery</option>
                 <option value="completed">Completed</option>
+                <option value="invalid">Invalid</option>
                 <option value="cancelled">Cancelled</option>
             </select>
             <label for="ordersType" class="sr-only">Order type</label>
@@ -235,6 +236,7 @@
 
     const STATUS_BADGE = {
         COMPLETED: "bg-[#edf7ef] text-[#32744a]",
+        INVALID: "bg-[#fff0ed] text-[#b42318]",
         OUT_FOR_DELIVERY: "bg-[#e8f1fb] text-[#1d5a96]",
         CANCELLED: "bg-[#f3f0ee] text-[#7a6a62]",
     };
@@ -278,10 +280,11 @@
                 statusButton(o, "PENDING", "Pending"),
                 isDelivery ? statusButton(o, "OUT_FOR_DELIVERY", "Out for Delivery") : "",
                 statusButton(o, "COMPLETED", "Completed"),
+                statusButton(o, "INVALID", "Mark Invalid"),
             ].join("");
         const payButton = cancelled ? "" : o.is_paid
             ? `<button type="button" data-action="payment" data-paid="false" data-id="${esc(o.id)}" class="rounded-lg border border-[#eadfd2] px-3 py-2 text-xs font-extrabold text-[#594941] transition hover:border-[#800000] hover:text-[#800000] disabled:opacity-50">Mark as Not Paid</button>`
-            : `<button type="button" data-action="payment" data-paid="true" data-id="${esc(o.id)}" class="rounded-lg border border-[#32744a] px-3 py-2 text-xs font-extrabold text-[#32744a] transition hover:bg-[#32744a] hover:text-white disabled:opacity-50">Mark as Paid</button>`;
+            : `<button type="button" data-action="payment" data-paid="true" data-id="${esc(o.id)}" ${o.payment_method === "GCASH" && (!o.gcash_receipt || o.payment_review_status === "INVALID") ? "disabled title=\"A replacement receipt is required before verification\"" : ""} class="rounded-lg border border-[#32744a] px-3 py-2 text-xs font-extrabold text-[#32744a] transition hover:bg-[#32744a] hover:text-white disabled:opacity-50">Mark as Paid</button>`;
 
         const contact = [
             o.contact_phone ? `<p class="mt-0.5 text-sm font-semibold text-[#89776e]">Phone: ${esc(o.contact_phone)}</p>` : "",
@@ -298,6 +301,10 @@
                 ${badge(o.payment_display, o.is_paid ? "bg-[#edf7ef] text-[#32744a]" : "bg-[#fff0ed] text-[#b42318]")}
             </div>
             <p class="mt-1 text-sm font-semibold text-[#89776e]">Customer: ${esc(o.customer_name ?? "Guest")}</p>
+            <p class="mt-1 text-sm font-bold text-[#594941]">Payment: ${esc(o.payment_method_display)} · ${esc(o.payment_review_display)}</p>
+            ${o.receipt_invalid_reason ? `<p class="mt-2 rounded-lg bg-[#fff0ed] px-3 py-2 text-xs font-semibold text-[#9b261e]">Receipt rejected: ${esc(o.receipt_invalid_reason)}</p>` : ""}
+            ${o.invalid_reason ? `<p class="mt-2 rounded-lg bg-[#fff0ed] px-3 py-2 text-xs font-semibold text-[#9b261e]">Order invalid: ${esc(o.invalid_reason)}</p>` : ""}
+            ${o.gcash_receipt ? `<div class="mt-3 flex flex-wrap items-center gap-3"><a href="${esc(o.gcash_receipt)}" target="_blank" rel="noopener"><img src="${esc(o.gcash_receipt)}" alt="GCash receipt for ${esc(o.order_number)}" class="h-28 w-28 rounded-xl border border-[#eadfd2] object-cover"></a><a href="${esc(o.gcash_receipt)}" target="_blank" rel="noopener" class="text-xs font-extrabold text-[#800000] underline">Open receipt image</a>${!o.is_paid && o.payment_method === "GCASH" ? `<button type="button" data-action="invalid-receipt" data-id="${esc(o.id)}" class="rounded-lg border border-[#b42318] px-3 py-2 text-xs font-extrabold text-[#b42318] hover:bg-[#fff0ed]">Mark receipt invalid</button>` : ""}</div>` : ""}
             ${contact}
         </div>
         <p class="mt-4 text-sm font-bold text-[#594941]">${esc(formatItems(o.items)) || "—"}</p>
@@ -452,6 +459,17 @@
         const body = btn.dataset.action === "payment"
             ? { is_paid: btn.dataset.paid === "true" }
             : { status: btn.dataset.status };
+        if (btn.dataset.action === "invalid-receipt") {
+            const reason = window.prompt("Why is this GCash receipt invalid?");
+            if (!reason || !reason.trim()) return;
+            body.payment_action = "invalid_receipt";
+            body.reason = reason.trim();
+        }
+        if (body.status === "INVALID") {
+            const reason = window.prompt("Why is this order invalid?");
+            if (!reason || !reason.trim()) return;
+            body.invalid_reason = reason.trim();
+        }
         btn.disabled = true;
         btn.textContent = "Updating…";
 

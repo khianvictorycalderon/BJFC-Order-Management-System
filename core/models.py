@@ -1,6 +1,16 @@
+from django.conf import settings
 from django.db import models
 from django.contrib.auth.models import AbstractUser
+from django.core.files.storage import FileSystemStorage
 from django.db.models.functions import Lower
+from django.utils.deconstruct import deconstructible
+
+
+@deconstructible
+class PrivateReceiptStorage(FileSystemStorage):
+    def __init__(self):
+        super().__init__(location=settings.BASE_DIR / "private_media", base_url=None)
+
 
 class User(AbstractUser):
     phone_number = models.CharField(max_length=15,blank=True,null=True)
@@ -108,6 +118,7 @@ class Order(models.Model):
         PREPARING = "PREPARING", "Preparing"
         OUT_FOR_DELIVERY = "OUT_FOR_DELIVERY", "Out for Delivery"
         COMPLETED = "COMPLETED", "Completed"
+        INVALID = "INVALID", "Invalid"
         CANCELLED = "CANCELLED", "Cancelled"
 
     class OrderType(models.TextChoices):
@@ -115,9 +126,21 @@ class Order(models.Model):
         PICKUP = "PICKUP", "Pickup"
         DELIVERY = "DELIVERY", "Delivery"
 
+    class PaymentMethod(models.TextChoices):
+        CASH_ON_DELIVERY = "CASH_ON_DELIVERY", "Cash on Delivery"
+        CASH_ON_PICKUP = "CASH_ON_PICKUP", "Cash on Pickup"
+        GCASH = "GCASH", "GCash"
+
+    class PaymentReviewStatus(models.TextChoices):
+        NOT_REQUIRED = "NOT_REQUIRED", "Not required"
+        AWAITING_RECEIPT = "AWAITING_RECEIPT", "Receipt required"
+        PENDING = "PENDING", "Receipt pending review"
+        INVALID = "INVALID", "Invalid receipt"
+        VERIFIED = "VERIFIED", "Verified"
+
     # While an order is in one of these statuses the customer may still cancel it
     # or (for deliveries) change its address. Once it is Out for Delivery,
-    # Completed or Cancelled it is locked.
+    # Completed, Invalid or Cancelled it is locked.
     CUSTOMER_EDITABLE_STATUSES = (
         Status.PENDING,
         Status.CONFIRMED,
@@ -145,6 +168,25 @@ class Order(models.Model):
     # Only used by Delivery orders.
     delivery_address = models.CharField(max_length=255, blank=True, default="")
 
+    payment_method = models.CharField(
+        max_length=24,
+        choices=PaymentMethod.choices,
+        default=PaymentMethod.CASH_ON_PICKUP,
+    )
+    gcash_receipt = models.ImageField(
+        storage=PrivateReceiptStorage(),
+        upload_to="gcash_receipts/",
+        blank=True,
+        null=True,
+    )
+    payment_review_status = models.CharField(
+        max_length=20,
+        choices=PaymentReviewStatus.choices,
+        default=PaymentReviewStatus.NOT_REQUIRED,
+    )
+    receipt_invalid_reason = models.TextField(blank=True, default="")
+    invalid_reason = models.TextField(blank=True, default="")
+
     # Payment is tracked separately from the order status.
     is_paid = models.BooleanField(default=False)
     paid_at = models.DateTimeField(blank=True, null=True)
@@ -170,6 +212,30 @@ class Order(models.Model):
 
     def __str__(self):
         return f"Order #{self.id}"
+
+
+class OrderAuditEvent(models.Model):
+    order = models.ForeignKey(
+        Order,
+        on_delete=models.CASCADE,
+        related_name="audit_events",
+    )
+    event_type = models.CharField(max_length=40)
+    details = models.TextField()
+    actor = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="+",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at", "-pk"]
+
+    def __str__(self):
+        return f"Order #{self.order_id}: {self.event_type}"
 
 
 class OrderAddressChange(models.Model):

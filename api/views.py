@@ -3,6 +3,7 @@ from datetime import timedelta
 from decimal import Decimal, InvalidOperation
 from functools import wraps
 
+from django import forms
 from django.contrib.auth import authenticate, login, logout, update_session_auth_hash
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
@@ -11,11 +12,12 @@ from django.core.validators import validate_email
 from django.db import IntegrityError, transaction
 from django.db.models import Avg, Count, Prefetch, Q, Sum
 from django.db.models.functions import TruncDate
-from django.http import JsonResponse
+from django.http import FileResponse, JsonResponse
 from django.utils import timezone
 from django.utils.dateparse import parse_date
 from django.views.decorators.csrf import csrf_exempt, csrf_protect
 from django.views.decorators.http import require_http_methods
+from PIL import Image
 
 
 from core.models import (
@@ -26,6 +28,7 @@ from core.models import (
     FoodItem,
     LandingPage,
     Order,
+    OrderAuditEvent,
     OrderItem,
     OrderAddressChange,
     OrderItemAddon,
@@ -54,6 +57,7 @@ ADMIN_SETTABLE_STATUSES = (
     Order.Status.PENDING,
     Order.Status.OUT_FOR_DELIVERY,
     Order.Status.COMPLETED,
+    Order.Status.INVALID,
 )
 
 PAGE_DEFAULTS = {
@@ -274,6 +278,15 @@ def _serialize_order(order, include_history=False):
         "is_paid": order.is_paid,
         "payment_status": "PAID" if order.is_paid else "UNPAID",
         "payment_display": "Paid" if order.is_paid else "Not yet paid",
+        "payment_method": order.payment_method,
+        "payment_method_display": order.get_payment_method_display(),
+        "payment_review_status": order.payment_review_status,
+        "payment_review_display": order.get_payment_review_status_display(),
+        "gcash_receipt": (
+            f"/api/orders/{order.pk}/gcash-receipt" if order.gcash_receipt else None
+        ),
+        "receipt_invalid_reason": order.receipt_invalid_reason,
+        "invalid_reason": order.invalid_reason,
         "paid_at": order.paid_at.isoformat() if order.paid_at else None,
         "can_cancel": order.can_customer_cancel,
         "can_edit_address": order.can_customer_edit_address,
@@ -296,6 +309,29 @@ def _serialize_order(order, include_history=False):
             if include_history
             else {}
         ),
+    }
+
+
+def _record_order_event(order, event_type, details, actor):
+    OrderAuditEvent.objects.create(
+        order=order,
+        event_type=event_type,
+        details=details,
+        actor=actor,
+    )
+
+
+def _serialize_audit_event(event):
+    actor = event.actor
+    return {
+        "id": event.pk,
+        "order_id": event.order_id,
+        "order_number": f"BJFC-{event.order_id:06d}",
+        "customer": event.order.customer.get_full_name() or event.order.customer.username,
+        "event_type": event.event_type,
+        "details": event.details,
+        "actor": (actor.get_full_name() or actor.username) if actor else "System",
+        "created_at": event.created_at.isoformat(),
     }
 
 
@@ -608,7 +644,10 @@ def _set_order_status(request, order_id):
     if status is None and isinstance(data.get("is_complete"), bool):
         status = Order.Status.COMPLETED if data["is_complete"] else Order.Status.PENDING
     is_paid = data.get("is_paid")
-    if status is None and is_paid is None:
+    payment_action = data.get("payment_action")
+    invalid_reason = data.get("invalid_reason")
+    receipt_reason = data.get("reason")
+    if status is None and is_paid is None and payment_action is None:
         return JsonResponse({"error": "A valid order status or payment state is required."}, status=400)
     if status is not None:
         if not isinstance(status, str) or status.upper() not in Order.Status.values:
@@ -616,10 +655,26 @@ def _set_order_status(request, order_id):
         status = status.upper()
         if status not in ADMIN_SETTABLE_STATUSES:
             return JsonResponse(
-                {"error": "Status must be PENDING, OUT_FOR_DELIVERY or COMPLETED."}, status=400
+                {"error": "Status must be PENDING, OUT_FOR_DELIVERY, COMPLETED or INVALID."},
+                status=400,
             )
     if is_paid is not None and not isinstance(is_paid, bool):
         return JsonResponse({"error": "'is_paid' must be true or false."}, status=400)
+    if payment_action is not None and payment_action != "invalid_receipt":
+        return JsonResponse({"error": "Invalid payment action."}, status=400)
+    if payment_action is not None and is_paid is not None:
+        return JsonResponse(
+            {"error": "Receipt review and payment state must be updated separately."},
+            status=400,
+        )
+    if status == Order.Status.INVALID and (
+        not isinstance(invalid_reason, str) or not invalid_reason.strip()
+    ):
+        return JsonResponse({"error": "A reason is required when marking an order invalid."}, status=400)
+    if payment_action == "invalid_receipt" and (
+        not isinstance(receipt_reason, str) or not receipt_reason.strip()
+    ):
+        return JsonResponse({"error": "A reason is required when rejecting a GCash receipt."}, status=400)
 
     with transaction.atomic():
         try:
@@ -628,6 +683,28 @@ def _set_order_status(request, order_id):
             return JsonResponse({"error": "Order not found."}, status=404)
         if order.status == Order.Status.CANCELLED:
             return JsonResponse({"error": "Cancelled orders can't be updated."}, status=409)
+        if payment_action == "invalid_receipt" and (
+            order.payment_method != Order.PaymentMethod.GCASH or not order.gcash_receipt
+        ):
+            return JsonResponse(
+                {"error": "Only an uploaded GCash receipt can be marked invalid."}, status=409
+            )
+        if payment_action == "invalid_receipt" and order.is_paid:
+            return JsonResponse({"error": "Verified payment receipts can't be rejected."}, status=409)
+        if is_paid and order.payment_method == Order.PaymentMethod.GCASH and not order.gcash_receipt:
+            return JsonResponse(
+                {"error": "A GCash receipt must be uploaded before payment can be verified."},
+                status=409,
+            )
+        if (
+            is_paid
+            and order.payment_method == Order.PaymentMethod.GCASH
+            and order.payment_review_status == Order.PaymentReviewStatus.INVALID
+        ):
+            return JsonResponse(
+                {"error": "The customer must submit a replacement receipt before payment can be verified."},
+                status=409,
+            )
         if (
             status == Order.Status.OUT_FOR_DELIVERY
             and order.order_type != Order.OrderType.DELIVERY
@@ -637,12 +714,62 @@ def _set_order_status(request, order_id):
             )
         update_fields = []
         if status is not None and status != order.status:
+            previous_status = order.get_status_display()
             order.status = status
             update_fields.append("status")
+            if status == Order.Status.INVALID:
+                order.invalid_reason = invalid_reason.strip()
+                update_fields.append("invalid_reason")
+                _record_order_event(
+                    order,
+                    "ORDER_INVALID",
+                    f"Order marked invalid: {order.invalid_reason}",
+                    request.user,
+                )
+            else:
+                if order.invalid_reason:
+                    order.invalid_reason = ""
+                    update_fields.append("invalid_reason")
+                _record_order_event(
+                    order,
+                    "STATUS_CHANGED",
+                    f"Order status changed from {previous_status} to {order.get_status_display()}.",
+                    request.user,
+                )
+        if payment_action == "invalid_receipt":
+            order.payment_review_status = Order.PaymentReviewStatus.INVALID
+            order.receipt_invalid_reason = receipt_reason.strip()
+            order.is_paid = False
+            order.paid_at = None
+            update_fields.extend(
+                ["payment_review_status", "receipt_invalid_reason", "is_paid", "paid_at"]
+            )
+            _record_order_event(
+                order,
+                "RECEIPT_REJECTED",
+                f"GCash receipt marked invalid: {order.receipt_invalid_reason}",
+                request.user,
+            )
         if is_paid is not None and is_paid != order.is_paid:
             order.is_paid = is_paid
             order.paid_at = timezone.now() if is_paid else None
             update_fields += ["is_paid", "paid_at"]
+            if is_paid and order.payment_method == Order.PaymentMethod.GCASH:
+                order.payment_review_status = Order.PaymentReviewStatus.VERIFIED
+                update_fields.append("payment_review_status")
+                event_type = "PAYMENT_VERIFIED"
+                details = "GCash payment manually verified by admin."
+            else:
+                if (
+                    not is_paid
+                    and order.payment_method == Order.PaymentMethod.GCASH
+                    and order.payment_review_status == Order.PaymentReviewStatus.VERIFIED
+                ):
+                    order.payment_review_status = Order.PaymentReviewStatus.PENDING
+                    update_fields.append("payment_review_status")
+                event_type = "PAYMENT_MARKED_PAID" if is_paid else "PAYMENT_MARKED_UNPAID"
+                details = "Payment marked paid." if is_paid else "Payment marked unpaid."
+            _record_order_event(order, event_type, details, request.user)
         if update_fields:
             order.save(update_fields=update_fields)
     order = _orders_with_relations().get(pk=order.pk)
@@ -665,6 +792,26 @@ def orders_info(request):
         created_at__date=today,
     ).count()
     return JsonResponse({"pending_orders": pending, "completed_today": completed_today})
+
+
+@_admin_api("GET")
+def admin_transaction_history(request):
+    params, error = _list_params(request)
+    if error:
+        return error
+    page_number, size, direction = params
+    queryset = OrderAuditEvent.objects.select_related(
+        "order__customer", "actor"
+    ).order_by(*_ordering(direction, "created_at", "pk"))
+    result = _page_response(
+        queryset,
+        page_number,
+        size,
+        "events",
+        _serialize_audit_event,
+    )
+    result.update(result["pagination"])
+    return JsonResponse(result)
 
 
 # --------------------------------------------------------------------------- #
@@ -1000,6 +1147,25 @@ def customer_create_order(request):
     order_type, error = _clean_order_type(data.get("order_type"))
     if error:
         return error
+    payment_method = data.get(
+        "payment_method",
+        Order.PaymentMethod.CASH_ON_DELIVERY
+        if order_type == Order.OrderType.DELIVERY
+        else Order.PaymentMethod.CASH_ON_PICKUP,
+    )
+    if payment_method not in Order.PaymentMethod.values:
+        return JsonResponse({"error": "Select a valid payment method."}, status=400)
+    if (
+        order_type == Order.OrderType.DELIVERY
+        and payment_method == Order.PaymentMethod.CASH_ON_PICKUP
+    ) or (
+        order_type != Order.OrderType.DELIVERY
+        and payment_method == Order.PaymentMethod.CASH_ON_DELIVERY
+    ):
+        return JsonResponse(
+            {"error": "Choose the cash payment option that matches your order type."},
+            status=400,
+        )
     # Dine-In needs neither a phone number nor an address; Pickup needs a phone
     # number; Delivery needs both.
     phone = address = ""
@@ -1019,6 +1185,12 @@ def customer_create_order(request):
         order = Order.objects.create(
             customer=request.user,
             order_type=order_type,
+            payment_method=payment_method,
+            payment_review_status=(
+                Order.PaymentReviewStatus.AWAITING_RECEIPT
+                if payment_method == Order.PaymentMethod.GCASH
+                else Order.PaymentReviewStatus.NOT_REQUIRED
+            ),
             contact_phone=phone,
             delivery_address=address,
             total_amount=total,
@@ -1026,6 +1198,12 @@ def customer_create_order(request):
             estimated_time=timezone.now() + timedelta(minutes=30),
         )
         _write_order_items(order, lines)
+        _record_order_event(
+            order,
+            "ORDER_PLACED",
+            f"Order placed with {order.get_payment_method_display()} payment.",
+            request.user,
+        )
     order = _orders_with_relations().get(pk=order.pk)
     return JsonResponse(
         {
@@ -1035,6 +1213,86 @@ def customer_create_order(request):
             "order": _serialize_order(order),
         },
         status=201,
+    )
+
+
+@csrf_protect
+@require_http_methods(["GET", "POST"])
+def customer_upload_gcash_receipt(request, pk):
+    if request.method == "GET":
+        if not request.user.is_authenticated:
+            return JsonResponse({"error": "Authentication required."}, status=401)
+        try:
+            order = Order.objects.get(pk=pk)
+        except Order.DoesNotExist:
+            return JsonResponse({"error": "Order not found."}, status=404)
+        if not request.user.is_staff and order.customer_id != request.user.pk:
+            return JsonResponse({"error": "You can only view your own receipt."}, status=403)
+        if not order.gcash_receipt:
+            return JsonResponse({"error": "No receipt has been uploaded."}, status=404)
+        receipt_file = order.gcash_receipt.open("rb")
+        with Image.open(receipt_file) as image:
+            content_type = Image.MIME.get(image.format, "application/octet-stream")
+        receipt_file.seek(0)
+        response = FileResponse(receipt_file, content_type=content_type)
+        response["X-Content-Type-Options"] = "nosniff"
+        response["Cache-Control"] = "private, no-store"
+        return response
+
+    error = _require_customer(request)
+    if error:
+        return error
+    upload = request.FILES.get("receipt")
+    if upload is None:
+        return JsonResponse({"error": "Choose a receipt image to upload."}, status=400)
+    if upload.size > 5 * 1024 * 1024:
+        return JsonResponse({"error": "Receipt images must be 5 MB or smaller."}, status=400)
+    try:
+        receipt = forms.ImageField().clean(upload)
+    except ValidationError as exc:
+        return JsonResponse({"error": " ".join(exc.messages)}, status=400)
+
+    with transaction.atomic():
+        try:
+            order = request.user.orders.select_for_update().get(pk=pk)
+        except Order.DoesNotExist:
+            return JsonResponse({"error": "Order not found."}, status=404)
+        if order.payment_method != Order.PaymentMethod.GCASH:
+            return JsonResponse({"error": "Receipts are only used for GCash orders."}, status=409)
+        if order.status in (Order.Status.CANCELLED, Order.Status.INVALID):
+            return JsonResponse(
+                {"error": "Receipts can't be submitted for cancelled or invalid orders."},
+                status=409,
+            )
+        if order.is_paid:
+            return JsonResponse({"error": "Verified payment receipts cannot be changed."}, status=409)
+        if order.gcash_receipt and order.payment_review_status != Order.PaymentReviewStatus.INVALID:
+            return JsonResponse(
+                {"error": "A submitted receipt can only be replaced after admin rejection."},
+                status=409,
+            )
+        order.gcash_receipt = receipt
+        order.payment_review_status = Order.PaymentReviewStatus.PENDING
+        order.receipt_invalid_reason = ""
+        order.save(
+            update_fields=[
+                "gcash_receipt",
+                "payment_review_status",
+                "receipt_invalid_reason",
+            ]
+        )
+        _record_order_event(
+            order,
+            "RECEIPT_SUBMITTED",
+            "Customer submitted a GCash receipt for manual review.",
+            request.user,
+        )
+    return JsonResponse(
+        {
+            "message": "Receipt uploaded for admin review.",
+            "gcash_receipt": f"/api/orders/{order.pk}/gcash-receipt",
+            "payment_review_status": order.payment_review_status,
+        }
     )
 
 
@@ -1082,6 +1340,12 @@ def customer_order(request, pk):
                 new_address=address,
                 changed_by=request.user,
             )
+            _record_order_event(
+                order,
+                "ADDRESS_CHANGED",
+                "Customer updated the delivery address.",
+                request.user,
+            )
             order.delivery_address = address
             order.save(update_fields=["delivery_address"])
     order = _orders_with_relations().get(pk=order.pk)
@@ -1109,6 +1373,7 @@ def customer_cancel_order(request, pk):
             return JsonResponse({"error": reason}, status=409)
         order.status = Order.Status.CANCELLED
         order.save(update_fields=["status"])
+        _record_order_event(order, "ORDER_CANCELLED", "Customer cancelled the order.", request.user)
     order = _orders_with_relations().get(pk=order.pk)
     return JsonResponse({"message": "Order cancelled.", "order": _serialize_order(order)})
 
