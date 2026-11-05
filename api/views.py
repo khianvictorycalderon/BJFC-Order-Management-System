@@ -1217,8 +1217,36 @@ def customer_create_order(request):
 
 
 @csrf_protect
-@require_http_methods(["GET", "POST"])
+@require_http_methods(["GET", "POST", "DELETE"])
 def customer_upload_gcash_receipt(request, pk):
+    if request.method == "DELETE":
+        if not request.user.is_authenticated:
+            return JsonResponse({"error": "Authentication required."}, status=401)
+        if not request.user.is_staff:
+            return JsonResponse({"error": "Admin access required."}, status=403)
+        with transaction.atomic():
+            orders = Order.objects.select_for_update()
+            try:
+                order = orders.get(pk=pk)
+            except Order.DoesNotExist:
+                return JsonResponse({"error": "Order not found."}, status=404)
+            if order.status != Order.Status.COMPLETED:
+                return JsonResponse(
+                    {"error": "Receipts can only be deleted after an order is completed."},
+                    status=409,
+                )
+            if not order.gcash_receipt:
+                return JsonResponse({"error": "No receipt has been uploaded."}, status=404)
+            order.gcash_receipt.delete(save=False)
+            order.save(update_fields=["gcash_receipt"])
+            _record_order_event(
+                order,
+                "RECEIPT_DELETED",
+                "GCash receipt deleted after order completion.",
+                request.user,
+            )
+        return JsonResponse({"message": "GCash receipt deleted."})
+
     if request.method == "GET":
         if not request.user.is_authenticated:
             return JsonResponse({"error": "Authentication required."}, status=401)
