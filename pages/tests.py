@@ -76,3 +76,35 @@ class PageAccessTests(TestCase):
         response = self.client.get("/login/?next=https://example.com/")
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.context["next_url"], "")
+
+
+class NavbarAuthButtonTests(TestCase):
+    """The navbar's Log in button becomes a role-aware Dashboard link when signed in."""
+
+    PUBLIC_PAGES = ("/", "/menu/", "/about/", "/contact/")
+
+    def setUp(self):
+        self.customer = User.objects.create_user(username="nav-customer", password="x-Test-pass-1")
+        self.admin = User.objects.create_user(
+            username="nav-admin", password="x-Test-pass-1", is_staff=True
+        )
+
+    def assert_button(self, path, label, href, absent_label):
+        html = self.client.get(path).content.decode()
+        self.assertIn(f'href="{href}"', html, path)
+        self.assertRegex(html, rf'href="{href}"[^>]*>\s*{label}\s*</a>', path)
+        self.assertNotRegex(html, rf'>\s*{absent_label}\s*</a>', path)
+
+    def test_logged_out_visitors_see_log_in(self):
+        for path in self.PUBLIC_PAGES:
+            self.assert_button(path, "Log in", "/login/", "Dashboard")
+
+    def test_customer_sees_dashboard_linking_to_customer_dashboard(self):
+        self.client.force_login(self.customer)
+        for path in self.PUBLIC_PAGES:
+            self.assert_button(path, "Dashboard", "/dashboard", "Log in")
+
+    def test_admin_sees_dashboard_linking_to_admin_dashboard(self):
+        self.client.force_login(self.admin)
+        for path in self.PUBLIC_PAGES:
+            self.assert_button(path, "Dashboard", "/admin-panel/dashboard/", "Log in")
