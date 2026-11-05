@@ -32,8 +32,8 @@
             <form id="adminLoginForm" method="post" action="{% url 'admin_login' %}" data-endpoint="{% url 'login_api' %}" class="mt-8 space-y-5">
                 {% csrf_token %}
                 <div>
-                    <label for="adminLoginUsername" class="mb-2 block text-[11px] font-extrabold uppercase tracking-[0.14em] text-[#89776e]">Username</label>
-                    <input id="adminLoginUsername" name="username" type="text" placeholder="Admin username" autocomplete="username" required class="h-12 w-full rounded-xl border border-[#eadfd2] bg-white px-4 text-sm font-semibold text-[#342724] outline-none transition placeholder:font-medium placeholder:text-[#b9a79d] focus:border-[#800000] focus:ring-4 focus:ring-[#800000]/10">
+                    <label for="adminLoginUsername" class="mb-2 block text-[11px] font-extrabold uppercase tracking-[0.14em] text-[#89776e]">Username or email</label>
+                    <input id="adminLoginUsername" name="username" type="text" placeholder="Admin username or email" autocomplete="username" required class="h-12 w-full rounded-xl border border-[#eadfd2] bg-white px-4 text-sm font-semibold text-[#342724] outline-none transition placeholder:font-medium placeholder:text-[#b9a79d] focus:border-[#800000] focus:ring-4 focus:ring-[#800000]/10">
                 </div>
                 <div>
                     <div class="mb-2">

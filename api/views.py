@@ -394,6 +394,24 @@ def test_api_response(request):
     return JsonResponse({"message": "API is running."})
 
 
+def _authenticate_by_username_or_email(request, identifier, password):
+    """Log in with either a username or an email address.
+
+    The text is tried as a username first, so usernames that happen to look like
+    an email (e.g. the default admin account) keep working. If that fails and it
+    contains "@", it is looked up as an email (case-insensitive). An email that
+    is shared by more than one account is refused as ambiguous.
+    """
+    user = authenticate(request=request, username=identifier, password=password)
+    if user is None and "@" in identifier:
+        matches = list(User.objects.filter(email__iexact=identifier)[:2])
+        if len(matches) == 1:
+            user = authenticate(
+                request=request, username=matches[0].get_username(), password=password
+            )
+    return user
+
+
 @csrf_protect
 @require_http_methods(["POST"])
 def login_api(request):
@@ -403,13 +421,13 @@ def login_api(request):
     username = data.get("username")
     password = data.get("password")
     if not isinstance(username, str) or not isinstance(password, str) or not username or not password:
-        return JsonResponse({"error": "Username and password are required."}, status=400)
+        return JsonResponse({"error": "Username or email and password are required."}, status=400)
     admin_only = data.get("admin_only", False)
     if not isinstance(admin_only, bool):
         return JsonResponse({"error": "'admin_only' must be a boolean."}, status=400)
-    user = authenticate(request=request, username=username, password=password)
+    user = _authenticate_by_username_or_email(request, username.strip(), password)
     if user is None:
-        return JsonResponse({"error": "Invalid username or password."}, status=401)
+        return JsonResponse({"error": "Invalid username/email or password."}, status=401)
     if not user.is_active:
         return JsonResponse({"error": "Account is inactive."}, status=403)
     if admin_only and not user.is_staff:

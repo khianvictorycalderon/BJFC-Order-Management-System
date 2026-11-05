@@ -597,3 +597,90 @@ class OrderWorkflowTests(TestCase):
         self.assertEqual(count("filter=cancelled"), 1)
         self.assertEqual(self.client.get("/api/admin/orders/?payment=maybe").status_code, 400)
         self.assertEqual(self.client.get("/api/admin/orders/?type=maybe").status_code, 400)
+
+    # ----- price changes must not rewrite history -----
+    def test_changing_menu_price_does_not_change_past_orders_or_sales(self):
+        self.client.force_login(self.customer)
+        self.assertEqual(self.place(items=[{"menu_item_id": self.item.pk, "quantity": 3}]).status_code, 201)
+        order = Order.objects.get()
+        order.status = Order.Status.COMPLETED
+        order.save(update_fields=["status"])  # sales only count completed orders
+
+        # Admin raises the price from 10.00 to 99.00.
+        FoodItem.objects.filter(pk=self.item.pk).update(price=Decimal("99.00"))
+
+        self.client.force_login(self.admin)
+        dashboard = self.client.get("/api/admin/dashboard/").json()
+        self.assertEqual(Decimal(dashboard["total_sales"]), Decimal("30.00"))
+        shown = self.client.get("/api/admin/orders/").json()["orders"][0]
+        self.assertEqual(shown["total_amount"], "30.00")
+        self.assertEqual(shown["items"][0]["price"], "10.00")
+
+        # A new order uses the new price.
+        self.client.force_login(self.customer)
+        self.place(items=[{"menu_item_id": self.item.pk, "quantity": 1}])
+        self.assertEqual(Order.objects.latest("pk").total_amount, Decimal("99.00"))
+
+
+class LoginIdentifierTests(TestCase):
+    """/api/login accepts a username or an email address."""
+
+    PASSWORD = "Test-password-123"
+
+    def setUp(self):
+        self.customer = User.objects.create_user(
+            username="jane", email="jane@example.com", password=self.PASSWORD
+        )
+        self.admin = User.objects.create_user(
+            username="boss", email="Boss@Example.com", password=self.PASSWORD, is_staff=True
+        )
+
+    def login(self, identifier, password=None, **extra):
+        return self.client.post(
+            "/api/login",
+            data=json.dumps(
+                {"username": identifier, "password": self.PASSWORD if password is None else password, **extra}
+            ),
+            content_type="application/json",
+        )
+
+    def test_login_with_username(self):
+        response = self.login("jane")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["user"]["username"], "jane")
+
+    def test_login_with_email_is_case_insensitive(self):
+        for identifier in ("jane@example.com", "JANE@Example.COM", "  jane@example.com "):
+            self.client.logout()
+            response = self.login(identifier)
+            self.assertEqual(response.status_code, 200, identifier)
+            self.assertEqual(response.json()["user"]["username"], "jane")
+
+    def test_wrong_password_or_unknown_email_is_rejected(self):
+        self.assertEqual(self.login("jane@example.com", "wrong-password").status_code, 401)
+        self.assertEqual(self.login("nobody@example.com").status_code, 401)
+        self.assertEqual(self.login("jane@example.com", "").status_code, 400)
+
+    def test_username_shaped_like_an_email_still_works(self):
+        User.objects.create_user(username="kitchen@example.com", password=self.PASSWORD)
+        response = self.login("kitchen@example.com")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["user"]["username"], "kitchen@example.com")
+
+    def test_someone_cannot_log_in_to_another_account_via_a_lookalike_username(self):
+        # An attacker registers a username equal to the victim's email. The victim's
+        # own email login must still reach the victim's account, not the attacker's.
+        User.objects.create_user(username="jane@example.com", password="Attacker-pass-9")
+        response = self.login("jane@example.com")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["user"]["username"], "jane")
+
+    def test_shared_email_is_ambiguous_and_refused(self):
+        User.objects.create_user(username="jane2", email="jane@example.com", password=self.PASSWORD)
+        self.assertEqual(self.login("jane@example.com").status_code, 401)
+        self.assertEqual(self.login("jane").status_code, 200)  # username still fine
+
+    def test_admin_only_login_works_with_email(self):
+        self.assertEqual(self.login("boss@example.com", admin_only=True).status_code, 200)
+        self.client.logout()
+        self.assertEqual(self.login("jane@example.com", admin_only=True).status_code, 403)
