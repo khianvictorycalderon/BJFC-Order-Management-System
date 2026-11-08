@@ -466,8 +466,8 @@ def login_api(request):
         return JsonResponse({"error": "Invalid username/email or password."}, status=401)
     if not user.is_active:
         return JsonResponse({"error": "Account is inactive."}, status=403)
-    if admin_only and not user.is_staff:
-        return JsonResponse({"error": "Admin access required."}, status=403)
+    if user.is_staff != admin_only:
+        return JsonResponse({"error": "Invalid username/email or password."}, status=401)
     login(request, user)
     return JsonResponse({"message": "Login successful.", "user": _serialize_user(user)}, status=200)
 
@@ -490,6 +490,20 @@ def register(request):
     confirm_password = data["confirm_password"]
     if not all(values.values()) or not password or not confirm_password:
         return JsonResponse({"error": "All fields are required."}, status=400)
+    if any(
+        not any(char.isalpha() for char in values[field])
+        or not all(char.isalpha() or char in " -'’" for char in values[field])
+        for field in ("first_name", "last_name")
+    ):
+        return JsonResponse(
+            {"error": "First and last names may contain letters, spaces, hyphens, and apostrophes only."},
+            status=400,
+        )
+    if not all(char.isalnum() or char in "._-" for char in values["username"]):
+        return JsonResponse(
+            {"error": "Username may contain letters, numbers, periods, underscores, and hyphens only."},
+            status=400,
+        )
     try:
         validate_email(values["email"])
     except ValidationError:
