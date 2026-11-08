@@ -160,6 +160,26 @@
     const cancelBtn = actions.querySelectorAll("button")[0];
     const orderBtn = actions.querySelectorAll("button")[1];
     const ORDER_LABEL = orderBtn.textContent;
+    const cartClearPopup = document.createElement("div");
+    cartClearPopup.id = "cartClearPopup";
+    cartClearPopup.className = "fixed inset-0 z-[100] hidden items-center justify-center bg-black/50 p-4";
+    cartClearPopup.innerHTML = `
+        <div class="w-full max-w-sm rounded-2xl border border-[#eadfd2] bg-white p-6 text-center shadow-2xl" role="status" aria-live="polite">
+            <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-[#edf7ef] text-2xl font-black text-[#32744a]" aria-hidden="true">✓</div>
+            <p id="cartClearPopupMessage" class="mt-4 text-lg font-extrabold text-[#342724]"></p>
+            <button type="button" class="mt-5 rounded-lg bg-[#800000] px-5 py-2 text-sm font-bold text-white transition hover:bg-[#650000] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#800000]/25">OK</button>
+        </div>`;
+    cartClearPopup.querySelector("button").addEventListener("click", () => {
+        cartClearPopup.classList.add("hidden");
+        cartClearPopup.classList.remove("flex");
+    });
+    cartClearPopup.addEventListener("click", (event) => {
+        if (event.target === cartClearPopup) {
+            cartClearPopup.classList.add("hidden");
+            cartClearPopup.classList.remove("flex");
+        }
+    });
+    document.body.appendChild(cartClearPopup);
 
     // ---------- Inject the order summary (above Cancel / Order Now) ----------
     const summary = document.createElement("section");
@@ -366,9 +386,14 @@
         });
 
         cancelBtn.addEventListener("click", () => {
+            const hadItems = cart.size > 0;
             cart.clear();
-            clearMsg();
             render();
+            cartClearPopup.querySelector("#cartClearPopupMessage").textContent =
+                hadItems ? "Cart cleared." : "Your cart is already empty.";
+            cartClearPopup.classList.remove("hidden");
+            cartClearPopup.classList.add("flex");
+            cartClearPopup.querySelector("button").focus();
         });
 
         orderBtn.addEventListener("click", async () => {

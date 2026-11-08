@@ -58,6 +58,21 @@ class BackendApiTests(TestCase):
         self.assertEqual(response.status_code, 403)
         self.assertFalse(response.wsgi_request.user.is_authenticated)
 
+    def test_ordinary_login_rejects_admins(self):
+        self.admin.set_password("admin-test-password")
+        self.admin.save(update_fields=["password"])
+        response = self.client.post(
+            "/api/login",
+            data=json.dumps({
+                "username": self.admin.username,
+                "password": "admin-test-password",
+            }),
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 401)
+        self.assertEqual(response.json()["error"], "Invalid username/email or password.")
+        self.assertFalse(response.wsgi_request.user.is_authenticated)
+
     def test_admin_dashboard_uses_database_data(self):
         order = Order.objects.create(
             customer=self.customer,
@@ -678,6 +693,59 @@ class OrderWorkflowTests(TestCase):
         self.assertEqual(Order.objects.latest("pk").total_amount, Decimal("99.00"))
 
 
+class RegistrationValidationTests(TestCase):
+    def setUp(self):
+        self.payload = {
+            "first_name": "Anne-Marie",
+            "last_name": "O'Neil",
+            "username": "anne_marie-1.0",
+            "email": "anne@example.com",
+            "password": "Strong-password-493!",
+            "confirm_password": "Strong-password-493!",
+        }
+
+    def register(self, **overrides):
+        return self.client.post(
+            "/api/register/",
+            data=json.dumps({**self.payload, **overrides}),
+            content_type="application/json",
+        )
+
+    def test_registration_accepts_normal_names_and_username_characters(self):
+        response = self.register()
+
+        self.assertEqual(response.status_code, 201, response.content)
+        user = User.objects.get()
+        self.assertEqual(user.first_name, "Anne-Marie")
+        self.assertEqual(user.last_name, "O'Neil")
+        self.assertEqual(user.username, "anne_marie-1.0")
+
+    def test_registration_rejects_non_alphabetical_names(self):
+        for field in ("first_name", "last_name"):
+            with self.subTest(field=field):
+                response = self.register(**{field: "Jane2!"})
+                self.assertEqual(response.status_code, 400)
+                self.assertIn("names", response.json()["error"])
+                self.assertEqual(User.objects.count(), 0)
+
+    def test_registration_rejects_disallowed_username_symbols(self):
+        response = self.register(username="anne@marie+1")
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("Username", response.json()["error"])
+        self.assertEqual(User.objects.count(), 0)
+
+    def test_registration_rejects_single_repeated_character_password(self):
+        response = self.register(password="AAAAAAAAAAA", confirm_password="AAAAAAAAAAA")
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn(
+            "single repeated character",
+            " ".join(response.json()["errors"]),
+        )
+        self.assertEqual(User.objects.count(), 0)
+
+
 class LoginIdentifierTests(TestCase):
     """/api/login accepts a username or an email address."""
 
@@ -740,3 +808,10 @@ class LoginIdentifierTests(TestCase):
         self.assertEqual(self.login("boss@example.com", admin_only=True).status_code, 200)
         self.client.logout()
         self.assertEqual(self.login("jane@example.com", admin_only=True).status_code, 403)
+
+    def test_ordinary_login_rejects_admin_even_with_valid_credentials(self):
+        response = self.login("boss@example.com")
+
+        self.assertEqual(response.status_code, 401)
+        self.assertEqual(response.json()["error"], "Invalid username/email or password.")
+        self.assertFalse(response.wsgi_request.user.is_authenticated)

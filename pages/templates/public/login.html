@@ -58,7 +58,8 @@ document.getElementById("loginForm").addEventListener("submit", async function (
             credentials: "same-origin",
             body: JSON.stringify({
                 username: form.username.value.trim(),
-                password: form.password.value
+                password: form.password.value,
+                admin_only: false
             })
         });
 
