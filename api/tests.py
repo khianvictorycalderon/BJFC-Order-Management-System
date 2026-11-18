@@ -161,6 +161,20 @@ class BackendApiTests(TestCase):
         self.assertFalse(self.item.available)
         self.assertEqual(self.item.price, Decimal("12.00"))
 
+        response = self.client.patch(
+            f"/api/admin/menu/items/{self.item.pk}",
+            data={
+                "name": "Updated Chicken",
+                "description": "Updated description",
+                "price": "13.00",
+            },
+        )
+        self.assertEqual(response.status_code, 200, response.content)
+        self.item.refresh_from_db()
+        self.assertEqual(self.item.name, "Updated Chicken")
+        self.assertEqual(self.item.description, "Updated description")
+        self.assertEqual(self.item.price, Decimal("13.00"))
+
         response = self.client.delete(f"/api/admin/menu/items/{created_item_id}")
         self.assertEqual(response.status_code, 200)
         self.client.force_login(self.customer)
