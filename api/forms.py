@@ -1,6 +1,7 @@
 import json
 import re
 from django import forms
+from django.http.multipartparser import MultiPartParser, MultiPartParserError
 from core.models import ContactMessage, FoodItem
 
 MAX_IMAGE_BYTES = 5 * 1024 * 1024  # 5 MB
@@ -17,6 +18,20 @@ def parse_payload(request):
         if not isinstance(data, dict):
             raise ValueError("Expected a JSON object.")
         return data, None
+    is_multipart_patch = (
+        request.method == "PATCH"
+        and (request.content_type or "").startswith("multipart/form-data")
+    )
+    if is_multipart_patch:
+        try:
+            return MultiPartParser(
+                request.META,
+                request,
+                request.upload_handlers,
+                request.encoding,
+            ).parse()
+        except MultiPartParserError as exc:
+            raise ValueError("Invalid multipart data.") from exc
     return request.POST.copy(), request.FILES
 
 
