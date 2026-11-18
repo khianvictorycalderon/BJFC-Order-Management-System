@@ -271,7 +271,7 @@
                     <img src="${esc(item.image || "/static/images/menu/chicken1.png")}" alt="${esc(item.name)}" class="h-20 w-20 rounded-full object-cover ring-2 ring-[#fff1e3]">
                 </div>
                 <h4 class="mt-4 text-base font-extrabold leading-snug text-[#2b201d]">${esc(item.name)}</h4>
-                <p class="mt-2 text-xs leading-5 text-[#89776e]">${esc(item.description || "")}</p>
+                <p class="mt-2 whitespace-pre-wrap text-xs leading-5 text-[#89776e]">${esc(item.description || "")}</p>
                 <div class="mt-auto flex items-center justify-between pt-4">
                     <span class="text-xl font-black text-[#342724]">₱${esc(item.price)}</span>
                     <button type="button" class="h-9 rounded-lg bg-[#e62727] px-5 text-xs font-extrabold uppercase tracking-wide text-white transition hover:bg-[#c41d1d]">Add</button>

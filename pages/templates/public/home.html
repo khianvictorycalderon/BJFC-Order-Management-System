@@ -21,9 +21,7 @@
                 {{ hero.title }}
             </h1>
 
-            <p class="mt-6 text-lg leading-[30px] sm:text-[22px] lg:mt-9 lg:pl-[7px]">
-                {% for line in hero.lines %}{{ line }}{% if not forloop.last %}<br>{% endif %}{% endfor %}
-            </p>
+            <p class="mt-6 whitespace-pre-wrap text-lg leading-[30px] sm:text-[22px] lg:mt-9 lg:pl-[7px]">{% for line in hero.lines %}{{ line }}{% if not forloop.last %}<br>{% endif %}{% endfor %}</p>
 
             <a
                 href="{{ hero.cta_url }}"
