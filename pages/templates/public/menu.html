@@ -24,9 +24,7 @@
                 {{ menu_page.title }}
             </h1>
 
-            <p class="mt-5 max-w-md text-base leading-7">
-                {{ menu_page.description }}
-            </p>
+            <p class="mt-5 max-w-md whitespace-pre-wrap text-base leading-7">{{ menu_page.description }}</p>
 
             <a href="#menu-items"
             class="mt-7 inline-flex rounded-full bg-white px-7 py-3 font-extrabold text-[#ee2023] transition hover:-translate-y-1 hover:bg-gray-100">
@@ -131,6 +129,7 @@
             color: #666;
             font-size: 12px;
             line-height: 1.5;
+            white-space: pre-wrap;
         }
 
         .product-controls {
@@ -273,13 +272,7 @@
                     <span class="product-price">₱{{ item.price }}</span>
                 </div>
 
-                <p class="product-description">
-                    {% if item.description %}
-                        {{ item.description }}
-                    {% else %}
-                        Freshly prepared and ready to enjoy.
-                    {% endif %}
-                </p>
+                <p class="product-description">{% if item.description %}{{ item.description }}{% else %}Freshly prepared and ready to enjoy.{% endif %}</p>
 
                 <div class="product-controls">
                     <button type="button"
